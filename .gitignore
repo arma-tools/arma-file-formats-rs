@@ -1,2 +1,10 @@
 /target
 /Cargo.lock
+
+tarpaulin-report.html
+*.profraw
+
+/tests/test-data/paa_out
+/tests/test-data/pbo_out
+
+/tests/test-data/wrp_in

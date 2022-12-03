@@ -9,6 +9,7 @@ pub trait ReadExtTrait: BufRead + Seek {
 
     fn read_u8(&mut self) -> io::Result<u8>;
     fn read_u16(&mut self) -> io::Result<u16>;
+    fn read_i32(&mut self) -> io::Result<i32>;
     fn read_u32(&mut self) -> io::Result<u32>;
 
     fn read_f32(&mut self) -> io::Result<f32>;
@@ -57,6 +58,10 @@ where
 
     fn read_u16(&mut self) -> io::Result<u16> {
         byteorder::ReadBytesExt::read_u16::<LittleEndian>(self)
+    }
+
+    fn read_i32(&mut self) -> io::Result<i32> {
+        byteorder::ReadBytesExt::read_i32::<LittleEndian>(self)
     }
 
     fn read_u32(&mut self) -> io::Result<u32> {

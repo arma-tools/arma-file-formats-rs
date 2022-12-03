@@ -38,3 +38,31 @@ pub enum RvffError {
     #[error("unknown decoding error")]
     Unknown,
 }
+
+#[derive(Error, Debug)]
+pub enum RvffConfigErrorKind {
+    #[error("IO failed")]
+    RvffIOError(#[from] io::Error),
+
+    #[error("Parsing failed: {0}")]
+    RvffPestError(String),
+
+    #[error("Invalid file")]
+    InvalidFileError,
+
+    #[error("unknown decoding error")]
+    Unknown,
+}
+
+#[derive(Error, Debug)]
+#[error(transparent)]
+pub struct RvffConfigError(Box<RvffConfigErrorKind>);
+
+impl<E> From<E> for RvffConfigError
+where
+    RvffConfigErrorKind: From<E>,
+{
+    fn from(err: E) -> Self {
+        RvffConfigError(Box::new(RvffConfigErrorKind::from(err)))
+    }
+}

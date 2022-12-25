@@ -17,11 +17,23 @@ pub enum PaaError {
     #[error("Paa lzo failed")]
     PaaLzoErr(#[from] LzokayError),
 
+    #[error("LZSS Error")]
+    RvffLzssError(#[from] RvffLzssError),
+
     #[error("Invalid state")]
     InvalidState,
 
     #[error("unknown decoding error")]
     Unknown,
+}
+
+#[derive(Error, Debug)]
+pub enum RvffLzssError {
+    #[error("LZSS Checksum Missmatch")]
+    ChecksumMissmatch,
+
+    #[error("LZSS Overflow")]
+    Overflow,
 }
 
 #[derive(Error, Debug)]
@@ -31,6 +43,9 @@ pub enum RvffError {
 
     #[error("Deku failed")]
     RvffDekuError(#[from] deku::DekuError),
+
+    #[error("LZSS Error")]
+    RvffLzssError(#[from] RvffLzssError),
 
     #[error("Invalid file")]
     InvalidFileError,

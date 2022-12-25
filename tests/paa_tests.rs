@@ -113,3 +113,19 @@ fn logo_dxt1_2048_encoding() {
 
     paa.write(&mut out_file, None).unwrap();
 }
+
+#[test]
+#[serial]
+fn ai_88_plus_decoding() {
+    let file = File::open(format!("{}ai88_plus.paa", INPUT_PATH_PREFIX)).unwrap();
+    let paa = Paa::from_reader(&mut BufReader::new(file), Some(&[0])).unwrap();
+
+    let mm = paa.mipmaps.first().unwrap();
+
+    let img_buf: ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+        ImageBuffer::from_raw(mm.width.into(), mm.height.into(), mm.data.clone()).unwrap();
+
+    img_buf
+        .save(format!("{}ai88_plus.png", OUTPUT_PATH_PREFIX))
+        .unwrap();
+}

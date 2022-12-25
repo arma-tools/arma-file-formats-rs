@@ -1,6 +1,7 @@
 use std::io::{self, Cursor, SeekFrom};
 use std::io::{BufRead, Seek, Write};
 
+use crate::core::decompress_lzss;
 use crate::core::read::ReadExtTrait;
 use crate::core::write::WriteExtTrait;
 use anyhow::Result;
@@ -141,7 +142,28 @@ impl Mipmap {
             PaaType::RGBA4444 => todo!(),
             PaaType::RGBA5551 => todo!(),
             PaaType::RGBA8888 => todo!(),
-            PaaType::GRAYwAlpha => todo!(),
+            PaaType::GRAYwAlpha => {
+                let mut cursor_data = Cursor::new(&self.data);
+
+                let (_, decompressed_data) = decompress_lzss(
+                    &mut cursor_data,
+                    (self.width * self.height * 2) as usize,
+                    true,
+                )?;
+
+                let mut rgba_buf = Vec::with_capacity((self.width * self.height * 4) as usize);
+
+                for i in (0..decompressed_data.len()).step_by(2) {
+                    let gray = decompressed_data[i];
+                    let alpha = decompressed_data[i + 1];
+                    rgba_buf.push(gray);
+                    rgba_buf.push(gray);
+                    rgba_buf.push(gray);
+                    rgba_buf.push(alpha);
+                }
+
+                self.data = rgba_buf;
+            }
         }
 
         Ok(())

@@ -3,7 +3,7 @@ use std::{
     io::BufReader,
 };
 
-use rvff::rap::{Cfg, CfgEntry, CfgValue, EntryReturn, PrettyPrint};
+use rvff::rap::{Cfg, CfgEntry, CfgValue, EntryReturn};
 
 const INPUT_PATH_PREFIX: &str = "./tests/test-data/rap_in/";
 #[allow(dead_code)]

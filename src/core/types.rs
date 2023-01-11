@@ -1,6 +1,7 @@
 use std::io::{self, BufRead, Seek};
 
 use crate::core::read::ReadExtTrait;
+use derivative::Derivative;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 #[derive(IntoPrimitive, TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,12 +48,6 @@ impl XYZTriplet {
     }
 }
 
-impl Default for XYZTriplet {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 use deku::{DekuContainerWrite, DekuRead, DekuUpdate, DekuWrite};
 
 #[derive(PartialEq, Debug, DekuRead, DekuWrite)]
@@ -69,7 +64,8 @@ pub struct XY {
     pub y: f32,
 }
 
-#[derive(PartialEq, Debug, DekuRead, DekuWrite)]
+#[derive(PartialEq, DekuRead, DekuWrite, Derivative)]
+#[derivative(Debug, Default)]
 pub struct XYZTriplet {
     x: f32,
     y: f32,
@@ -83,4 +79,13 @@ pub struct TransformMatrix(XYZTriplet, XYZTriplet, XYZTriplet, XYZTriplet);
 pub(crate) struct BytesUntilZeroData {
     #[deku(until = "|v: &u8| *v == 0")]
     pub(crate) bytes: Vec<u8>,
+}
+
+#[derive(PartialEq, DekuRead, DekuWrite, Derivative)]
+#[derivative(Debug, Default)]
+pub struct RGBAColor {
+    pub a: u8,
+    pub b: u8,
+    pub c: u8,
+    pub d: u8,
 }

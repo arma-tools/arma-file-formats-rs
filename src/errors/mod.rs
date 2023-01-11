@@ -37,6 +37,18 @@ pub enum RvffLzssError {
 }
 
 #[derive(Error, Debug)]
+pub enum RvffOdolError {
+    #[error("Signature Missing")]
+    SignatureMissing,
+
+    #[error("Unknown Version: `{0}`")]
+    UnknownVersion(u32),
+
+    #[error("Unsupported Version: `{0}`")]
+    UnsupportedVersion(u32),
+}
+
+#[derive(Error, Debug)]
 pub enum RvffError {
     #[error("IO failed")]
     RvffIOError(#[from] io::Error),
@@ -46,6 +58,9 @@ pub enum RvffError {
 
     #[error("LZSS Error")]
     RvffLzssError(#[from] RvffLzssError),
+
+    #[error("ODOL Error")]
+    RvffOdolError(#[from] RvffOdolError),
 
     #[error("Invalid file")]
     InvalidFileError,

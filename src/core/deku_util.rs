@@ -20,11 +20,25 @@ pub(crate) fn read_string_zt(
     ))
 }
 
+pub(crate) fn read_string_zt_opt(
+    rest: &BitSlice<u8, Msb0>,
+) -> Result<(&BitSlice<u8, Msb0>, Option<String>), DekuError> {
+    let (rest, val) = read_string_zt(rest)?;
+    Ok((rest, Some(val)))
+}
+
 pub(crate) fn write_string_zt(output: &mut BitVec<u8, Msb0>, str: &str) -> Result<(), DekuError> {
     let value = str.as_bytes();
     output.write_all(value).unwrap();
     output.write_u8(b'\0').unwrap();
     Ok(())
+}
+
+pub(crate) fn write_string_zt_opt_str(
+    output: &mut BitVec<u8, Msb0>,
+    str: &Option<String>,
+) -> Result<(), DekuError> {
+    write_string_zt(output, str.as_ref().unwrap())
 }
 
 pub(crate) fn read_string_zt_vec(

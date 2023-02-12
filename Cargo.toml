@@ -30,9 +30,8 @@ rand = { version = "0.8.5" }#, default-features = false, features = ["small_rng"
 getrandom = { version = "0.2", features = ["js"] }
 
 # Rap
-pest = "2.0"
-pest_derive = "2.0"
-no-comment = "0.0.3"
+ariadne = "0.1.5"
+chumsky = "0.9.0"
 
 # Test
 image = "0.23.14"

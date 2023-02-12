@@ -60,7 +60,7 @@ pub enum RvffConfigErrorKind {
     RvffIOError(#[from] io::Error),
 
     #[error("Parsing failed: {0}")]
-    RvffPestError(String),
+    RvffParseError(String),
 
     #[error("Invalid file")]
     InvalidFileError,

@@ -1,51 +1,20 @@
-use std::io::{BufRead, Seek};
+use std::io::{BufRead, Cursor, Seek};
 
-use no_comment::{languages, IntoWithoutComments};
-use pest::Parser;
-
-use super::{entry::CfgEntry, parser::RapConfigParser, pretty_print::PrettyPrint, EntryReturn};
+use super::{entry::CfgEntry, parser::parse, pretty_print::PrettyPrint, EntryReturn};
 use crate::{
     core::read::ReadExtTrait,
     errors::{RvffConfigError, RvffConfigErrorKind},
-    rap::parser::Rule,
 };
 
 const RAP_MAGIC: u32 = 1348563456;
-
 #[derive(Debug)]
 pub struct Cfg {
     #[allow(dead_code)]
-    enum_offset: u32,
+    pub enum_offset: u32,
     pub inherited_classname: String,
     pub entries: Vec<CfgEntry>,
 }
 impl Cfg {
-    pub fn parse_config(file_content: &str) -> Result<Cfg, RvffConfigError> {
-        //Box<Error<Rule>>
-        let file_content: String = file_content
-            .chars()
-            .without_comments(languages::c())
-            .collect();
-        match RapConfigParser::parse(Rule::cfg, &file_content) {
-            Ok(rules) => {
-                let mut entries = Vec::new();
-                for r in rules {
-                    if r.as_rule() != Rule::EOI {
-                        entries.push(CfgEntry::parse_value(r));
-                    }
-                }
-                Ok(Cfg {
-                    entries,
-                    enum_offset: 0,
-                    inherited_classname: String::new(),
-                })
-            }
-            Err(err) => Err(RvffConfigError::from(RvffConfigErrorKind::RvffPestError(
-                format!("{}", err),
-            ))),
-        }
-    }
-
     pub fn is_valid_rap_bin<I>(reader: &mut I) -> bool
     where
         I: BufRead + Seek,
@@ -77,6 +46,37 @@ impl Cfg {
         Ok(Cfg {
             enum_offset,
             inherited_classname,
+            entries,
+        })
+    }
+
+    pub fn read_data(data: &[u8]) -> Result<Cfg, RvffConfigError> {
+        let mut reader = Cursor::new(data);
+        Self::read(&mut reader)
+    }
+
+    pub fn read<I>(reader: &mut I) -> Result<Cfg, RvffConfigError>
+    where
+        I: BufRead + Seek,
+    {
+        let is_valid_bin = Self::is_valid_rap_bin(reader);
+        reader.rewind()?;
+        if is_valid_bin {
+            return Self::read_config(reader);
+        }
+
+        let mut cfg_text = String::new();
+        reader.read_to_string(&mut cfg_text)?;
+
+        Self::parse_config(&cfg_text)
+    }
+
+    pub fn parse_config(cfg: &str) -> Result<Cfg, RvffConfigError> {
+        let entries = parse(cfg)?;
+
+        Ok(Cfg {
+            enum_offset: 0,
+            inherited_classname: String::new(),
             entries,
         })
     }

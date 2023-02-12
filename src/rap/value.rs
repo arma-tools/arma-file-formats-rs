@@ -44,6 +44,38 @@ impl CfgValue {
 
         Ok(CfgValue::Array(entries))
     }
+
+    pub fn as_float(&self) -> Option<f32> {
+        if let CfgValue::Float(val) = self {
+            Some(*val)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_long(&self) -> Option<i32> {
+        if let CfgValue::Long(val) = self {
+            Some(*val)
+        } else {
+            None
+        }
+    }
+
+    pub fn as_string(&self) -> Option<String> {
+        if let CfgValue::String(val) = self {
+            Some(val.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_array(&self) -> Option<Vec<CfgValue>> {
+        if let CfgValue::Array(val) = self {
+            Some(val.clone())
+        } else {
+            None
+        }
+    }
 }
 
 impl CfgValue {

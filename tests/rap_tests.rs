@@ -86,3 +86,50 @@ fn mission_sqm_bin_test() {
                 class.entries.len() == 1)
     );
 }
+
+#[test]
+fn comment_string_test() {
+    let inp = "
+    test = \"call{this addAction [\"\"<t color=\'#008000\'>Turn on Lights</t>\"\", \"\"Scripts\\XiviD\\lightsON.sqf\"\"];\" \\n \"this addAction [\"\"<t color='#FF0000'>Turn off Lights</t>\"\", \"\"Scripts\\XiviD\\lightsOFF.sqf\"\"];\" \\n \"\" \\n \"}\";
+
+test2 = \"diag_log \"\"hi\"\"; \";
+
+test3 = \"/*0*/\";
+test4 = \"\";
+/*
+/*test5 = \"dasd\";
+test5 = \"dasd\";
+
+test5 = \"dasd\";
+*
+
+//23
+
+
+fjaslkf*/
+";
+
+    let cfg = Cfg::parse_config(inp).unwrap();
+
+    let test2 = cfg.get_entry(&["test"]).unwrap().as_string().unwrap();
+    println!("test2: {}", test2);
+    //fs::write("out_test.txt", test2).unwrap();
+}
+
+#[test]
+fn grad_base_parse() {
+    let file = File::open(format!("{}mission_grad_base.sqm", INPUT_PATH_PREFIX)).unwrap();
+    let mut buf = BufReader::new(file);
+
+    let cfg = Cfg::read(&mut buf).unwrap();
+    //dbg!(cfg);
+
+    let entry = cfg
+        .get_entry(&["Mission", "Entities", "Item1066", "type"])
+        .unwrap();
+
+    assert_eq!(
+        entry.as_string().unwrap_or_default(),
+        "Land_Shoot_House_Panels_F"
+    );
+}

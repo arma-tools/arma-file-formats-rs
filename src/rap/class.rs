@@ -1,8 +1,6 @@
 use std::io::{BufRead, Seek};
 
-use pest::iterators::Pairs;
-
-use crate::{core::read::ReadExtTrait, errors::RvffConfigError, rap::parser::Rule};
+use crate::{core::read::ReadExtTrait, errors::RvffConfigError};
 
 use super::{entry::CfgEntry, pretty_print::PrettyPrint, EntryReturn};
 
@@ -14,31 +12,6 @@ pub struct CfgClass {
 }
 
 impl CfgClass {
-    pub fn parse_class(token_rules: &mut Pairs<Rule>) -> CfgClass {
-        let name = token_rules.next().unwrap().as_str().to_owned();
-        let mut parent_class: Option<String> = None;
-        if let Some(snd_token) = token_rules.peek() {
-            let rule = snd_token.as_rule();
-            if rule == Rule::ident {
-                parent_class = Some(snd_token.as_str().to_owned());
-                token_rules.next();
-            }
-        } else {
-            // empty class
-            return CfgClass {
-                name,
-                parent: None,
-                entries: Vec::new(),
-            };
-        }
-
-        CfgClass {
-            name,
-            parent: parent_class,
-            entries: token_rules.map(CfgEntry::parse_value).collect(),
-        }
-    }
-
     pub fn read_class<I>(reader: &mut I) -> Result<CfgClass, RvffConfigError>
     where
         I: BufRead + Seek,

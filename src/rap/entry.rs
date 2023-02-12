@@ -1,12 +1,8 @@
 use std::io::{BufRead, Seek};
 
-use pest::iterators::Pair;
+use crate::{core::read::ReadExtTrait, errors::RvffConfigError};
 
-use crate::{core::read::ReadExtTrait, errors::RvffConfigError, rap::parser::Rule};
-
-use super::{
-    class::CfgClass, parser, pretty_print::PrettyPrint, property::CfgProperty, EntryReturn,
-};
+use super::{class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty, EntryReturn};
 
 #[derive(Debug, Clone)]
 pub enum CfgEntry {
@@ -17,25 +13,6 @@ pub enum CfgEntry {
 }
 
 impl CfgEntry {
-    pub fn parse_value(pair: Pair<parser::Rule>) -> CfgEntry {
-        match pair.as_rule() {
-            Rule::property => {
-                CfgEntry::Property(CfgProperty::parse_property(&mut pair.into_inner()))
-            }
-            Rule::class => CfgEntry::Class(CfgClass::parse_class(&mut pair.into_inner())),
-            Rule::array => {
-                CfgEntry::Property(CfgProperty::parse_property_array(&mut pair.into_inner()))
-            }
-            Rule::extern_class => {
-                CfgEntry::Extern(pair.into_inner().next().unwrap().as_str().to_string())
-            }
-            Rule::deleted_class => {
-                CfgEntry::Delete(pair.into_inner().next().unwrap().as_str().to_string())
-            }
-            _ => unreachable!(),
-        }
-    }
-
     pub fn parse_entry<I>(reader: &mut I) -> Result<CfgEntry, RvffConfigError>
     where
         I: BufRead + Seek,
@@ -79,6 +56,38 @@ impl CfgEntry {
         }
 
         None
+    }
+
+    pub fn as_property(&self) -> Option<CfgProperty> {
+        if let CfgEntry::Property(val) = self {
+            Some(val.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_class(&self) -> Option<CfgClass> {
+        if let CfgEntry::Class(val) = self {
+            Some(val.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_extern(&self) -> Option<String> {
+        if let CfgEntry::Extern(val) = self {
+            Some(val.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn as_delete(&self) -> Option<String> {
+        if let CfgEntry::Delete(val) = self {
+            Some(val.clone())
+        } else {
+            None
+        }
     }
 }
 

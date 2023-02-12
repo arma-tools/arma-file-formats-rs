@@ -1,9 +1,7 @@
 use std::io::{BufRead, Seek};
 
-use pest::iterators::Pairs;
-
-use super::{parser, pretty_print::PrettyPrint, value::CfgValue};
-use crate::{core::read::ReadExtTrait, errors::RvffConfigError, rap::parser::Rule};
+use super::{pretty_print::PrettyPrint, value::CfgValue};
+use crate::{core::read::ReadExtTrait, errors::RvffConfigError};
 
 #[derive(Debug, Clone)]
 pub struct CfgProperty {
@@ -12,63 +10,6 @@ pub struct CfgProperty {
 }
 
 impl CfgProperty {
-    pub fn parse_property(token_rules: &mut Pairs<parser::Rule>) -> CfgProperty {
-        let ident = token_rules.next().unwrap().as_str();
-        let valr = token_rules.next().unwrap();
-        let value = valr.as_str();
-        match valr.as_rule() {
-            Rule::string => CfgProperty {
-                name: ident.to_owned(),
-                value: CfgValue::String(value.to_owned()),
-            },
-            Rule::number => {
-                let name = ident.to_owned();
-                let num: f32 = value.parse().unwrap();
-                if num.fract() != 0.0 {
-                    CfgProperty {
-                        name,
-                        value: CfgValue::Float(num),
-                    }
-                } else {
-                    CfgProperty {
-                        name,
-                        value: CfgValue::Long(num as i32),
-                    }
-                }
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn parse_property_array(token_rules: &mut Pairs<Rule>) -> CfgProperty {
-        let ident = token_rules.next().unwrap().as_str();
-        let elmen = token_rules
-            .next()
-            .unwrap()
-            .into_inner()
-            .map(|r| {
-                let value = r.as_str();
-                match r.as_rule() {
-                    Rule::string => CfgValue::String(value.to_owned()),
-                    Rule::number => {
-                        let num: f32 = value.parse().unwrap();
-                        if num.fract() != 0.0 {
-                            CfgValue::Float(num)
-                        } else {
-                            CfgValue::Long(num as i32)
-                        }
-                    }
-                    _ => unreachable!(),
-                }
-            })
-            .collect();
-
-        CfgProperty {
-            name: ident.to_owned(),
-            value: CfgValue::Array(elmen),
-        }
-    }
-
     pub fn read_property<I>(reader: &mut I, is_array: bool) -> Result<CfgProperty, RvffConfigError>
     where
         I: BufRead + Seek,

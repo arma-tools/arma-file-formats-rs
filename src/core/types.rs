@@ -1,6 +1,7 @@
 use std::io::{self, BufRead, Seek};
 
 use crate::core::read::ReadExtTrait;
+use binrw::BinRead;
 use derivative::Derivative;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -72,8 +73,41 @@ pub struct XYZTriplet {
     z: f32,
 }
 
+#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
+#[derivative(Debug, Default)]
+pub struct XYZTripletBinrw {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
+#[derivative(Debug, Default)]
+pub struct STPair {
+    pub s: XYZTripletBinrw,
+    pub t: XYZTripletBinrw,
+}
+
 #[derive(PartialEq, Debug, DekuRead, DekuWrite)]
 pub struct TransformMatrix(XYZTriplet, XYZTriplet, XYZTriplet, XYZTriplet);
+
+#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
+#[derivative(Debug, Default)]
+pub struct TransformMatrixBinrw(
+    XYZTripletBinrw,
+    XYZTripletBinrw,
+    XYZTripletBinrw,
+    XYZTripletBinrw,
+);
+
+#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
+#[derivative(Debug, Default)]
+pub struct D3DColorValue {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
+}
 
 #[derive(PartialEq, Debug, DekuRead, DekuWrite)]
 pub(crate) struct BytesUntilZeroData {
@@ -81,7 +115,7 @@ pub(crate) struct BytesUntilZeroData {
     pub(crate) bytes: Vec<u8>,
 }
 
-#[derive(PartialEq, DekuRead, DekuWrite, Derivative)]
+#[derive(BinRead, PartialEq, Derivative)]
 #[derivative(Debug, Default)]
 pub struct RGBAColor {
     pub a: u8,

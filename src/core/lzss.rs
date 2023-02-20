@@ -1,6 +1,8 @@
-use std::io::{BufRead, Seek};
+use std::io::{Read, Seek};
 
-use crate::{core::read::ReadExtTrait, errors::RvffLzssError};
+use byteorder::{LittleEndian, ReadBytesExt};
+
+use crate::errors::RvffLzssError;
 
 pub(crate) fn decompress_lzss<R>(
     reader: &mut R,
@@ -8,7 +10,7 @@ pub(crate) fn decompress_lzss<R>(
     use_signed_checksum: bool,
 ) -> Result<(u64, Vec<u8>), RvffLzssError>
 where
-    R: BufRead + Seek,
+    R: Read + Seek,
 {
     let mut array = vec![0_u8; 4113];
     let mut dst = vec![0_u8; expected_size];
@@ -77,7 +79,7 @@ where
     }
 
     //let hash = vec![0_u8; 4];
-    let hash = reader.read_i32().unwrap();
+    let hash = reader.read_i32::<LittleEndian>().unwrap();
     if hash != calculated_hash {
         return Err(RvffLzssError::ChecksumMissmatch);
     }

@@ -7,4 +7,5 @@ tarpaulin-report.html
 /tests/test-data/paa_out
 /tests/test-data/pbo_out
 
+/tests/test-data/p3d_in
 /tests/test-data/wrp_in

@@ -1,5 +1,6 @@
 use binrw::{BinRead, BinResult, NullString};
 use std::io::SeekFrom;
+use std::marker::PhantomData;
 use std::{
     fs::File,
     io::{BufRead, BufReader, Seek},
@@ -46,7 +47,6 @@ pub struct ODOL {
 
     pub lod_count: u32,
 
-    #[br(dbg)]
     #[br(count = lod_count)]
     pub resolutions: Vec<Resolution>,
 
@@ -110,96 +110,90 @@ pub(crate) fn read_lods(
     Ok(lods)
 }
 
-#[derive(BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative)]
 #[derivative(Debug, Default)]
-pub enum Resolution {
-    #[derivative(Default)]
-    #[br(magic = 1f32)]
-    Lod1,
-    #[br(magic = 2f32)]
-    Lod2,
-    #[br(magic = 3f32)]
-    Lod3,
-    #[br(magic = 4f32)]
-    Lod4,
-    #[br(magic = 5f32)]
-    Lod5,
-    #[br(magic = 6f32)]
-    Lod6,
-    #[br(magic = 7f32)]
-    Lod7,
-    #[br(magic = 8f32)]
-    Lod8,
-    #[br(magic = 9f32)]
-    Lod9,
-    #[br(magic = 10f32)]
-    Lod10,
-    #[br(magic = 1E3f32)]
+pub struct Resolution {
+    pub value: f32,
+
+    #[br(args { value })]
+    pub res: ResolutionEnum,
+}
+
+#[allow(illegal_floating_point_literal_pattern)]
+#[derive(BinRead, Derivative, PartialEq)]
+#[derivative(Debug, Default)]
+#[br(import { value: f32 })]
+//#[br(repr(f32))]
+pub enum ResolutionEnum {
+    #[br(pre_assert(value < 1E3f32))]
+    GraphicalLod,
+    #[br(pre_assert(value == 1E3f32))]
     ViewGunner,
-    #[br(magic = 1.1E3f32)]
+    #[br(pre_assert(value == 1.1E3f32))]
     ViewPilot,
-    #[br(magic = 1.2E3f32)]
+    #[br(pre_assert(value == 1.2E3f32))]
     ViewCargo,
-    #[br(magic = 1.202E3f32)]
-    Unk1,
-    #[br(magic = 1E4f32)]
+    #[br(pre_assert(value == 1.202E3f32))]
+    ViewUnknown,
+    #[br(pre_assert(value == 1E4f32))]
     ShadowVolume,
-    #[br(magic = 1.001E4f32)]
+    #[br(pre_assert(value == 1.001E4f32))]
     ShadowVolume2,
-    #[br(magic = 1.1E4f32)]
+    #[br(pre_assert(value == 1.1E4f32))]
     StencilShadow,
-    #[br(magic = 1.101E4f32)]
+    #[br(pre_assert(value == 1.101E4f32))]
     StencilShadow2,
-    #[br(magic = 1.102E4f32)]
-    Unk3,
-    #[br(magic = 1E13f32)]
+    #[br(pre_assert(value == 1.102E4f32))]
+    StencilShadowUnknown,
+    #[br(pre_assert(value == 1E13f32))]
     Geometry,
-    #[br(magic = 4E13f32)]
-    Unk4,
-    #[br(magic = 1E15f32)]
+    #[br(pre_assert(value == 4E13f32))]
+    Unknown4E13,
+    #[br(pre_assert(value == 1E15f32))]
     Memory,
-    #[br(magic = 2E15f32)]
+    #[br(pre_assert(value == 2E15f32))]
     LandContact,
-    #[br(magic = 3E15f32)]
+    #[br(pre_assert(value == 3E15f32))]
     Roadway,
-    #[br(magic = 4E15f32)]
+    #[br(pre_assert(value == 4E15f32))]
     Paths,
-    #[br(magic = 5E15f32)]
+    #[br(pre_assert(value == 5E15f32))]
     HitPoints,
-    #[br(magic = 6E15f32)]
+    #[br(pre_assert(value == 6E15f32))]
     ViewGeometry,
-    #[br(magic = 7E15f32)]
+    #[br(pre_assert(value == 7E15f32))]
     FireGeometry,
-    #[br(magic = 8E15f32)]
+    #[br(pre_assert(value == 8E15f32))]
     ViewCargoGeometry,
-    #[br(magic = 9E15f32)]
+    #[br(pre_assert(value == 9E15f32))]
     ViewCargoFireGeometry,
-    #[br(magic = 1E16f32)]
+    #[br(pre_assert(value == 1E16f32))]
     ViewCommander,
-    #[br(magic = 1.1E16f32)]
+    #[br(pre_assert(value == 1.1E16f32))]
     ViewCommanderGeometry,
-    #[br(magic = 1.2E16f32)]
+    #[br(pre_assert(value == 1.2E16f32))]
     ViewCommanderFireGeometry,
-    #[br(magic = 1.3E16f32)]
+    #[br(pre_assert(value == 1.3E16f32))]
     ViewPilotGeometry,
-    #[br(magic = 1.4E16f32)]
+    #[br(pre_assert(value == 1.4E16f32))]
     ViewPilotFireGeometry,
-    #[br(magic = 1.5E16f32)]
+    #[br(pre_assert(value == 1.5E16f32))]
     ViewGunnerGeometry,
-    #[br(magic = 1.6E16f32)]
+    #[br(pre_assert(value == 1.6E16f32))]
     ViewGunnerFireGeometry,
-    #[br(magic = 1.7E16f32)]
+    #[br(pre_assert(value == 1.7E16f32))]
     SubParts,
-    #[br(magic = 1.8E16f32)]
+    #[br(pre_assert(value == 1.8E16f32))]
     ShadowVolumeViewCargo,
-    #[br(magic = 1.9E16f32)]
+    #[br(pre_assert(value == 1.9E16f32))]
     ShadowVolumeViewPilot,
-    #[br(magic = 2E16f32)]
+    #[br(pre_assert(value == 2E16f32))]
     ShadowVolumeViewGunner,
-    #[br(magic = 2E16f32)]
-    Unk2,
-    #[br(magic = 2.1E16f32)]
-    Unk5,
+    #[br(pre_assert(value == 2.1E16f32))]
+    Wreck,
+    #[br(pre_assert(true))]
+    #[derivative(Default)]
+    Unknown(PhantomData<f32>),
 }
 
 impl ODOL {

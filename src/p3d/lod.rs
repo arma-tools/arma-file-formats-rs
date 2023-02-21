@@ -31,6 +31,7 @@ pub struct Lod {
     pub lod_items: Vec<u32>,
 
     bone_link_count: u32,
+
     #[br(count = bone_link_count)]
     pub bone_links: Vec<BoneLink>,
 
@@ -42,7 +43,7 @@ pub struct Lod {
     #[br(parse_with = read_condensed_array_cond)]
     pub clip_old_format: Option<Vec<ClipFlags>>,
 
-    #[br(if(args.version >= 50))]
+    #[br(if(args.version >= 51))]
     pub face_area: Option<f32>,
 
     pub or_hints: i32,
@@ -105,7 +106,6 @@ pub struct Lod {
     #[br(args(args))]
     pub default_uv_set: UVSet,
 
-    #[br(dbg)]
     #[br(map = |x: u32| if x > 0 { x - 1 } else { x })]
     uv_set_count: u32,
 
@@ -351,11 +351,11 @@ pub struct LodSection {
     #[br(count = stage_count)]
     pub stages: Option<Vec<f32>>,
 
-    #[br(if(args.version >= 36))]
+    #[br(if(args.version >= 67))]
     #[br(map = |x: i32| x >= 1)]
     pub unk_matrix_exists: bool,
 
-    #[br(if(args.version >= 36 && unk_matrix_exists))]
+    #[br(if(args.version >= 67 && unk_matrix_exists))]
     pub unk_matrix: TransformMatrixBinrw,
 }
 

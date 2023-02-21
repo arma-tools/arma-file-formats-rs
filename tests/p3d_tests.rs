@@ -1,3 +1,5 @@
+use std::fs;
+
 use rvff::p3d::ODOL;
 use serial_test::serial;
 
@@ -8,9 +10,14 @@ const OUTPUT_PATH_PREFIX: &str = "./tests/test-data/p3d_out/";
 #[test]
 #[serial]
 fn aa_p3d() {
-    let odol = ODOL::from_path(format!("{}APC_Tracked_01_aa_F.p3d", INPUT_PATH_PREFIX)).unwrap();
+    let odol = ODOL::from_path(format!(
+        "{}test_all/APC_Tracked_01_aa_F.p3d",
+        INPUT_PATH_PREFIX
+    ))
+    .unwrap();
     println!("{:#?}", odol.use_defaults);
     println!("{:#?}", odol.face_defaults);
+    println!("{:#?}", odol.resolutions);
     // println!("{:#?}", odol.lods[0].sections);
     // println!("{:#?}", odol.lods[0].named_selection);
     println!("{:#?}", odol.lods[0].named_properties);
@@ -39,4 +46,19 @@ fn aa_p3d() {
     );
     //println!("neighbour: {:#?}", odol.lods[0].);
     println!("neighbour: {:#?}", odol.lods[0].neighbour_bone_ref.last());
+}
+
+#[test]
+fn test_all() {
+    let test_all_dir = fs::read_dir(format!("{}test_all", INPUT_PATH_PREFIX)).unwrap();
+
+    test_all_dir.for_each(|e| {
+        if let Ok(entry) = e {
+            let p = entry.path();
+            if p.extension().unwrap_or_default() == "p3d" {
+                println!("Testing:  {}", p.display());
+                let _o = ODOL::from_path(p).unwrap();
+            }
+        }
+    });
 }

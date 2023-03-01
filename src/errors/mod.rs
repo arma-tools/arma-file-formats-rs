@@ -56,6 +56,8 @@ pub enum RvffError {
     #[error("Deku failed")]
     RvffDekuError(#[from] deku::DekuError),
 
+    // #[error("Deku failed")]
+    // RvffBinrwError(#[from] binrw::bin),
     #[error("LZSS Error")]
     RvffLzssError(#[from] RvffLzssError),
 

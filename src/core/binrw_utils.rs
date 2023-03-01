@@ -9,6 +9,7 @@ use binrw::BinResult;
 use binrw::Endian;
 use derivative::Derivative;
 use lzokay_rust_native::decompress::decompress_stream;
+use rsa::BigUint;
 
 use crate::p3d::ODOLArgs;
 
@@ -83,6 +84,18 @@ where
     decompress_array(reader, endian, elemen_size, count, odol_args)
 }
 
+#[binrw::parser(reader, endian)]
+pub(crate) fn read_compressed_array_count<T, 'a>(
+    elemen_size: usize,
+    count: usize,
+    odol_args: ODOLArgs,
+) -> BinResult<Vec<T>>
+where
+    T: BinRead<Args<'a> = ()>,
+{
+    decompress_array(reader, endian, elemen_size, count, odol_args)
+}
+
 pub(crate) fn decompress_array<'a, T>(
     reader: &mut (impl Read + Seek),
     endian: Endian,
@@ -105,6 +118,20 @@ where
     Ok(arr)
 }
 
+#[binrw::parser(reader, endian)]
+pub(crate) fn read_compressed_data_cond_count(
+    condition: bool,
+    count: usize,
+    odol_args: ODOLArgs,
+) -> BinResult<Option<Vec<u8>>> {
+    // dbg!(count);
+    // dbg!(odol_args);
+    if condition {
+        Ok(Some(decompress_data(reader, endian, 1, count, odol_args)?))
+    } else {
+        Ok(None)
+    }
+}
 fn decompress_data(
     reader: &mut (impl Read + Seek),
     endian: Endian,
@@ -312,3 +339,37 @@ impl From<STPairCompress> for STPair {
         }
     }
 }
+
+#[binrw::parser(reader)]
+pub(crate) fn read_biguint(length: (usize,)) -> BinResult<BigUint> {
+    let mut buf = vec![0_u8; length.0];
+    reader.read_exact(&mut buf)?;
+    Ok(BigUint::from_bytes_le(&buf))
+}
+
+#[binrw::writer(writer)]
+pub(crate) fn write_biguint(biguint: BigUint) -> BinResult<()> {
+    let buf = biguint.to_bytes_le();
+    writer.write_all(&buf)?;
+    Ok(())
+}
+
+// pub(crate) fn read_biguint(
+//     rest: &BitSlice<u8, Msb0>,
+//     length: usize,
+// ) -> Result<(&BitSlice<u8, Msb0>, BigUint), DekuError> {
+//     let (bigint_bytes, rest) = rest.split_at(length * 8);
+//     Ok((
+//         rest,
+//         BigUint::from_bytes_le(&bigint_bytes.to_bitvec().into_vec()),
+//     ))
+// }
+
+// pub(crate) fn write_biguint(
+//     output: &mut BitVec<u8, Msb0>,
+//     bigint: &BigUint,
+// ) -> Result<(), DekuError> {
+//     let bigint_bytes = bigint.to_bytes_le();
+//     output.write_all(&bigint_bytes).unwrap();
+//     Ok(())
+// }

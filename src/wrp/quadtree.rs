@@ -1,107 +1,108 @@
-use deku::{
-    bitvec::{BitSlice, BitVec, Msb0},
-    DekuContainerWrite, DekuError, DekuRead, DekuUpdate, DekuWrite,
-};
+use std::io::{Cursor, Seek};
 
-#[derive(PartialEq, Debug, DekuRead, DekuWrite)]
-pub struct QuadTree<T: for<'a> DekuRead<'a>> {
-    flag: u8,
+use binrw::{BinRead, BinResult, Endian};
 
-    #[deku(cond = "*flag == 0")]
-    flag_data: Option<u8>,
+use derivative::Derivative;
 
-    #[deku(cond = "*flag != 0")]
-    inner_data: QuadTreeInner<T>,
+#[derive(PartialEq, BinRead, Derivative)]
+#[derivative(Debug, Default)]
+#[br(import(element_size: u32))]
+pub struct QuadTree {
+    #[br(map = |x: u8| x != 0)]
+    flag: bool,
+
+    #[br(args(flag, element_size))]
+    root: QuadTreeData,
 }
 
-impl<T> QuadTree<T>
-where
-    T: for<'a> deku::DekuRead<'a>,
-{
-    pub fn new() -> Self {
-        QuadTree {
-            flag: 0,
-            flag_data: None,
-            inner_data: QuadTreeInner::<T>::new(),
-        }
-    }
+#[derive(BinRead, Derivative, PartialEq)]
+#[derivative(Debug, Default)]
+#[br(import(flag: bool, element_size: u32))]
+pub enum QuadTreeData {
+    #[br(pre_assert(flag))]
+    Node(#[br(args(element_size))] QuadTreeNode),
+    #[br(pre_assert(!flag))]
+    #[derivative(Default)]
+    Leaf(#[br(args(element_size))] QuadTreeLeaf),
 }
 
-impl<T> Default for QuadTree<T>
-where
-    T: for<'a> deku::DekuRead<'a>,
-{
-    fn default() -> Self {
-        Self::new()
-    }
+#[derive(Derivative, PartialEq)]
+#[derivative(Debug, Default)]
+pub struct QuadTreeNode {
+    sub_trees: Vec<QuadTreeData>,
 }
 
-#[derive(PartialEq, Debug, DekuRead, DekuWrite)]
-pub struct QuadTreeInner<T: for<'a> DekuRead<'a>> {
-    bit_mask: u16,
-    #[deku(
-        reader = "QuadTreeInner::<T>::read_data(*bit_mask, deku::rest)",
-        writer = "QuadTreeInner::<T>::write_data(deku::output, &self.data)"
-    )]
-    data: Vec<QuadTreeData<T>>,
-}
+impl BinRead for QuadTreeNode {
+    type Args<'a> = (u32,);
 
-#[allow(clippy::type_complexity)]
-impl<T> QuadTreeInner<T>
-where
-    T: for<'a> deku::DekuRead<'a>,
-{
-    pub fn new() -> Self {
-        QuadTreeInner {
-            bit_mask: 0,
-            data: vec![],
-        }
-    }
-
-    fn read_data(
-        bit_mask: u16,
-        rest: &BitSlice<u8, Msb0>,
-    ) -> Result<(&BitSlice<u8, Msb0>, Vec<QuadTreeData<T>>), DekuError> {
-        let mut bit_mask = bit_mask;
-        let mut rest = rest;
-        let mut data: Vec<QuadTreeData<T>> = Vec::new();
-
+    fn read_options<R: std::io::Read + Seek>(
+        reader: &mut R,
+        endian: Endian,
+        args: Self::Args<'_>,
+    ) -> BinResult<Self> {
+        let mut bit_mask = u16::read_options(reader, endian, ())?;
+        assert!(args.0 > 0);
+        let mut sub_trees = Vec::with_capacity(16);
         for _ in 0..16 {
             if (bit_mask & 1) == 1 {
-                let (rest_ret, value) = QuadTreeInner::<T>::read(rest, ())?;
-                data.push(QuadTreeData::Tree(value));
-                rest = rest_ret;
+                sub_trees.push(QuadTreeData::Node(QuadTreeNode::read_options(
+                    reader, endian, args,
+                )?));
             } else {
-                let (rest_ret, value) = T::read(rest, ())?;
-                data.push(QuadTreeData::Value(value));
-                rest = rest_ret;
+                sub_trees.push(QuadTreeData::Leaf(QuadTreeLeaf::read_options(
+                    reader, endian, args,
+                )?));
             }
             bit_mask >>= 1;
         }
-        Ok((rest, data))
-    }
 
-    fn write_data(
-        _output: &mut BitVec<u8, Msb0>,
-        _flags: &[QuadTreeData<T>],
-    ) -> Result<(), DekuError> {
-        // let value: u32 = flags.bits();
-        // value.write(output, ())
-        Ok(())
+        Ok(QuadTreeNode { sub_trees })
     }
 }
 
-impl<T> Default for QuadTreeInner<T>
-where
-    T: for<'a> deku::DekuRead<'a>,
-{
-    fn default() -> Self {
-        QuadTreeInner::new()
+#[derive(Derivative, PartialEq)]
+#[derivative(Debug, Default)]
+pub struct QuadTreeLeaf {
+    element_size: u32,
+    data: Vec<u8>,
+}
+
+impl BinRead for QuadTreeLeaf {
+    type Args<'a> = (u32,);
+
+    fn read_options<R: std::io::Read + std::io::Seek>(
+        reader: &mut R,
+        _: binrw::Endian,
+        args: Self::Args<'_>,
+    ) -> binrw::BinResult<Self> {
+        let mut data = vec![0_u8; 4];
+        reader.read_exact(&mut data)?;
+
+        Ok(QuadTreeLeaf {
+            element_size: args.0,
+            data,
+        })
     }
 }
 
-#[derive(PartialEq, Debug)]
-enum QuadTreeData<T: for<'a> DekuRead<'a>> {
-    Tree(QuadTreeInner<T>),
-    Value(T),
+impl QuadTreeLeaf {
+    pub fn get<'a, T: BinRead<Args<'a> = ()>>(&self, x: u32, y: u32) -> BinResult<Option<T>> {
+        let offset = match self.element_size {
+            1 => 0,
+            2 => x * 2,
+            4 => (y << 1) + x,
+            _ => todo!(),
+        } as u64;
+
+        let mut data_reader = Cursor::new(&self.data);
+
+        if offset > data_reader.stream_position()? {
+            return Ok(None);
+        }
+
+        data_reader.set_position(offset);
+
+        let val = T::read_options(&mut data_reader, Endian::Little, ())?;
+        Ok(Some(val))
+    }
 }

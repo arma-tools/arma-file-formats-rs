@@ -59,8 +59,24 @@ pub struct BoundingBox {
     pub d: XY,
 }
 
+#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
+#[derivative(Debug, Default)]
+pub struct BoundingBoxBinrw {
+    pub a: XYBinrw,
+    pub b: XYBinrw,
+    pub c: XYBinrw,
+    pub d: XYBinrw,
+}
+
 #[derive(PartialEq, Debug, DekuRead, DekuWrite)]
 pub struct XY {
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
+#[derivative(Debug, Default)]
+pub struct XYBinrw {
     pub x: f32,
     pub y: f32,
 }

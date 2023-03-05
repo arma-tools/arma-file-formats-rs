@@ -41,9 +41,9 @@ where
             if use_signed_checksum {
                 calculated_hash += val as i8 as i32;
             } else {
-                calculated_hash += val as u8 as i32;
+                calculated_hash += val as i32;
             }
-            dst[num2 as usize] = val as u8;
+            dst[num2 as usize] = val;
             num2 += 1;
             remaining_size -= 1;
             array[num4 as usize] = val;
@@ -55,8 +55,8 @@ where
             i |= (val & 240) << 4;
             val &= 15;
             val += 2;
-            let mut j = num4 - i as i32;
-            let num8 = val + j as i32;
+            let mut j = num4 - i;
+            let num8 = val + j;
             if (val + 1) as usize > remaining_size {
                 return Err(RvffLzssError::Overflow);
             }
@@ -65,12 +65,12 @@ where
                 if use_signed_checksum {
                     calculated_hash += num6 as i8 as i32;
                 } else {
-                    calculated_hash += num6 as u8 as i32;
+                    calculated_hash += num6 as i32;
                 }
-                dst[num2 as usize] = num6 as u8;
+                dst[num2 as usize] = num6;
                 num2 += 1;
                 remaining_size -= 1;
-                array[num4 as usize] = num6 as u8;
+                array[num4 as usize] = num6;
                 num4 += 1;
                 num4 &= 4095;
                 j += 1;

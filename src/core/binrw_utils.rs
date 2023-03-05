@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 
-use binrw::io::BufReader;
 use binrw::BinRead;
 use binrw::BinResult;
 use binrw::Endian;
@@ -17,25 +15,15 @@ use super::decompress_lzss;
 use super::types::STPair;
 use super::types::XYZTripletBinrw;
 
-#[binrw::parser(reader, endian)]
-fn custom_parser() -> BinResult<HashMap<u16, u16>> {
-    let mut map = HashMap::new();
-    map.insert(
-        <_>::read_options(reader, endian, ())?,
-        <_>::read_options(reader, endian, ())?,
-    );
-    Ok(map)
-}
-
-#[binrw::parser(reader, endian)]
-fn read_lzo(expected_size: usize) -> BinResult<Vec<u8>> {
-    let pre_pos = reader.stream_position()?;
-    let mut buf_reader = BufReader::new(reader);
-    decompress_stream(&mut buf_reader, Some(expected_size)).map_err(|e| binrw::Error::Custom {
-        err: Box::new(e),
-        pos: pre_pos,
-    })
-}
+// #[binrw::parser(reader, endian)]
+// fn read_lzo(expected_size: usize) -> BinResult<Vec<u8>> {
+//     let pre_pos = reader.stream_position()?;
+//     let mut buf_reader = BufReader::new(reader);
+//     decompress_stream(&mut buf_reader, Some(expected_size)).map_err(|e| binrw::Error::Custom {
+//         err: Box::new(e),
+//         pos: pre_pos,
+//     })
+// }
 
 #[binrw::parser(reader, endian)]
 pub(crate) fn read_compressed_size_cond(
@@ -57,14 +45,14 @@ pub(crate) fn read_compressed_size_cond(
     }
 }
 
-#[binrw::parser(reader, endian)]
-pub(crate) fn read_compressed_size(
-    elemen_size: usize,
-    count: usize,
-    args: ODOLArgs,
-) -> BinResult<Vec<u8>> {
-    decompress_data(reader, endian, elemen_size, count, args)
-}
+// #[binrw::parser(reader, endian)]
+// pub(crate) fn read_compressed_size(
+//     elemen_size: usize,
+//     count: usize,
+//     args: ODOLArgs,
+// ) -> BinResult<Vec<u8>> {
+//     decompress_data(reader, endian, elemen_size, count, args)
+// }
 
 #[binrw::parser(reader, endian)]
 pub(crate) fn read_compressed(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<u8>> {
@@ -203,15 +191,15 @@ where
     }
 }
 
-#[binrw::parser(reader, endian)]
-pub(crate) fn read_condensed_array<T, 'a>(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<T>>
-where
-    T: BinRead<Args<'a> = ()> + Clone,
-    // T::Args<'a>: Clone,
-    // T: Clone,
-{
-    condensed_array(reader, endian, elemen_size, args)
-}
+// #[binrw::parser(reader, endian)]
+// pub(crate) fn read_condensed_array<T, 'a>(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<T>>
+// where
+//     T: BinRead<Args<'a> = ()> + Clone,
+//     // T::Args<'a>: Clone,
+//     // T: Clone,
+// {
+//     condensed_array(reader, endian, elemen_size, args)
+// }
 
 fn condensed_array<'a, T>(
     reader: &mut (impl Read + Seek),
@@ -247,7 +235,7 @@ pub(crate) fn read_vertex_index_array(args: ODOLArgs, count: usize) -> BinResult
     Ok(res)
 }
 
-fn read_vertex_index<'a>(
+fn read_vertex_index(
     reader: &mut (impl Read + Seek),
     endian: Endian,
     args: ODOLArgs,
@@ -260,11 +248,11 @@ fn read_vertex_index<'a>(
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_normals_parse<'a>(args: (ODOLArgs,)) -> BinResult<Vec<XYZTripletBinrw>> {
+pub(crate) fn read_normals_parse(args: (ODOLArgs,)) -> BinResult<Vec<XYZTripletBinrw>> {
     read_normals(reader, endian, args.0)
 }
 
-pub(crate) fn read_normals<'a>(
+pub(crate) fn read_normals(
     reader: &mut (impl Read + Seek),
     endian: Endian,
     args: ODOLArgs,
@@ -306,11 +294,11 @@ pub(crate) fn decompress_xyz(val: i32) -> XYZTripletBinrw {
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_st_parse<'a>(args: (ODOLArgs,)) -> BinResult<Vec<STPair>> {
+pub(crate) fn read_st_parse(args: (ODOLArgs,)) -> BinResult<Vec<STPair>> {
     read_st(reader, endian, args.0)
 }
 
-pub(crate) fn read_st<'a>(
+pub(crate) fn read_st(
     reader: &mut (impl Read + Seek),
     endian: Endian,
     args: ODOLArgs,
@@ -348,7 +336,7 @@ pub(crate) fn read_biguint(length: (usize,)) -> BinResult<BigUint> {
 }
 
 #[binrw::writer(writer)]
-pub(crate) fn write_biguint(biguint: BigUint) -> BinResult<()> {
+pub(crate) fn write_biguint(biguint: &BigUint) -> BinResult<()> {
     let buf = biguint.to_bytes_le();
     writer.write_all(&buf)?;
     Ok(())

@@ -79,7 +79,7 @@ impl Pbo {
         }
 
         reader.read_bytes(21)?;
-        let mut data_pos = reader.seek(SeekFrom::Current(0))?;
+        let mut data_pos = reader.stream_position()?;
 
         for entry in &mut self.entries {
             entry.1.data_offset = data_pos;

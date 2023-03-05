@@ -1,5 +1,5 @@
 pub(crate) mod binrw_utils;
-pub mod deku_util;
+// pub mod deku_util;
 mod lzss;
 pub mod read;
 pub mod types;

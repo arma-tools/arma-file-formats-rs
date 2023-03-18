@@ -1,89 +1,111 @@
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Cursor;
 use std::io::Read;
+use std::io::Seek;
 use std::path::Path;
 
-use crate::core::deku_util::read_biguint;
-use crate::core::deku_util::read_string_zt;
-use crate::core::deku_util::write_biguint;
-use crate::core::deku_util::write_string_zt;
+use crate::core::binrw_utils::{read_biguint, write_biguint};
 use crate::core::write::WriteExtTrait;
 use crate::errors::RvffError;
-use deku::DekuContainerRead;
-use deku::DekuEnumExt;
-use deku::DekuError;
-use deku::{DekuContainerWrite, DekuRead, DekuUpdate, DekuWrite};
+use binrw::{binrw, BinRead, Endian};
+use binrw::{BinWrite, NullString};
+use derivative::Derivative;
 use rsa::BigUint;
 
 const EXTENSION: &str = "bisign";
 
-#[derive(Eq, PartialEq, Debug, DekuRead, DekuWrite)]
+#[derive(Eq, PartialEq, Debug)]
+#[binrw]
+#[brw(little)]
 pub struct Signature {
-    #[deku(
-        reader = "read_string_zt(deku::rest)",
-        writer = "write_string_zt(deku::output, &self.authority)"
-    )]
-    pub authority: String,
+    // #[deku(
+    //     reader = "read_string_zt(deku::rest)",
+    //     writer = "write_string_zt(deku::output, &self.authority)"
+    // )]
+    pub authority: NullString,
 
-    #[deku(assert_eq = "148")]
+    // #[deku(assert_eq = "148")]
+    #[br(assert(unk1 == 148))]
+    #[bw(assert(unk1 == &148))]
     unk1: u32,
-    #[deku(assert_eq = "518")]
+    // #[deku(assert_eq = "518")]
+    #[br(assert(unk2 == 518))]
+    #[bw(assert(unk2 == &518))]
     unk2: u32,
-    #[deku(assert_eq = "9216")]
+    #[br(assert(unk3 == 9216))]
+    #[bw(assert(unk3 == &9216))]
+    // #[deku(assert_eq = "9216")]
     unk3: u32,
-    #[deku(assert_eq = "826364754")]
+    // #[deku(assert_eq = "826364754")]
+    #[br(assert(unk4 == 826364754))]
+    #[bw(assert(unk4 == &826364754))]
     unk4: u32,
 
-    #[deku(update = "self.n.to_bytes_le().len()*8")]
-    pub n_length: u32,
+    // #[deku(update = "self.n.to_bytes_le().len()*8")]
+    pub(crate) n_length: u32,
     pub exponent: u32,
 
-    #[deku(
-        reader = "read_biguint(deku::rest, *n_length as usize /8)",
-        writer = "write_biguint(deku::output, &self.n)"
-    )]
+    // #[deku(
+    //     reader = "read_biguint(deku::rest, *n_length as usize /8)",
+    //     writer = "write_biguint(deku::output, &self.n)"
+    // )]
+    #[br(args((n_length as usize / 8)))]
+    #[br(parse_with = read_biguint)]
+    #[bw(write_with = write_biguint)]
     pub n: BigUint,
 
-    #[deku(update = "self.sig1.to_bytes_le().len()")]
-    pub sig1_length: u32,
-    #[deku(
-        reader = "read_biguint(deku::rest, *sig1_length as usize)",
-        writer = "write_biguint(deku::output, &self.sig1)"
-    )]
+    // #[deku(update = "self.sig1.to_bytes_le().len()")]
+    pub(crate) sig1_length: u32,
+    // #[deku(
+    //     reader = "read_biguint(deku::rest, *sig1_length as usize)",
+    //     writer = "write_biguint(deku::output, &self.sig1)"
+    // )]
+    #[br(args((sig1_length as usize)))]
+    #[br(parse_with = read_biguint)]
+    #[bw(write_with = write_biguint)]
     pub sig1: BigUint,
 
     pub version: SignVersion,
 
-    #[deku(update = "self.sig2.to_bytes_le().len()")]
-    pub sig2_length: u32,
-    #[deku(
-        reader = "read_biguint(deku::rest, *sig2_length as usize)",
-        writer = "write_biguint(deku::output, &self.sig2)"
-    )]
+    // #[deku(update = "self.sig2.to_bytes_le().len()")]
+    pub(crate) sig2_length: u32,
+    // #[deku(
+    //     reader = "read_biguint(deku::rest, *sig2_length as usize)",
+    //     writer = "write_biguint(deku::output, &self.sig2)"
+    // )]
+    #[br(args((sig2_length as usize)))]
+    #[br(parse_with = read_biguint)]
+    #[bw(write_with = write_biguint)]
     pub sig2: BigUint,
 
-    #[deku(update = "self.sig3.to_bytes_le().len()")]
-    pub sig3_length: u32,
-    #[deku(
-        reader = "read_biguint(deku::rest, *sig3_length as usize)",
-        writer = "write_biguint(deku::output, &self.sig3)"
-    )]
+    // #[deku(update = "self.sig3.to_bytes_le().len()")]
+    pub(crate) sig3_length: u32,
+    // #[deku(
+    //     reader = "read_biguint(deku::rest, *sig3_length as usize)",
+    //     writer = "write_biguint(deku::output, &self.sig3)"
+    // )]
+    #[br(args((sig3_length as usize)))]
+    #[br(parse_with = read_biguint)]
+    #[bw(write_with = write_biguint)]
     pub sig3: BigUint,
 }
 
-#[derive(Eq, PartialEq, Debug, DekuRead, DekuWrite, Clone, Copy)]
-#[deku(type = "u32")]
+#[allow(non_camel_case_types, clippy::enum_variant_names)]
+#[derive(BinRead, BinWrite, Derivative, Eq, PartialEq, Clone, Copy)]
+#[derivative(Debug)]
+#[brw(repr = u32)]
 pub enum SignVersion {
-    #[deku(id = "0x02")]
+    // #[deku(id = "0x02")]
     V2 = 2,
-    #[deku(id = "0x03")]
+    // #[deku(id = "0x03")]
     V3 = 3,
 }
 
 impl Signature {
     pub fn new() -> Self {
         Signature {
-            authority: String::default(),
+            authority: String::default().into(),
             unk1: 148,
             unk2: 518,
             unk3: 9216,
@@ -109,17 +131,13 @@ impl Signature {
 
     pub fn from_stream<R>(reader: &mut R) -> Result<Signature, RvffError>
     where
-        R: Read,
+        R: Read + Seek,
     {
-        let mut buf = Vec::new();
-        reader.read_to_end(&mut buf)?;
-
-        let (_, pub_key) = Signature::from_bytes((&buf, 0))?;
-
-        Ok(pub_key)
+        let sig = Signature::read_options(reader, Endian::Little, ())?;
+        Ok(sig)
     }
 
-    pub fn write_file<P: AsRef<Path>>(&self, path: P) -> Result<(), RvffError> {
+    pub fn write_file<P: AsRef<Path>>(&mut self, path: P) -> Result<(), RvffError> {
         let path: &Path = &path.as_ref().with_extension(EXTENSION);
 
         let mut file = File::create(path)?;
@@ -127,8 +145,15 @@ impl Signature {
         Ok(())
     }
 
-    pub fn write_data(&self) -> Result<Vec<u8>, RvffError> {
-        Ok(self.to_bytes()?)
+    pub fn write_data(&mut self) -> Result<Vec<u8>, RvffError> {
+        let mut buf = Vec::new();
+        let mut cursor = Cursor::new(&mut buf);
+
+        self.n_length = (self.n.to_bytes_le().len() * 8) as u32;
+
+        Signature::write(self, &mut cursor)?;
+
+        Ok(buf)
     }
 
     pub(crate) fn get_hashes(&self) -> (BigUint, BigUint, BigUint) {

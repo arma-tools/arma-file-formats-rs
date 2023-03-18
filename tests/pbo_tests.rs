@@ -73,17 +73,17 @@ fn sign_test() {
 
     let auth = "RVFF_TEST_KEY2";
 
-    let priv_key = PrivateKey::generate(auth);
+    let mut priv_key = PrivateKey::generate(auth);
     priv_key
         .write_file(format!("{}RVFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
         .unwrap();
 
-    let pub_key: PublicKey = priv_key.clone().into();
+    let mut pub_key: PublicKey = priv_key.clone().into();
     pub_key
         .write_file(format!("{}RVFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
         .unwrap();
 
-    let sig = pbo.sign(SignVersion::V3, &priv_key);
+    let mut sig = pbo.sign(SignVersion::V3, &priv_key);
     sig.write_file(format!("{}RVFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
         .unwrap();
 

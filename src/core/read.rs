@@ -118,28 +118,28 @@ where
     }
 
     fn peek_u8(&mut self) -> io::Result<u8> {
-        let pos = self.seek(SeekFrom::Current(0))?;
+        let pos = self.stream_position()?;
         let ret = ReadExtTrait::read_u8(self)?;
         self.seek(SeekFrom::Start(pos))?;
         Ok(ret)
     }
 
     fn peek_u16(&mut self) -> io::Result<u16> {
-        let pos = self.seek(SeekFrom::Current(0))?;
+        let pos = self.stream_position()?;
         let ret = ReadExtTrait::read_u16(self)?;
         self.seek(SeekFrom::Start(pos))?;
         Ok(ret)
     }
 
     fn peek_string(&mut self, size: usize) -> io::Result<String> {
-        let pos = self.seek(SeekFrom::Current(0))?;
+        let pos = self.stream_position()?;
         let ret = self.read_string(size)?;
         self.seek(SeekFrom::Start(pos))?;
         Ok(ret)
     }
 
     fn peek_string_lossy(&mut self, size: usize) -> io::Result<String> {
-        let pos = self.seek(SeekFrom::Current(0))?;
+        let pos = self.stream_position()?;
         let ret = self.read_string_lossy(size)?;
         self.seek(SeekFrom::Start(pos))?;
         Ok(ret)

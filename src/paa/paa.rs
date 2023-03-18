@@ -46,8 +46,8 @@ impl Paa {
         let mut paa = Paa::new();
 
         let mut mm = Mipmap::new();
-        mm.width = width as u16;
-        mm.height = height as u16;
+        mm.width = width;
+        mm.height = height;
         mm.data = data;
 
         paa.mipmaps.push(mm);
@@ -66,7 +66,7 @@ impl Paa {
     {
         let mut paa = Paa::new();
 
-        reader.seek(SeekFrom::Start(0))?;
+        reader.rewind()?;
         paa.magic_number = PaaType::try_from(reader.read_u16()?).unwrap_or(PaaType::UNKNOWN);
 
         while reader.peek_string_lossy(4)?.starts_with("GGAT") {
@@ -267,7 +267,7 @@ impl Paa {
         // Offsets
         writer.write_string("GGATSFFO")?;
         writer.write_u32(16 * 4)?; // Always 16 mipmaps
-        let offset_offset = writer.seek(SeekFrom::Current(0))?;
+        let offset_offset = writer.stream_position()?;
         writer.write_bytes(&[0u8; 16 * 4])?;
 
         // Palette
@@ -280,7 +280,7 @@ impl Paa {
         let mut mipmap_offsets = Vec::<u32>::with_capacity(16);
         let mut dict = Dict::new();
         for mipmap in &mut self.mipmaps {
-            mipmap_offsets.push(writer.seek(SeekFrom::Current(0))? as u32);
+            mipmap_offsets.push(writer.stream_position()? as u32);
             mipmap.write(writer, &magic_number, &mut dict)?;
         }
 

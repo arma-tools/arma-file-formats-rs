@@ -49,7 +49,7 @@ impl Mipmap {
         self.height = reader.read_u16()?;
         self.data_size = reader.read_u24()? as i64;
 
-        self.data_pos = Some(reader.seek(SeekFrom::Current(0))?);
+        self.data_pos = Some(reader.stream_position()?);
 
         reader.seek(SeekFrom::Current(self.data_size))?;
 

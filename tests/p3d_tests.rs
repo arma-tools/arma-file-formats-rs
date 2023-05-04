@@ -49,6 +49,14 @@ fn aa_p3d() {
 }
 
 #[test]
+fn single_debug() {
+    let odol = ODOL::from_path(format!("{}test_all\\Bridge_01_F.p3d", INPUT_PATH_PREFIX)).unwrap();
+    for lod in odol.lods {
+        dbg!(lod.named_selection.clone());
+    }
+}
+
+#[test]
 fn test_all() {
     let test_all_dir = fs::read_dir(format!("{}test_all", INPUT_PATH_PREFIX)).unwrap();
 

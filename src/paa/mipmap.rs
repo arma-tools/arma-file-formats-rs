@@ -118,6 +118,10 @@ impl Mipmap {
             PaaType::DXT3 => todo!(),
             PaaType::DXT4 => todo!(),
             PaaType::DXT5 => {
+                if self.is_lzo_compressed {
+                    self.data = decompress_stream(&mut Cursor::new(self.data.clone()), None)?;
+                }
+
                 let format = Format::Bc3;
                 let mut decompressed = vec![0u8; 4 * expected_size];
 

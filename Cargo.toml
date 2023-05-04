@@ -3,6 +3,9 @@ name = "rvff"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["lib", "staticlib"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -42,7 +45,12 @@ image = "0.23.14"
 serial_test = "0.5.1"
 
 # LZO
-lzokay-rust-native = { path = "../../raff-and-friends/lzokay-rust-native", version = "0.1.0" }
+lzokay-rust-native = { path = "L:/Repos/rust/raff-and-friends/lzokay-rust-native", version = "0.1.0" }
+
+cxx = "1.0"
+
+[build-dependencies]
+cxx-build = "1.0"
 
 [features]
 parallel = ["squish/rayon", "rayon"]

@@ -11,6 +11,24 @@ pub mod wrp;
 
 pub mod errors;
 
+// use std::io::Cursor;
+
+// use cxx::CxxVector;
+
+// #[cxx::bridge(namespace = "lib2")]
+// pub mod ffi {
+//     // Any shared structs, whose fields will be visible to both languages.
+//     pub struct BlobMetadata {
+//         size: usize,
+//         tags: Vec<String>,
+//         //blah: Option<u32>,
+//     }
+//     extern "Rust" {
+//         fn test(bm: &BlobMetadata);
+//     }
+// }
+
+// pub fn test(bm: &ffi::BlobMetadata) {}
 #[cfg(test)]
 mod tests {
 

@@ -2,7 +2,7 @@ use binrw::BinRead;
 use binrw::NullString;
 use derivative::Derivative;
 
-#[derive(PartialEq, BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(version: u32))]
 pub struct Skeleton {
@@ -21,7 +21,7 @@ pub struct Skeleton {
     pub pivots_name_obsolete: Option<NullString>,
 }
 
-#[derive(PartialEq, BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct Bone {
     pub bone_name: NullString,

@@ -6,7 +6,7 @@ use crate::core::types::XYZTripletBinrw;
 
 use super::ODOLArgs;
 
-#[derive(PartialEq, BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs))]
 pub struct Animations {
@@ -120,7 +120,7 @@ pub enum AnimAddress {
     NAnimAddress = 3,
 }
 
-#[derive(PartialEq, BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct Bones2Anims {
     bone_count: u32,
@@ -129,7 +129,7 @@ pub struct Bones2Anims {
     pub bone_2_anim_class_list: Vec<Bone2AnimClassList>,
 }
 
-#[derive(PartialEq, BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct Bone2AnimClassList {
     anim_class_count: u32,
@@ -138,7 +138,7 @@ pub struct Bone2AnimClassList {
     pub animation_class_index: Vec<u32>,
 }
 
-#[derive(PartialEq, Derivative)]
+#[derive(PartialEq, Derivative, Clone)]
 #[derivative(Debug, Default)]
 //#[br(import(animation_class_count: u32, animation_classes: Vec<AnimationClass>,))]
 pub struct Anims2Bones {
@@ -147,7 +147,7 @@ pub struct Anims2Bones {
     pub animation_class_indices: Vec<AnimBones>,
 }
 
-#[derive(PartialEq, Derivative)]
+#[derive(PartialEq, Derivative, Clone)]
 #[derivative(Debug, Default)]
 //#[br(import(animation_classes: Vec<AnimationClass>))]
 pub struct AnimBones {

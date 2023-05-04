@@ -14,6 +14,13 @@ const OUTPUT_PATH_PREFIX: &str = "./tests/test-data/pbo_out/";
 
 #[test]
 #[serial]
+fn has_entry() {
+    let pbo = Pbo::from_path(format!("{}grad_adminMessages.pbo", INPUT_PATH_PREFIX)).unwrap();
+    assert!(pbo.has_entry("x\\grad\\addons\\adminMessages\\gui\\defines.hpp"));
+}
+
+#[test]
+#[serial]
 fn pbo() {
     let file = File::open(format!("{}grad_adminMessages.pbo", INPUT_PATH_PREFIX)).unwrap();
     let mut buffer = BufReader::new(file);
@@ -30,12 +37,17 @@ fn pbo_lazy() {
     let mut buffer = BufReader::new(file);
     let mut pbo = PboReader::from_stream(&mut buffer).unwrap();
 
-    let file2 = pbo
-        .get_entry("stringtable.xml".to_string())
-        .unwrap()
-        .unwrap();
+    let file2 = pbo.get_entry("stringtable.xml").unwrap().unwrap();
 
     fs::write(format!("{}stringtable.xml", OUTPUT_PATH_PREFIX), file2.data).unwrap();
+
+    assert!(pbo
+        .extract_single_file(
+            "gui\\defines.hpp",
+            &format!("{}extracttest/", OUTPUT_PATH_PREFIX),
+            false
+        )
+        .is_ok());
 }
 
 #[test]

@@ -1,6 +1,6 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use indexmap::IndexMap;
 use rsa::BigUint;
@@ -23,6 +23,7 @@ const V3_INCLUDE_LIST: [&str; 11] = [
     "sqf", "inc", "bikb", "ext", "fsm", "sqm", "hpp", "cfg", "sqs", "h", "sqfc",
 ];
 
+#[derive(Debug, Clone)]
 pub struct Pbo {
     pub properties: IndexMap<String, String>,
 
@@ -52,6 +53,30 @@ impl Pbo {
         let mut pbo = Pbo::new();
         pbo.read(reader, false)?;
         Ok(pbo)
+    }
+
+    pub fn get_prefix(&self) -> String {
+        if let Some(prefix) = self.properties.get("prefix") {
+            let mut prefix = prefix.to_string();
+            prefix.push('\\');
+            prefix.to_lowercase()
+        } else {
+            String::new()
+        }
+    }
+
+    fn handle_prefix(&self, entry_path: &str) -> String {
+        let entry_path = entry_path.to_lowercase();
+        let prefix = self.get_prefix();
+        if entry_path.starts_with(&prefix) {
+            entry_path.replacen(&prefix, "", 1)
+        } else {
+            entry_path
+        }
+    }
+
+    pub fn has_entry(&self, entry_path: &str) -> bool {
+        self.entries.contains_key(&self.handle_prefix(entry_path))
     }
 
     pub(crate) fn read<R>(&mut self, reader: &mut R, skip_data: bool) -> Result<(), RvffError>
@@ -104,13 +129,15 @@ impl Pbo {
 
     pub(crate) fn get_entry<R>(
         &mut self,
-        entry_path: String,
+        entry_path: &str,
         reader: &mut R,
     ) -> Result<Option<Entry>, RvffError>
     where
         R: BufRead + Seek,
     {
-        if let Some(entry) = self.entries.get_mut(&entry_path) {
+        let entry_path = &self.handle_prefix(entry_path);
+
+        if let Some(entry) = self.entries.get_mut(entry_path) {
             if entry.data.is_empty() {
                 entry.read_data(reader)?;
             }
@@ -119,6 +146,45 @@ impl Pbo {
             Ok(None)
         }
     }
+
+    pub fn extract_single_file<R>(
+        &mut self,
+        entry_path: &str,
+        out_path: &str,
+        full_path: bool,
+        reader: &mut R,
+    ) -> Result<(), RvffError>
+    where
+        R: BufRead + Seek,
+    {
+        let entry_path = &self.handle_prefix(entry_path);
+
+        if let Some(entry) = self.get_entry(entry_path, reader)? {
+            let mut out_path = PathBuf::from(out_path);
+            if full_path {
+                out_path.push(entry.filename);
+            } else {
+                let filename = PathBuf::from(entry.filename)
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_str()
+                    .unwrap_or_default()
+                    .to_owned();
+                out_path.push(filename);
+            }
+
+            if let Some(dir) = out_path.parent() {
+                fs::create_dir_all(dir)?;
+            }
+
+            fs::write(out_path, entry.data)?;
+
+            Ok(())
+        } else {
+            Err(RvffError::PboEntryNotFound(entry_path.to_owned()))
+        }
+    }
+
     pub(crate) fn generate_hashes(
         &self,
         version: SignVersion,

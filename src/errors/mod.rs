@@ -50,12 +50,12 @@ pub enum RvffOdolError {
 
 #[derive(Error, Debug)]
 pub enum RvffError {
-    #[error("IO failed")]
+    #[error("IO failed {0}")]
     RvffIOError(#[from] io::Error),
 
     // #[error("Deku failed")]
     // RvffDekuError(#[from] deku::DekuError),
-    #[error("Binrw failed")]
+    #[error("Binrw failed {0}")]
     RvffBinrwError(#[from] binrw::Error),
 
     #[error("LZSS Error")]
@@ -66,6 +66,9 @@ pub enum RvffError {
 
     #[error("Invalid file")]
     InvalidFileError,
+
+    #[error("PBO Entry {0} not found")]
+    PboEntryNotFound(String),
 
     #[error("unknown decoding error")]
     Unknown,

@@ -1,50 +1,92 @@
+use std::marker::PhantomData;
+
 use binrw::BinRead;
 use derivative::Derivative;
+
+#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derivative(Debug, Default)]
+pub struct ClipFlags {
+    pub value: i32,
+
+    #[br(args { value })]
+    pub res: ClipFlagsEnum,
+}
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(BinRead, Derivative, PartialEq, Clone, Copy)]
 #[derivative(Debug, Default)]
 #[br(repr = i32)]
-pub enum ClipFlags {
-    #[derivative(Default)]
+#[br(import { value: i32 })]
+pub enum ClipFlagsEnum {
+    #[br(pre_assert(value == 0))]
     ClipNoneNormal,
+    #[br(pre_assert(value == 1))]
     ClipFront = 1,
+    #[br(pre_assert(value == 2))]
     ClipBack = 2,
+    #[br(pre_assert(value == 4))]
     ClipLeft = 4,
+    #[br(pre_assert(value == 8))]
     ClipRight = 8,
+    #[br(pre_assert(value == 16))]
     ClipBottom = 16,
+    #[br(pre_assert(value == 32))]
     ClipTop = 32,
+    #[br(pre_assert(value == 64))]
     ClipUser0 = 64,
+    #[br(pre_assert(value == 63))]
     ClipAll = 63,
+    #[br(pre_assert(value == 3840))]
     ClipLandMask = 3840,
+    #[br(pre_assert(value == 256))]
     ClipLandStep = 256,
 
     //ClipLandOn = 256,
+    #[br(pre_assert(value == 512))]
     ClipLandUnder = 512,
+    #[br(pre_assert(value == 1024))]
     ClipLandAbove = 1024,
+    #[br(pre_assert(value == 2048))]
     ClipLandKeep = 2048,
+    #[br(pre_assert(value == 12288))]
     ClipDecalMask = 12288,
+    #[br(pre_assert(value == 4096))]
     ClipDecalStep = 4096,
 
     //ClipDecalNormal = 4096,
+    #[br(pre_assert(value == 8192))]
     ClipDecalVertical = 8192,
+    #[br(pre_assert(value == 49152))]
     ClipFogMask = 49152,
+    #[br(pre_assert(value == 16384))]
     ClipFogStep = 16384,
 
     //ClipFogDisable = 16384,
+    #[br(pre_assert(value == 32768))]
     ClipFogSky = 32768,
+    #[br(pre_assert(value == 983040))]
     ClipLightMask = 983040,
+    #[br(pre_assert(value == 65536))]
     ClipLightStep = 65536,
 
+    #[br(pre_assert(value == 524288))]
     ClipLightLine = 524288,
+    #[br(pre_assert(value ==267386880))]
     ClipUserMask = 267386880,
+    #[br(pre_assert(value ==1048576))]
     ClipUserStep = 1048576,
+    #[br(pre_assert(value == 255))]
     MaxUserValue = 255,
+    #[br(pre_assert(value == 268435200))]
     ClipHints = 268435200,
+
+    #[br(pre_assert(true))]
+    #[derivative(Default)]
+    Unknown,
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq)]
+#[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = i32)]
 pub enum EFogMode {
@@ -56,7 +98,7 @@ pub enum EFogMode {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq)]
+#[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = i32)]
 pub enum EMainLight {
@@ -77,7 +119,7 @@ pub enum EMainLight {
     clippy::enum_variant_names,
     clippy::enum_clike_unportable_variant
 )]
-#[derive(BinRead, Derivative, PartialEq)]
+#[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum PixelShaderID {
@@ -216,52 +258,99 @@ pub enum PixelShaderID {
     PSUninitialized = 4294967295,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
-#[br(repr = i32)]
-pub enum VertexShaderID {
-    #[derivative(Default)]
-    VSBasic,
-    VSNormalMap,
-    VSNormalMapDiffuse,
-    VSGrass,
-    VSDummy1,
-    VSDummy2,
-    VSShadowVolume,
-    VSWater,
-    VSWaterSimple,
-    VSSprite,
-    VSPoint,
-    VSNormalMapThrough,
-    VSDummy3,
-    VSTerrain,
-    VSBasicAS,
-    VSNormalMapAS,
-    VSNormalMapDiffuseAS,
-    VSGlass,
-    VSNormalMapSpecularThrough,
-    VSNormalMapThroughNoFade,
-    VSNormalMapSpecularThroughNoFade,
-    VSShore,
-    VSTerrainGrass,
-    VSSuper,
-    VSMulti,
-    VSTree,
-    VSTreeNoFade,
-    VSTreePRT,
-    VSTreePRTNoFade,
-    VSSkin,
-    VSCalmWater,
-    VSTreeAdv,
-    VSTreeAdvTrunk,
-    VSSimulWeatherClouds,
-    VSSimulWeatherCloudsCPU,
-    NVertexShaderID,
+pub struct VertexShaderID {
+    pub value: i32,
+
+    #[br(args { value })]
+    pub e: VertexShaderIDEnum,
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq)]
+#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derivative(Debug, Default)]
+#[br(import { value: i32 })]
+pub enum VertexShaderIDEnum {
+    #[br(pre_assert(value == 0i32))]
+    VSBasic,
+    #[br(pre_assert(value == 1))]
+    VSNormalMap,
+    #[br(pre_assert(value == 2))]
+    VSNormalMapDiffuse,
+    #[br(pre_assert(value == 3))]
+    VSGrass,
+    #[br(pre_assert(value == 4))]
+    VSDummy1,
+    #[br(pre_assert(value == 5))]
+    VSDummy2,
+    #[br(pre_assert(value == 6))]
+    VSShadowVolume,
+    #[br(pre_assert(value == 7))]
+    VSWater,
+    #[br(pre_assert(value == 8))]
+    VSWaterSimple,
+    #[br(pre_assert(value == 9))]
+    VSSprite,
+    #[br(pre_assert(value == 10))]
+    VSPoint,
+    #[br(pre_assert(value == 11))]
+    VSNormalMapThrough,
+    #[br(pre_assert(value == 12))]
+    VSDummy3,
+    #[br(pre_assert(value == 13))]
+    VSTerrain,
+    #[br(pre_assert(value == 14))]
+    VSBasicAS,
+    #[br(pre_assert(value == 15))]
+    VSNormalMapAS,
+    #[br(pre_assert(value == 16))]
+    VSNormalMapDiffuseAS,
+    #[br(pre_assert(value == 17))]
+    VSGlass,
+    #[br(pre_assert(value == 18))]
+    VSNormalMapSpecularThrough,
+    #[br(pre_assert(value == 19))]
+    VSNormalMapThroughNoFade,
+    #[br(pre_assert(value == 20))]
+    VSNormalMapSpecularThroughNoFade,
+    #[br(pre_assert(value == 21))]
+    VSShore,
+    #[br(pre_assert(value == 22))]
+    VSTerrainGrass,
+    #[br(pre_assert(value == 23))]
+    VSSuper,
+    #[br(pre_assert(value == 24))]
+    VSMulti,
+    #[br(pre_assert(value == 25))]
+    VSTree,
+    #[br(pre_assert(value == 26))]
+    VSTreeNoFade,
+    #[br(pre_assert(value == 27))]
+    VSTreePRT,
+    #[br(pre_assert(value == 28))]
+    VSTreePRTNoFade,
+    #[br(pre_assert(value == 29))]
+    VSSkin,
+    #[br(pre_assert(value == 30))]
+    VSCalmWater,
+    #[br(pre_assert(value == 31))]
+    VSTreeAdv,
+    #[br(pre_assert(value == 32))]
+    VSTreeAdvTrunk,
+    #[br(pre_assert(value == 33))]
+    VSSimulWeatherClouds,
+    #[br(pre_assert(value == 34))]
+    VSSimulWeatherCloudsCPU,
+    #[br(pre_assert(value == 35))]
+    NVertexShaderID,
+    #[br(pre_assert(true))]
+    #[derivative(Default)]
+    Unknown(PhantomData<f32>),
+}
+
+#[allow(non_camel_case_types, clippy::enum_variant_names)]
+#[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum UVSource {
@@ -279,7 +368,7 @@ pub enum UVSource {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq)]
+#[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum TextureFilterType {

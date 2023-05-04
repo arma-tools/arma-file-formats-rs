@@ -35,7 +35,7 @@ impl Entry {
     where
         R: BufRead + Seek,
     {
-        self.filename = reader.read_string_zt()?;
+        self.filename = reader.read_string_zt()?.to_lowercase();
         self.mime_type = reader.read_string(4)?;
         self.original_size = reader.read_u32()?;
         self.offset = reader.read_u32()?;

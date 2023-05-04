@@ -140,11 +140,12 @@ fn decompress_data(
 
         if !flag {
             let mut data = vec![0; expected_size];
-            let read = reader.read(&mut data).map_err(|e| binrw::Error::Custom {
-                err: Box::new(e),
-                pos: pre_pos,
-            })?;
-            assert_eq!(read, expected_size);
+            reader
+                .read_exact(&mut data)
+                .map_err(|e| binrw::Error::Custom {
+                    err: Box::new(e),
+                    pos: pre_pos,
+                })?;
             data
         } else {
             decompress_stream(reader, Some(count * elemen_size)).map_err(|e| {
@@ -156,11 +157,12 @@ fn decompress_data(
         }
     } else if expected_size < 1024 {
         let mut data = vec![0; expected_size];
-        let read = reader.read(&mut data).map_err(|e| binrw::Error::Custom {
-            err: Box::new(e),
-            pos: pre_pos,
-        })?;
-        assert_eq!(read, expected_size);
+        reader
+            .read_exact(&mut data)
+            .map_err(|e| binrw::Error::Custom {
+                err: Box::new(e),
+                pos: pre_pos,
+            })?;
         data
     } else {
         decompress_lzss(reader, expected_size, false)

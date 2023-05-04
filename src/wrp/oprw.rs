@@ -28,7 +28,7 @@ pub struct OPRW {
     #[br(calc = version >= 23)]
     use_lzo: bool,
 
-    #[br(calc = ODOLArgs{ version, use_lzo, use_compression_flag: false })]
+    #[br(calc = ODOLArgs{ version, use_lzo, use_compression_flag: false, skip_lods: false })]
     args: ODOLArgs,
 
     #[br(if(version >= 25))]
@@ -124,7 +124,6 @@ pub struct OPRW {
     #[br(count = size_of_objects / OPRW_SIZE_OF_WPROBJECT)]
     #[br(args { inner: (version,) })]
     pub objects: Vec<Object>,
-
     //#[br(count = road_part_count)]
     #[br(parse_with = until_eof)]
     pub map_infos: Vec<MapInfo>,
@@ -203,9 +202,9 @@ pub struct Object {
 #[derive(PartialEq, BinRead, Derivative)]
 #[derivative(Debug, Default)]
 pub struct MapInfo {
-    id: u32,
+    pub id: u32,
     #[br(args(id))]
-    data: MapData,
+    pub data: MapData,
 }
 
 const MAP_TYPE_1_IDS: [u32; 16] = [0, 1, 2, 10, 11, 12, 13, 14, 15, 16, 17, 22, 23, 26, 27, 30]; // 12 (cham)

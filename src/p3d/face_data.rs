@@ -3,7 +3,7 @@ use derivative::Derivative;
 
 use super::ODOLArgs;
 
-#[derive(PartialEq, BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs))]
 pub struct FaceData {

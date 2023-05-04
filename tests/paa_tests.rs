@@ -38,6 +38,12 @@ fn dim_at_level_test() {
 }
 
 #[test]
+fn ds() {
+    //let file = File::open(format!("{}pictureMap_ca.paa", INPUT_PATH_PREFIX)).unwrap();
+    //let paa = Paa::from_reader(&mut BufReader::new(file), None).unwrap();
+}
+
+#[test]
 #[serial]
 fn logo_dxt5_128_decoding() {
     let file = File::open(format!("{}logo_dxt5_128.paa", INPUT_PATH_PREFIX)).unwrap();

@@ -107,10 +107,10 @@ pub struct STPair {
 #[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
 #[derivative(Debug, Default)]
 pub struct TransformMatrixBinrw(
-    XYZTripletBinrw,
-    XYZTripletBinrw,
-    XYZTripletBinrw,
-    XYZTripletBinrw,
+    pub XYZTripletBinrw,
+    pub XYZTripletBinrw,
+    pub XYZTripletBinrw,
+    pub XYZTripletBinrw,
 );
 
 #[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
@@ -128,7 +128,7 @@ pub struct D3DColorValue {
 //     pub(crate) bytes: Vec<u8>,
 // }
 
-#[derive(BinRead, PartialEq, Derivative)]
+#[derive(BinRead, PartialEq, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct RGBAColor {
     pub a: u8,

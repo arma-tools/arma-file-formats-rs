@@ -135,3 +135,26 @@ fn ai_88_plus_decoding() {
         .save(format!("{}ai88_plus.png", OUTPUT_PATH_PREFIX))
         .unwrap();
 }
+
+#[test]
+#[serial]
+fn argb4444_staszow_decoding() {
+    let file = File::open(format!(
+        "{}argb4444_StaszowWinter_ca.paa",
+        INPUT_PATH_PREFIX
+    ))
+    .unwrap();
+    let paa = Paa::from_reader(&mut BufReader::new(file), Some(&[0])).unwrap();
+
+    let mm = paa.mipmaps.first().unwrap();
+
+    let img_buf: ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+        ImageBuffer::from_raw(mm.width.into(), mm.height.into(), mm.data.clone()).unwrap();
+
+    img_buf
+        .save(format!(
+            "{}argb4444_StaszowWinter_ca.png",
+            OUTPUT_PATH_PREFIX
+        ))
+        .unwrap();
+}

@@ -1,8 +1,10 @@
+use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 
 use super::*;
 use crate::core::binrw_utils::read_compressed_array_count;
+use crate::core::decompress_lzss_unk_size;
 use crate::{
     core::{
         binrw_utils::read_compressed_data_cond_count,
@@ -131,9 +133,26 @@ pub struct OPRW {
 
 impl OPRW {
     pub fn from_read(reader: &mut (impl Read + Seek)) -> Result<OPRW, RvffError> {
-        let mut oprw = OPRW::read_options(reader, Endian::Little, ()).unwrap();
-        oprw.road_net.retain(|rn| rn.road_part_count > 0);
+        // OPRW
+        let mut magic_buf = vec![0_u8; 4];
+        reader.read_exact(&mut magic_buf)?;
+        if magic_buf != b"OPRW" {
+            reader.rewind()?;
+            let data = decompress_lzss_unk_size(reader)?;
 
+            let mut cursor = Cursor::new(data);
+            let oprw = OPRW::read_oprw(&mut cursor)?;
+            return Ok(oprw);
+        } else {
+            reader.rewind()?;
+        }
+        let oprw = OPRW::read_oprw(reader)?;
+        Ok(oprw)
+    }
+
+    fn read_oprw(reader: &mut (impl Read + Seek)) -> Result<OPRW, RvffError> {
+        let mut oprw = OPRW::read_options(reader, Endian::Little, ())?;
+        oprw.road_net.retain(|rn| rn.road_part_count > 0);
         Ok(oprw)
     }
 }

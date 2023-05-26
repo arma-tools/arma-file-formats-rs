@@ -1,6 +1,7 @@
 use binrw::{BinRead, BinResult, NullString};
+use byteorder::ReadBytesExt;
 use std::collections::HashMap;
-use std::io::{Read, SeekFrom};
+use std::io::{Cursor, Read, SeekFrom};
 use std::marker::PhantomData;
 use std::{
     fs::File,
@@ -8,6 +9,7 @@ use std::{
     path::Path,
 };
 
+use crate::core::decompress_lzss_unk_size;
 use crate::{errors::RvffError, p3d::model_info::ModelInfo};
 use derivative::Derivative;
 
@@ -35,6 +37,7 @@ pub struct ODOLOptions {
 #[br(magic = b"ODOL")]
 #[br(import(options: ODOLOptions))]
 pub struct ODOL {
+    //#[br(dbg)]
     #[br(assert((28..=73).contains(&version), "ODOL Version {} Unsupported", version))]
     pub version: u32,
 
@@ -47,12 +50,10 @@ pub struct ODOL {
     #[br(calc = ODOLArgs{ version, use_lzo, use_compression_flag, skip_lods: options.skip_lods })]
     args: ODOLArgs,
 
-    #[br(if(version == 58))]
-    pub prefix: Option<NullString>,
-    #[br(if(version > 59))]
+    #[br(if(version >= 59))]
     pub app_id: u32,
     #[br(if(version >= 58))]
-    pub muzzle_flash: Option<NullString>,
+    pub p3d_prefix: Option<NullString>,
 
     pub lod_count: u32,
 
@@ -225,17 +226,35 @@ impl ODOL {
     where
         R: Read + Seek,
     {
-        let opt = ODOLOptions { skip_lods: true };
-
-        Ok(ODOL::read_le_args(reader, (opt,))?)
+        ODOL::read(reader, true)
     }
 
     pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
     where
         R: Read + Seek,
     {
-        let opt = ODOLOptions { skip_lods: false };
+        ODOL::read(reader, false)
+    }
 
+    fn read<R>(reader: &mut R, skip_lods: bool) -> Result<Self, RvffError>
+    where
+        R: Read + Seek,
+    {
+        let opt = ODOLOptions { skip_lods };
+
+        let mut magic_buf = vec![0_u8; 4];
+        reader.read_exact(&mut magic_buf)?;
+        reader.rewind()?;
+        if magic_buf != b"ODOL" {
+            reader.read_u8()?;
+            reader.read_exact(&mut magic_buf)?;
+            if magic_buf == b"ODOL" {
+                let data = decompress_lzss_unk_size(reader)?;
+                let mut cursor = Cursor::new(data);
+
+                return Ok(ODOL::read_le_args(&mut cursor, (opt,))?);
+            }
+        }
         Ok(ODOL::read_le_args(reader, (opt,))?)
     }
 
@@ -252,6 +271,7 @@ impl ODOL {
                 reader.seek(SeekFrom::Start((*start_address).into()))?;
                 let lod = Lod::read_le_args(reader, (self.args,))?;
                 //self.lods.insert(resolution, lod);
+                // doesnt handle lzss btw
 
                 return Ok(lod);
             }

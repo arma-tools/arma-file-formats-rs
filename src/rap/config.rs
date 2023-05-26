@@ -2,8 +2,8 @@ use std::io::{BufRead, Cursor, Seek};
 
 use super::{entry::CfgEntry, parser::parse, pretty_print::PrettyPrint, EntryReturn};
 use crate::{
-    core::read::ReadExtTrait,
-    errors::{RvffConfigError, RvffConfigErrorKind},
+    core::{decompress_lzss_unk_size, read::ReadExtTrait},
+    errors::RvffError,
 };
 
 const RAP_MAGIC: u32 = 1348563456;
@@ -24,12 +24,12 @@ impl Cfg {
             && matches!(reader.read_u32(), Ok(v) if v == 8)
     }
 
-    pub fn read_config<I>(reader: &mut I) -> Result<Cfg, RvffConfigError>
+    pub fn read_config<I>(reader: &mut I) -> Result<Cfg, RvffError>
     where
         I: BufRead + Seek,
     {
         if !Cfg::is_valid_rap_bin(reader) {
-            return Err(RvffConfigErrorKind::InvalidFileError.into());
+            return Err(RvffError::InvalidFileError);
         }
 
         let enum_offset = reader.read_u32()?;
@@ -50,12 +50,12 @@ impl Cfg {
         })
     }
 
-    pub fn read_data(data: &[u8]) -> Result<Cfg, RvffConfigError> {
+    pub fn read_data(data: &[u8]) -> Result<Cfg, RvffError> {
         let mut reader = Cursor::new(data);
         Self::read(&mut reader)
     }
 
-    pub fn read<I>(reader: &mut I) -> Result<Cfg, RvffConfigError>
+    pub fn read<I>(reader: &mut I) -> Result<Cfg, RvffError>
     where
         I: BufRead + Seek,
     {
@@ -63,17 +63,44 @@ impl Cfg {
         reader.rewind()?;
         if is_valid_bin {
             return Self::read_config(reader);
+        } else {
+            reader.read_u8()?;
+            if matches!(reader.read_u32(), Ok(v) if v == RAP_MAGIC) {
+                if let Ok(data) = decompress_lzss_unk_size(reader) {
+                    let mut reader = Cursor::new(data);
+                    let is_valid_bin = Self::is_valid_rap_bin(&mut reader);
+                    reader.rewind()?;
+                    if is_valid_bin {
+                        return Self::read_config(&mut reader);
+                    }
+                }
+            }
         }
 
         let mut cfg_text = String::new();
-        reader.read_to_string(&mut cfg_text)?;
+        reader.rewind()?;
+        if let Err(err) = reader.read_to_string(&mut cfg_text) {
+            // try lzss decompression
+            reader.rewind()?;
+            if let Ok(uncomp_data) = decompress_lzss_unk_size(reader) {
+                if let Ok(cfg) = String::from_utf8(uncomp_data) {
+                    if let Ok(entries) = parse(&cfg) {
+                        return Ok(Cfg {
+                            enum_offset: 0,
+                            inherited_classname: String::new(),
+                            entries,
+                        });
+                    }
+                }
+            }
+            return Err(err.into());
+        }
 
         Self::parse_config(&cfg_text)
     }
 
-    pub fn parse_config(cfg: &str) -> Result<Cfg, RvffConfigError> {
+    pub fn parse_config(cfg: &str) -> Result<Cfg, RvffError> {
         let entries = parse(cfg)?;
-
         Ok(Cfg {
             enum_offset: 0,
             inherited_classname: String::new(),

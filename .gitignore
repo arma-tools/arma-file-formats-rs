@@ -9,3 +9,4 @@ tarpaulin-report.html
 
 /tests/test-data/p3d_in
 /tests/test-data/wrp_in
+/tests/test-data/util_out

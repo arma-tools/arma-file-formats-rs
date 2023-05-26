@@ -15,11 +15,20 @@ fn test_defaults() {
 
 #[test]
 #[serial]
+fn tempelan_wrp() {
+    //Tembelan.wrp
+    let mut file = File::open(format!("{}Tembelan.wrp", INPUT_PATH_PREFIX)).unwrap();
+
+    let wrp = OPRW::from_read(&mut file).unwrap();
+}
+
+#[test]
+#[serial]
 fn stratis_wrp() {
     let mut file = File::open(format!("{}Stratis.wrp", INPUT_PATH_PREFIX)).unwrap();
 
     let wrp = OPRW::from_read(&mut file).unwrap();
-
+    dbg!(&wrp.map_infos.len());
     dbg!(&wrp.mountains[700]);
     dbg!(&wrp.mountains.len());
     dbg!(&wrp.classed_models.as_ref().unwrap().last());
@@ -77,4 +86,11 @@ fn ivf_wrp() {
     let wrp = OPRW::from_read(&mut reader).unwrap();
 
     dbg!(&wrp.app_id);
+}
+
+#[test]
+#[serial]
+fn fjae_test() {
+    let mut file = File::open(format!("{}fjaderholmarna.wrp", INPUT_PATH_PREFIX)).unwrap();
+    let oprw = OPRW::from_read(&mut file).unwrap();
 }

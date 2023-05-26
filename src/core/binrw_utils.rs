@@ -132,8 +132,9 @@ fn decompress_data(
         return Ok(Vec::new());
     }
     let pre_pos = reader.stream_position()?;
+    //dbg!(pre_pos);
     let data = if odol_args.use_lzo {
-        let mut flag = expected_size > 1024;
+        let mut flag = expected_size >= 1024;
         if odol_args.use_compression_flag {
             flag = u8::read_options(reader, endian, ())? != 0;
         }

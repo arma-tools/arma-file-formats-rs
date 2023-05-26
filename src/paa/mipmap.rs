@@ -143,7 +143,40 @@ impl Mipmap {
                 // )
                 // .unwrap();
             }
-            PaaType::RGBA4444 => todo!(),
+            PaaType::RGBA4444 => {
+                let mut cursor_data = Cursor::new(&self.data);
+
+                let (_, decompressed_data) = decompress_lzss(
+                    &mut cursor_data,
+                    self.width as usize * self.height as usize * 2,
+                    true,
+                )?;
+
+                let mut rgba_buf =
+                    Vec::with_capacity(self.width as usize * self.height as usize * 4);
+
+                for i in (0..decompressed_data.len()).step_by(2) {
+                    let high = decompressed_data[i + 1];
+                    let low = decompressed_data[i];
+
+                    let lhbyte = high & 0x0F;
+                    let hhbyte = (high & 0xF0) >> 4;
+                    let llbyte = low & 0x0F;
+                    let hlbyte = (low & 0xF0) >> 4;
+
+                    let b = ((lhbyte as u32 * 255) / 15) as u8;
+                    let a = ((hhbyte as u32 * 255) / 15) as u8;
+                    let r = ((llbyte as u32 * 255) / 15) as u8;
+                    let g = ((hlbyte as u32 * 255) / 15) as u8;
+
+                    rgba_buf.push(r);
+                    rgba_buf.push(g);
+                    rgba_buf.push(b);
+                    rgba_buf.push(a);
+                }
+
+                self.data = rgba_buf;
+            }
             PaaType::RGBA5551 => todo!(),
             PaaType::RGBA8888 => todo!(),
             PaaType::GRAYwAlpha => {

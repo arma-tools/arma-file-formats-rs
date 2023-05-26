@@ -14,6 +14,12 @@ const OUTPUT_PATH_PREFIX: &str = "./tests/test-data/pbo_out/";
 
 #[test]
 #[serial]
+fn test_fow() {
+    let pbo = Pbo::from_path(format!("{}fow_functions.pbo", INPUT_PATH_PREFIX)).unwrap();
+}
+
+#[test]
+#[serial]
 fn has_entry() {
     let pbo = Pbo::from_path(format!("{}grad_adminMessages.pbo", INPUT_PATH_PREFIX)).unwrap();
     assert!(pbo.has_entry("x\\grad\\addons\\adminMessages\\gui\\defines.hpp"));

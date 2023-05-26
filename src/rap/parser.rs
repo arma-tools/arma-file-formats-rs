@@ -1,5 +1,5 @@
 use crate::{
-    errors::{RvffConfigError, RvffConfigErrorKind},
+    errors::RvffError,
     rap::{CfgClass, CfgEntry, CfgProperty, CfgValue},
 };
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
@@ -16,6 +16,7 @@ enum Token {
     Str(String),
     Ctrl(char),
     Ident(String),
+    Bool(bool),
     Class,
     Delete,
     StringConcat,
@@ -31,6 +32,7 @@ impl fmt::Display for Token {
             Token::Class => write!(f, "class"),
             Token::Delete => write!(f, "delete"),
             Token::StringConcat => write!(f, " \\n "),
+            Token::Bool(b) => write!(f, "{}", b),
         }
     }
 }
@@ -93,25 +95,32 @@ fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
     let ctrl = one_of("[]{};,:=").map(Token::Ctrl);
 
     // identifiers and keywords
-    let ident = text::ident().map(|ident: String| match ident.as_str() {
+    let ident = text::ident().map(|ident: String| match ident.to_lowercase().as_str() {
         "class" => Token::Class,
         "delete" => Token::Delete,
+        "true" => Token::Bool(true),
+        "false" => Token::Bool(false),
         _ => Token::Ident(ident),
     });
 
-    let token = num
-        .or(strs)
+    let token = ident
         .or(ctrl)
-        .or(ident)
+        .or(strs)
+        .or(num)
         .recover_with(skip_then_retry_until([]));
 
-    let comment = just("//").then(take_until(just('\n'))).padded();
+    let comment = just("//")
+        .or(just("#"))
+        .then(take_until(just('\n')))
+        .padded();
+    //let define = just("#").then(take_until(just('\n'))).padded();
     let ml_comment = just("/*").then(take_until(just("*/"))).padded();
 
     token
         .map_with_span(|tok, span| (tok, span))
         .padded_by(comment.repeated())
         .padded_by(ml_comment.repeated())
+        // .padded_by(define.repeated())
         .padded()
         .repeated()
 }
@@ -173,6 +182,7 @@ fn entry_parser() -> impl Parser<Token, Vec<Spanned<EntryExpr>>, Error = Simple<
             }
         },
         Token::Str(s) => ValueExpr::Str(s),
+        Token::Bool(b) => ValueExpr::Long(b as i32),
     }
     .map_with_span(|ident, span| (ident, span))
     .labelled("value");
@@ -261,13 +271,13 @@ fn entry_parser() -> impl Parser<Token, Vec<Spanned<EntryExpr>>, Error = Simple<
     class.or(entry).repeated().then_ignore(end())
 }
 
-pub(crate) fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffConfigError> {
+pub(crate) fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
     let (tokens, errs) = lexer().parse_recovery(src);
-    //dbg!(tokens.clone());
-    //dbg!(errs.clone());
+    // dbg!(&tokens);
+    // dbg!(errs.clone());
 
     let parse_errs = if let Some(tokens) = tokens {
-        //dbg!(tokens);
+        //dbg!(&tokens);
         let len = src.chars().count();
         let (ast, parse_errs) =
             entry_parser().parse_recovery(Stream::from_iter(len..len + 1, tokens.into_iter()));
@@ -364,5 +374,5 @@ pub(crate) fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffConfigError> {
         })
         .collect();
 
-    Err(RvffConfigErrorKind::RvffParseError(errs_str.join("\n")).into())
+    Err(RvffError::RvffParseError(errs_str.join("\n")))
 }

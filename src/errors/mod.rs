@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, string::FromUtf8Error};
 
 use lzokay_rust_native::util::LzokayError;
 use thiserror::Error;
@@ -53,6 +53,8 @@ pub enum RvffError {
     #[error("IO failed {0}")]
     RvffIOError(#[from] io::Error),
 
+    #[error("FromUTF8 failed {0}")]
+    RvffUTFError(#[from] FromUtf8Error),
     // #[error("Deku failed")]
     // RvffDekuError(#[from] deku::DekuError),
     #[error("Binrw failed {0}")]
@@ -72,32 +74,7 @@ pub enum RvffError {
 
     #[error("unknown decoding error")]
     Unknown,
-}
-
-#[derive(Error, Debug)]
-pub enum RvffConfigErrorKind {
-    #[error("IO failed")]
-    RvffIOError(#[from] io::Error),
 
     #[error("Parsing failed: {0}")]
     RvffParseError(String),
-
-    #[error("Invalid file")]
-    InvalidFileError,
-
-    #[error("unknown decoding error")]
-    Unknown,
-}
-
-#[derive(Error, Debug)]
-#[error(transparent)]
-pub struct RvffConfigError(Box<RvffConfigErrorKind>);
-
-impl<E> From<E> for RvffConfigError
-where
-    RvffConfigErrorKind: From<E>,
-{
-    fn from(err: E) -> Self {
-        RvffConfigError(Box::new(RvffConfigErrorKind::from(err)))
-    }
 }

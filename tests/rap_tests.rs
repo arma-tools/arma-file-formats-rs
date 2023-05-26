@@ -10,6 +10,40 @@ const INPUT_PATH_PREFIX: &str = "./tests/test-data/rap_in/";
 const OUTPUT_PATH_PREFIX: &str = "./tests/test-data/rap_out/";
 
 #[test]
+fn rvmat_define() {
+    let file = File::open(format!("{}define.rvmat", INPUT_PATH_PREFIX)).unwrap();
+    let mut reader = BufReader::new(file);
+    if let Err(err) = Cfg::read(&mut reader) {
+        println!("{}", err.to_string());
+    }
+}
+
+#[test]
+fn weird_roadlib() {
+    let file = File::open(format!("{}roadslib_weird.cfg", INPUT_PATH_PREFIX)).unwrap();
+    let mut reader = BufReader::new(file);
+    if let Err(err) = Cfg::read(&mut reader) {
+        println!("{}", err.to_string());
+    }
+}
+
+#[test]
+fn lzss_roadlib() {
+    let file = File::open(format!("{}roadslib_lzss.cfg", INPUT_PATH_PREFIX)).unwrap();
+    let mut reader = BufReader::new(file);
+    if let Err(err) = Cfg::read(&mut reader) {
+        println!("{}", err.to_string());
+    }
+}
+
+#[test]
+fn lzss_config() {
+    let file = File::open(format!("{}bmg_texture1.rvmat", INPUT_PATH_PREFIX)).unwrap();
+    let mut reader = BufReader::new(file);
+    let _ = Cfg::read(&mut reader).unwrap();
+}
+
+#[test]
 fn mission_sqm_test() {
     let file_content = fs::read_to_string(format!("{}mission.sqm.cpp", INPUT_PATH_PREFIX)).unwrap();
     let cfg = Cfg::parse_config(&file_content).unwrap();

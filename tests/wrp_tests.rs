@@ -1,6 +1,6 @@
 use std::{fs::File, io::BufReader};
 
-use rvff::wrp::OPRW;
+use rvff::wrp::{MapData, MapInfo, OPRW};
 use serial_test::serial;
 
 const INPUT_PATH_PREFIX: &str = "./tests/test-data/wrp_in/";
@@ -8,18 +8,32 @@ const INPUT_PATH_PREFIX: &str = "./tests/test-data/wrp_in/";
 #[test]
 fn test_defaults() {
     OPRW::default();
+}
 
-    // QuadTree::<u32>::default();
-    // QuadTreeInner::<u32>::default();
+#[test]
+fn gm_test_summer() {
+    // gm_weferlingen_summer
+    let mut file = File::open(format!("{}gm_weferlingen_summer.wrp", INPUT_PATH_PREFIX)).unwrap();
+
+    let wrp = OPRW::from_read(&mut file).unwrap();
+
+    let rivers: Vec<&MapInfo> = wrp
+        .map_infos
+        .iter()
+        .filter(|x| matches!(&x.data, MapData::MapTypeRiver { .. }))
+        .collect();
+
+    dbg!(&rivers);
+    dbg!(rivers.len());
 }
 
 #[test]
 #[serial]
 fn tempelan_wrp() {
-    //Tembelan.wrp
+    // Tembelan.wrp
     let mut file = File::open(format!("{}Tembelan.wrp", INPUT_PATH_PREFIX)).unwrap();
 
-    let wrp = OPRW::from_read(&mut file).unwrap();
+    let _ = OPRW::from_read(&mut file).unwrap();
 }
 
 #[test]
@@ -92,5 +106,5 @@ fn ivf_wrp() {
 #[serial]
 fn fjae_test() {
     let mut file = File::open(format!("{}fjaderholmarna.wrp", INPUT_PATH_PREFIX)).unwrap();
-    let oprw = OPRW::from_read(&mut file).unwrap();
+    let _ = OPRW::from_read(&mut file).unwrap();
 }

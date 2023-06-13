@@ -2,7 +2,7 @@ use binrw::BinRead;
 use binrw::NullString;
 use derivative::Derivative;
 
-use crate::core::types::XYZTripletBinrw;
+use crate::core::types::XYZTriplet;
 
 use super::ODOLArgs;
 
@@ -76,9 +76,9 @@ pub struct AnimationClass {
     pub offset_1: Option<f32>,
 
     #[br(if(anim_transform_type == AnimType::Direct))]
-    pub axis_pos: Option<XYZTripletBinrw>,
+    pub axis_pos: Option<XYZTriplet>,
     #[br(if(anim_transform_type == AnimType::Direct))]
-    pub axis_dir: Option<XYZTripletBinrw>,
+    pub axis_dir: Option<XYZTriplet>,
     #[br(if(anim_transform_type == AnimType::Direct))]
     pub axis_angle: Option<f32>,
     #[br(if(anim_transform_type == AnimType::Direct))]
@@ -140,21 +140,17 @@ pub struct Bone2AnimClassList {
 
 #[derive(PartialEq, Derivative, Clone)]
 #[derivative(Debug, Default)]
-//#[br(import(animation_class_count: u32, animation_classes: Vec<AnimationClass>,))]
 pub struct Anims2Bones {
-    //  #[br(count = animation_class_count)]
-    //#[br(args { inner: (animation_classes,) })]
     pub animation_class_indices: Vec<AnimBones>,
 }
 
 #[derive(PartialEq, Derivative, Clone)]
 #[derivative(Debug, Default)]
-//#[br(import(animation_classes: Vec<AnimationClass>))]
 pub struct AnimBones {
     pub skeleton_bone_name_index: i32,
 
-    pub axis_pos: Option<XYZTripletBinrw>,
-    pub axis_dir: Option<XYZTripletBinrw>,
+    pub axis_pos: Option<XYZTriplet>,
+    pub axis_dir: Option<XYZTriplet>,
 }
 
 impl BinRead for Anims2Bones {
@@ -175,8 +171,8 @@ impl BinRead for Anims2Bones {
                 && anim_class.anim_transform_type != AnimType::Direct
                 && anim_class.anim_transform_type != AnimType::Hide
             {
-                let axis_pos = XYZTripletBinrw::read_options(reader, endian, ())?;
-                let axis_dir = XYZTripletBinrw::read_options(reader, endian, ())?;
+                let axis_pos = XYZTriplet::read_options(reader, endian, ())?;
+                let axis_dir = XYZTriplet::read_options(reader, endian, ())?;
                 animation_class_indices.push(AnimBones {
                     skeleton_bone_name_index,
                     axis_pos: Some(axis_pos),

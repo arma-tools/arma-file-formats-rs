@@ -3,7 +3,7 @@ use crate::core::{
         decompress_array, read_compressed, read_compressed_array, read_compressed_size_cond,
         read_condensed_array_cond, read_normals_parse, read_st_parse, read_vertex_index_array,
     },
-    types::{D3DColorValue, STPair, TransformMatrixBinrw, XYZTripletBinrw},
+    types::{D3DColorValue, STPair, TransformMatrix, XYZTriplet},
 };
 use binrw::{BinRead, BinResult, NullString};
 use derivative::Derivative;
@@ -32,7 +32,6 @@ pub struct Lod {
     #[br(if(args.version >= 50))]
     pub vertex_count: Option<u32>,
 
-    //#[br(if(version < 50))]
     #[br(args(args.version < 50, 4, args))]
     #[br(parse_with = read_condensed_array_cond)]
     pub clip_old_format: Option<Vec<i32>>,
@@ -42,9 +41,9 @@ pub struct Lod {
 
     pub or_hints: i32,
     pub and_hints: i32,
-    pub b_min: XYZTripletBinrw,
-    pub b_max: XYZTripletBinrw,
-    pub b_center: XYZTripletBinrw,
+    pub b_min: XYZTriplet,
+    pub b_max: XYZTriplet,
+    pub b_center: XYZTriplet,
     pub b_radius: f32,
 
     texture_count: u32,
@@ -112,11 +111,11 @@ pub struct Lod {
 
     #[br(args(12, args,))]
     #[br(parse_with = read_compressed_array)]
-    pub vertices: Vec<XYZTripletBinrw>,
+    pub vertices: Vec<XYZTriplet>,
 
     #[br(args(args,))]
     #[br(parse_with = read_normals_parse)]
-    pub normals: Vec<XYZTripletBinrw>,
+    pub normals: Vec<XYZTriplet>,
 
     #[br(args(args,))]
     #[br(parse_with = read_st_parse)]
@@ -142,7 +141,7 @@ pub struct Lod {
 #[br(import(args: ODOLArgs))]
 pub struct Proxy {
     pub proxy_model: NullString,
-    pub transofrmation: TransformMatrixBinrw,
+    pub transofrmation: TransformMatrix,
     pub sequence_id: i32,
     pub named_selection_index: i32,
     pub bone_index: i32,
@@ -238,7 +237,7 @@ pub struct StageTexture {
 #[derivative(Debug, Default)]
 pub struct StageTransform {
     pub uv_source: u32,
-    pub transformation: TransformMatrixBinrw,
+    pub transformation: TransformMatrix,
 }
 
 #[derive(PartialEq, BinRead, Derivative, Clone)]
@@ -280,17 +279,6 @@ impl BinRead for CompressedVertexIndexArray {
     }
 }
 
-// #[derive(PartialEq, BinRead, Derivative)]
-// #[derivative(Debug, Default)]
-
-// pub struct Polygons {
-//     #[br(args(version, use_lzo))]
-//     pub mlod_index: LodEdge,
-
-//     #[br(args(version, use_lzo))]
-//     pub vertex_index: LodEdge,
-// }
-
 #[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs))]
@@ -301,31 +289,6 @@ pub struct LodFace {
     #[br(parse_with = read_vertex_index_array)]
     pub vertex_indices: Vec<u32>,
 }
-
-// impl BinRead for LodEdge {
-//     type Args<'a> = (u32, bool);
-
-//     fn read_options<R: std::io::Read + std::io::Seek>(
-//         reader: &mut R,
-//         endian: binrw::Endian,
-//         args: Self::Args<'_>,
-//     ) -> BinResult<Self> {
-//         // i version >= 69 -> i32 else u16
-
-//         let count = u32::read_options(reader, endian, ())? as usize;
-
-//         let edges: Vec<u32> = if args.0 >= 69 {
-//             decompress_array::<u32>(reader, endian, count, 4, args.1)?
-//         } else {
-//             decompress_array::<u16>(reader, endian, count, 2, args.1)?
-//                 .into_iter()
-//                 .map(|n| n as u32)
-//                 .collect()
-//         };
-
-//         Ok(LodEdge { edges })
-//     }
-// }
 
 #[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
@@ -359,7 +322,7 @@ pub struct LodSection {
     pub unk_matrix_exists: bool,
 
     #[br(if(args.version >= 67 && unk_matrix_exists))]
-    pub unk_matrix: TransformMatrixBinrw,
+    pub unk_matrix: TransformMatrix,
 }
 
 #[derive(PartialEq, BinRead, Derivative, Clone)]
@@ -402,7 +365,7 @@ pub struct LodFrame {
     pub bone_count: u32,
 
     #[br(count = bone_count)]
-    pub bone_positions: Vec<XYZTripletBinrw>,
+    pub bone_positions: Vec<XYZTriplet>,
 }
 
 #[derive(PartialEq, BinRead, Derivative, Clone)]

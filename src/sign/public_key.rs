@@ -21,38 +21,27 @@ const EXTENSION: &str = "bikey";
 #[binrw]
 #[brw(little)]
 pub struct PublicKey {
-    // #[deku(
-    //     reader = "read_string_zt(deku::rest)",
-    //     writer = "write_string_zt(deku::output, &self.authority)"
-    // )]
     pub authority: NullString,
 
     #[br(assert(unk1 == 148))]
     #[bw(assert(unk1 == &148))]
-    // #[deku(assert_eq = "148")]
     unk1: u32,
-    // #[deku(assert_eq = "518")]
+
     #[br(assert(unk2 == 518))]
     #[bw(assert(unk2 == &518))]
     unk2: u32,
-    // #[deku(assert_eq = "9216")]
+
     #[br(assert(unk3 == 9216))]
     #[bw(assert(unk3 == &9216))]
     unk3: u32,
-    // #[deku(assert_eq = "826364754")]
+
     #[br(assert(unk4 == 826364754))]
     #[bw(assert(unk4 == &826364754))]
     unk4: u32,
 
-    // #[deku(update = "self.n.to_bytes_le().len()*8")]
     n_length: u32,
     pub exponent: u32,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /8)",
-    //     writer = "write_biguint(deku::output, &self.n)"
-    // )]
-    //#[deku(count = "n_length/8")]
     #[br(args((n_length as usize / 8)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]

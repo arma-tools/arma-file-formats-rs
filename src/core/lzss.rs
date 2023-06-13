@@ -83,7 +83,6 @@ where
         }
     }
 
-    //let hash = vec![0_u8; 4];
     let hash = reader.read_i32::<LittleEndian>().unwrap();
     if hash != calculated_hash {
         return Err(RvffLzssError::ChecksumMissmatch);

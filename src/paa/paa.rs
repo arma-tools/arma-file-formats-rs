@@ -55,11 +55,6 @@ impl Paa {
         paa
     }
 
-    // "image" feature
-    // pub fn from_image_path<P: AsRef<Path>>(path: P) -> io::Result<Paa> {
-
-    // }
-
     pub fn from_reader<R>(reader: &mut R, indicies_to_load: Option<&[u32]>) -> Result<Paa, PaaError>
     where
         R: BufRead + Seek,
@@ -110,8 +105,6 @@ impl Paa {
         if self.mipmaps.is_empty() {
             return Err(PaaError::NoMipmapError);
         }
-
-        //let mut skip_levels: Vec<usize> = Vec::new();
 
         for i in 1..self.mipmaps.len() {
             let mipmap = &self.mipmaps[i];

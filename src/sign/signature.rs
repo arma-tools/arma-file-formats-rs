@@ -19,48 +19,33 @@ const EXTENSION: &str = "bisign";
 #[binrw]
 #[brw(little)]
 pub struct Signature {
-    // #[deku(
-    //     reader = "read_string_zt(deku::rest)",
-    //     writer = "write_string_zt(deku::output, &self.authority)"
-    // )]
     pub authority: NullString,
 
-    // #[deku(assert_eq = "148")]
     #[br(assert(unk1 == 148))]
     #[bw(assert(unk1 == &148))]
     unk1: u32,
-    // #[deku(assert_eq = "518")]
+
     #[br(assert(unk2 == 518))]
     #[bw(assert(unk2 == &518))]
     unk2: u32,
     #[br(assert(unk3 == 9216))]
     #[bw(assert(unk3 == &9216))]
-    // #[deku(assert_eq = "9216")]
     unk3: u32,
-    // #[deku(assert_eq = "826364754")]
+
     #[br(assert(unk4 == 826364754))]
     #[bw(assert(unk4 == &826364754))]
     unk4: u32,
 
-    // #[deku(update = "self.n.to_bytes_le().len()*8")]
     pub(crate) n_length: u32,
     pub exponent: u32,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /8)",
-    //     writer = "write_biguint(deku::output, &self.n)"
-    // )]
     #[br(args((n_length as usize / 8)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub n: BigUint,
 
-    // #[deku(update = "self.sig1.to_bytes_le().len()")]
     pub(crate) sig1_length: u32,
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *sig1_length as usize)",
-    //     writer = "write_biguint(deku::output, &self.sig1)"
-    // )]
+
     #[br(args((sig1_length as usize)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
@@ -68,23 +53,15 @@ pub struct Signature {
 
     pub version: SignVersion,
 
-    // #[deku(update = "self.sig2.to_bytes_le().len()")]
     pub(crate) sig2_length: u32,
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *sig2_length as usize)",
-    //     writer = "write_biguint(deku::output, &self.sig2)"
-    // )]
+
     #[br(args((sig2_length as usize)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub sig2: BigUint,
 
-    // #[deku(update = "self.sig3.to_bytes_le().len()")]
     pub(crate) sig3_length: u32,
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *sig3_length as usize)",
-    //     writer = "write_biguint(deku::output, &self.sig3)"
-    // )]
+
     #[br(args((sig3_length as usize)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
@@ -96,9 +73,7 @@ pub struct Signature {
 #[derivative(Debug)]
 #[brw(repr = u32)]
 pub enum SignVersion {
-    // #[deku(id = "0x02")]
     V2 = 2,
-    // #[deku(id = "0x03")]
     V3 = 3,
 }
 

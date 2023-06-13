@@ -194,9 +194,6 @@ impl Pbo {
 
         let hash1 = checksum.as_slice();
 
-        // println!("Namehash");
-        // dbg!(&self.namehash());
-
         let mut hash2 = Sha1::new();
         hash2.update(hash1);
         hash2.update(self.namehash());
@@ -207,9 +204,6 @@ impl Pbo {
                 hash2.update(b"\\");
             }
         }
-
-        // dbg!(&hash1);
-        //dbg!(&hash2.finalize());
 
         let mut hash3 = Sha1::new();
         hash3.update(self.filehash(version));
@@ -289,7 +283,6 @@ impl Pbo {
         data.extend(b"\x0e\x03\x02\x1a\x05\x00\x04\x14");
         data.extend(hash);
         BigUint::from_bytes_be(&data)
-        //UInt::from_le_slice(&data)
     }
 
     pub(crate) fn namehash(&self) -> Output<Sha1> {

@@ -14,7 +14,7 @@ fn rvmat_define() {
     let file = File::open(format!("{}define.rvmat", INPUT_PATH_PREFIX)).unwrap();
     let mut reader = BufReader::new(file);
     if let Err(err) = Cfg::read(&mut reader) {
-        println!("{}", err.to_string());
+        println!("{}", err);
     }
 }
 
@@ -23,7 +23,7 @@ fn weird_roadlib() {
     let file = File::open(format!("{}roadslib_weird.cfg", INPUT_PATH_PREFIX)).unwrap();
     let mut reader = BufReader::new(file);
     if let Err(err) = Cfg::read(&mut reader) {
-        println!("{}", err.to_string());
+        println!("{}", err);
     }
 }
 
@@ -32,7 +32,7 @@ fn lzss_roadlib() {
     let file = File::open(format!("{}roadslib_lzss.cfg", INPUT_PATH_PREFIX)).unwrap();
     let mut reader = BufReader::new(file);
     if let Err(err) = Cfg::read(&mut reader) {
-        println!("{}", err.to_string());
+        println!("{}", err);
     }
 }
 

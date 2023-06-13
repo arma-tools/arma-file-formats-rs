@@ -55,8 +55,7 @@ pub enum RvffError {
 
     #[error("FromUTF8 failed {0}")]
     RvffUTFError(#[from] FromUtf8Error),
-    // #[error("Deku failed")]
-    // RvffDekuError(#[from] deku::DekuError),
+
     #[error("Binrw failed {0}")]
     RvffBinrwError(#[from] binrw::Error),
 

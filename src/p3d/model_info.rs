@@ -1,5 +1,5 @@
 use crate::core::types::RGBAColor;
-use crate::core::types::XYZTripletBinrw;
+use crate::core::types::XYZTriplet;
 use binrw::BinRead;
 use binrw::NullString;
 
@@ -18,28 +18,28 @@ pub struct ModelInfo {
     pub remarks: u32,
     pub and_hints: u32,
     pub or_hints: u32,
-    pub aiming_center: XYZTripletBinrw,
+    pub aiming_center: XYZTriplet,
     pub map_icon_color: RGBAColor,
     pub map_selected_color: RGBAColor,
     pub view_density: f32,
-    pub bbox_min_pos: XYZTripletBinrw,
-    pub bbox_max_pos: XYZTripletBinrw,
+    pub bbox_min_pos: XYZTriplet,
+    pub bbox_max_pos: XYZTriplet,
     #[br(if(args.version >= 70))]
     pub lod_density_coef: Option<f32>,
 
     #[br(if(args.version >= 71))]
     pub draw_importance: Option<f32>,
     #[br(if(args.version >= 52))]
-    pub bbox_min_visual: Option<XYZTripletBinrw>,
+    pub bbox_min_visual: Option<XYZTriplet>,
     #[br(if(args.version >= 52))]
-    pub bbox_max_visual: Option<XYZTripletBinrw>,
+    pub bbox_max_visual: Option<XYZTriplet>,
 
-    pub bounding_center: XYZTripletBinrw,
-    pub geometry_center: XYZTripletBinrw,
-    pub center_of_mass: XYZTripletBinrw,
+    pub bounding_center: XYZTriplet,
+    pub geometry_center: XYZTriplet,
+    pub center_of_mass: XYZTriplet,
 
     #[br(count = 3)]
-    pub inv_intertia: Vec<XYZTripletBinrw>,
+    pub inv_intertia: Vec<XYZTriplet>,
     #[br(map = |x: u8| x != 0)]
     pub auto_center: bool,
     #[br(map = |x: u8| x != 0)]

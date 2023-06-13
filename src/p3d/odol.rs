@@ -37,7 +37,6 @@ pub struct ODOLOptions {
 #[br(magic = b"ODOL")]
 #[br(import(options: ODOLOptions))]
 pub struct ODOL {
-    //#[br(dbg)]
     #[br(assert((28..=73).contains(&version), "ODOL Version {} Unsupported", version))]
     pub version: u32,
 
@@ -95,15 +94,12 @@ pub struct ODOL {
     })]
     pub face_defaults: Vec<Option<FaceData>>,
 
-    //#[br(count = lod_count)]
-    // #[br(count = 1)]
     #[br(args(lod_count as usize, &start_address_of_lods, args,))]
     #[br(parse_with = read_lods)]
     pub lods: Vec<Lod>,
 }
 
 #[binrw::parser(reader, endian)]
-//fn read_compressed_array<T: for<'a> BinRead<Args<'a> = ()>, Copy>(
 pub(crate) fn read_lods(
     count: usize,
     start_address_of_lods: &[u32],
@@ -138,7 +134,6 @@ pub struct Resolution {
 #[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
 #[br(import { value: f32 })]
-//#[br(repr(f32))]
 pub enum ResolutionEnum {
     #[br(pre_assert(value < 1E3f32))]
     GraphicalLod,

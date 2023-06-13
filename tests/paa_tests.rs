@@ -1,6 +1,6 @@
 use std::{fs::File, io::BufReader};
 
-use image::{GenericImageView, ImageBuffer};
+use image::ImageBuffer;
 use rvff::{
     self,
     paa::{Paa, Tagg},
@@ -35,12 +35,6 @@ fn dim_at_level_test() {
     assert_eq!(Paa::dim_at_level(1024, 1), 512);
     assert_eq!(Paa::dim_at_level(1024, 0), 1024);
     assert_eq!(Paa::dim_at_level(32, 6), 1);
-}
-
-#[test]
-fn ds() {
-    //let file = File::open(format!("{}pictureMap_ca.paa", INPUT_PATH_PREFIX)).unwrap();
-    //let paa = Paa::from_reader(&mut BufReader::new(file), None).unwrap();
 }
 
 #[test]

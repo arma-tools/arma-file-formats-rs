@@ -108,7 +108,10 @@ impl Paa {
 
         for i in 1..self.mipmaps.len() {
             let mipmap = &self.mipmaps[i];
-            if (mipmap.width as usize * mipmap.height as usize * 4) != mipmap.data.len() {
+            if !mipmap.width.is_power_of_two()
+                || !mipmap.height.is_power_of_two()
+                || mipmap.width as usize * mipmap.height as usize * 4 != mipmap.data.len()
+            {
                 return Err(PaaError::InvalidMipmapError(i));
             }
         }

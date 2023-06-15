@@ -3,13 +3,14 @@ name = "rvff"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["lib", "staticlib"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 byteorder = "1.4.3"
-num_enum = "0.5.4"
-
-# deku = "0.15.1"
+num_enum = "0.6.1"
 
 binrw = "0.11.1"
 
@@ -21,28 +22,26 @@ derivative = "2.2.0"
 
 # Paa
 squish = "2.0.0-beta1"
-#lzokay = "1.0.1"
 
 # PBO
 indexmap = "1.9.1"
-sha-1 = "0.9.8"
+sha-1 = "0.10.1"
 
 # Sign
-rsa = { version = "0.7.2" }
-rand = { version = "0.8.5" }#, default-features = false, features = ["small_rng"] }
-# rand_core = { version = "0.6.4", default-features = false, features = ["js"] }
+rsa = { version = "0.9.2" }
+rand = { version = "0.8.5" }
 getrandom = { version = "0.2", features = ["js"] }
 
 # Rap
-ariadne = "0.1.5"
+ariadne = "0.3.0"
 chumsky = "0.9.0"
 
-# Test
-image = "0.23.14"
-serial_test = "0.5.1"
-
 # LZO
-lzokay-rust-native = { path = "../../raff-and-friends/lzokay-rust-native", version = "0.1.0" }
+lzokay-rust-native = { git = "https://github.com/TheWillard/lzokay-rust-native.git", branch = "main" }
+
+[dev-dependencies]
+image = "0.24.6"
+serial_test = "2.0.0"
 
 [features]
 parallel = ["squish/rayon", "rayon"]

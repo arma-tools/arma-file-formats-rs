@@ -1,12 +1,15 @@
 use binrw::{BinRead, BinResult, NullString};
-use std::io::SeekFrom;
+use byteorder::ReadBytesExt;
+use std::collections::HashMap;
+use std::io::{Cursor, Read, SeekFrom};
 use std::marker::PhantomData;
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Seek},
+    io::{BufReader, Seek},
     path::Path,
 };
 
+use crate::core::decompress_lzss_unk_size;
 use crate::{errors::RvffError, p3d::model_info::ModelInfo};
 use derivative::Derivative;
 
@@ -20,11 +23,19 @@ pub struct ODOLArgs {
     pub version: u32,
     pub use_lzo: bool,
     pub use_compression_flag: bool,
+    pub skip_lods: bool,
 }
 
-#[derive(BinRead, Derivative)]
+#[derive(Derivative)]
+#[derivative(Debug, Default, Copy, Clone)]
+pub struct ODOLOptions {
+    pub skip_lods: bool,
+}
+
+#[derive(BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(magic = b"ODOL")]
+#[br(import(options: ODOLOptions))]
 pub struct ODOL {
     #[br(assert((28..=73).contains(&version), "ODOL Version {} Unsupported", version))]
     pub version: u32,
@@ -35,15 +46,13 @@ pub struct ODOL {
     #[br(calc = version >= 64)]
     use_compression_flag: bool,
 
-    #[br(calc = ODOLArgs{ version, use_lzo, use_compression_flag })]
+    #[br(calc = ODOLArgs{ version, use_lzo, use_compression_flag, skip_lods: options.skip_lods })]
     args: ODOLArgs,
 
-    #[br(if(version == 58))]
-    pub prefix: Option<NullString>,
-    #[br(if(version > 59))]
+    #[br(if(version >= 59))]
     pub app_id: u32,
     #[br(if(version >= 58))]
-    pub muzzle_flash: Option<NullString>,
+    pub p3d_prefix: Option<NullString>,
 
     pub lod_count: u32,
 
@@ -85,20 +94,21 @@ pub struct ODOL {
     })]
     pub face_defaults: Vec<Option<FaceData>>,
 
-    //#[br(count = lod_count)]
-    // #[br(count = 1)]
     #[br(args(lod_count as usize, &start_address_of_lods, args,))]
     #[br(parse_with = read_lods)]
     pub lods: Vec<Lod>,
 }
 
 #[binrw::parser(reader, endian)]
-//fn read_compressed_array<T: for<'a> BinRead<Args<'a> = ()>, Copy>(
 pub(crate) fn read_lods(
     count: usize,
     start_address_of_lods: &[u32],
     args: ODOLArgs,
 ) -> BinResult<Vec<Lod>> {
+    if args.skip_lods {
+        return Ok(Vec::new());
+    }
+
     let mut lods = Vec::with_capacity(count);
 
     #[allow(clippy::needless_range_loop)]
@@ -111,7 +121,7 @@ pub(crate) fn read_lods(
     Ok(lods)
 }
 
-#[derive(PartialEq, BinRead, Derivative)]
+#[derive(PartialEq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct Resolution {
     pub value: f32,
@@ -121,10 +131,9 @@ pub struct Resolution {
 }
 
 #[allow(illegal_floating_point_literal_pattern)]
-#[derive(BinRead, Derivative, PartialEq)]
+#[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
 #[br(import { value: f32 })]
-//#[br(repr(f32))]
 pub enum ResolutionEnum {
     #[br(pre_assert(value < 1E3f32))]
     GraphicalLod,
@@ -208,57 +217,103 @@ impl ODOL {
         Self::from_stream(&mut buf_reader)
     }
 
+    pub(crate) fn from_stream_lazy<R>(reader: &mut R) -> Result<Self, RvffError>
+    where
+        R: Read + Seek,
+    {
+        ODOL::read(reader, true)
+    }
+
     pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
-        Ok(ODOL::read_le(reader).unwrap())
+        ODOL::read(reader, false)
+    }
 
-        // assert_eq!(&reader.read_string_lossy(4)?, "ODOL");
+    fn read<R>(reader: &mut R, skip_lods: bool) -> Result<Self, RvffError>
+    where
+        R: Read + Seek,
+    {
+        let opt = ODOLOptions { skip_lods };
 
-        // let mut odol = Self::new();
+        let mut magic_buf = vec![0_u8; 4];
+        reader.read_exact(&mut magic_buf)?;
+        reader.rewind()?;
+        if magic_buf != b"ODOL" {
+            reader.read_u8()?;
+            reader.read_exact(&mut magic_buf)?;
+            if magic_buf == b"ODOL" {
+                let data = decompress_lzss_unk_size(reader)?;
+                let mut cursor = Cursor::new(data);
 
-        // odol.version = reader.read_u32()?;
+                return Ok(ODOL::read_le_args(&mut cursor, (opt,))?);
+            }
+        }
+        Ok(ODOL::read_le_args(reader, (opt,))?)
+    }
 
-        // if odol.version > 73 {
-        //     return Err(RvffError::RvffOdolError(RvffOdolError::UnknownVersion(
-        //         odol.version,
-        //     )));
-        // } else if odol.version < 28 {
-        //     return Err(RvffError::RvffOdolError(RvffOdolError::UnsupportedVersion(
-        //         odol.version,
-        //     )));
-        // }
+    pub fn read_lod<RS>(
+        &self,
+        reader: &mut RS,
+        resolution: ResolutionEnum,
+    ) -> Result<Lod, RvffError>
+    where
+        RS: Read + Seek,
+    {
+        if let Some(lod_index) = self.resolutions.iter().position(|r| r.res == resolution) {
+            if let Some(start_address) = self.start_address_of_lods.get(lod_index) {
+                reader.seek(SeekFrom::Start((*start_address).into()))?;
+                let lod = Lod::read_le_args(reader, (self.args,))?;
+                //self.lods.insert(resolution, lod);
+                // doesnt handle lzss btw
 
-        // if odol.version >= 44 {
-        //     odol.use_lzo = true;
-        // }
-        // if odol.version >= 64 {
-        //     odol.use_compression_flag = true;
-        // }
+                return Ok(lod);
+            }
+        }
 
-        // if odol.version == 58 {
-        //     odol.prefix = reader.read_string_zt()?;
-        // }
+        todo!()
+    }
+}
 
-        // if odol.version >= 59 {
-        //     odol.app_id = reader.read_u32()?;
-        // }
+pub struct OdolLazyReader<R>
+where
+    R: Read + Seek,
+{
+    reader: R,
+    pub odol: ODOL,
+    pub lods: HashMap<ResolutionEnum, Lod>,
+}
 
-        // if odol.version >= 58 {
-        //     odol.muzzle_flash = reader.read_string_zt()?;
-        // }
+impl<R> OdolLazyReader<R>
+where
+    R: Read + Seek,
+{
+    pub fn from_reader(mut reader: R) -> Result<OdolLazyReader<R>, RvffError> {
+        let odol = ODOL::from_stream_lazy(&mut reader)?;
+        Ok(OdolLazyReader {
+            lods: HashMap::new(),
+            reader,
+            odol,
+        })
+    }
 
-        // let lod_count = reader.read_u32()?;
-        // odol.resolutions.reserve(lod_count as usize);
-        // for _ in 0..lod_count {
-        //     odol.resolutions.push(reader.read_f32()?);
-        // }
+    pub fn read_lod(&mut self, resolution: ResolutionEnum) -> Result<Lod, RvffError> {
+        if let Some(lod_index) = self
+            .odol
+            .resolutions
+            .iter()
+            .position(|r| r.res == resolution)
+        {
+            if let Some(start_address) = self.odol.start_address_of_lods.get(lod_index) {
+                self.reader.seek(SeekFrom::Start((*start_address).into()))?;
+                let lod = Lod::read_le_args(&mut self.reader, (self.odol.args,))?;
+                //self.lods.insert(resolution, lod);
 
-        // let model_info_bytes = reader.read_bytes(16384)?;
-        // let (rest, model_info) =
-        //     ModelInfo::read(model_info_bytes.as_bits(), (odol.version, lod_count)).unwrap();
-        // odol.model_info = model_info;
-        // Ok(odol)
+                return Ok(lod);
+            }
+        }
+
+        todo!()
     }
 }

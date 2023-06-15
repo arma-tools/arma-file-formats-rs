@@ -16,8 +16,10 @@ use std::{
     path::Path,
 };
 
-use rsa::BigUint;
-use rsa::{PublicKeyParts, RsaPrivateKey};
+use rsa::{
+    traits::{PrivateKeyParts, PublicKeyParts},
+    BigUint, RsaPrivateKey,
+};
 
 pub(crate) const KEY_LENGTH: u32 = 1024;
 const EXPONENT: u32 = 65537;
@@ -43,69 +45,39 @@ pub struct PrivateKey {
     #[bw(assert(unk4 == &843141970))]
     unk4: u32,
 
-    //#[deku(update = "self.n.to_bytes_le().len()*8")]
-    //#[bw(calc = (n.to_bytes_le().len() * 8) as u32)]
     n_length: u32,
     pub exponent: u32,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /8)",
-    //     writer = "write_biguint(deku::output, &self.n)"
-    // )]
     #[br(args((n_length as usize / 8)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub n: BigUint,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /16)",
-    //     writer = "write_biguint(deku::output, &self.p)"
-    // )]
     #[br(args((n_length as usize / 16)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub p: BigUint,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /16)",
-    //     writer = "write_biguint(deku::output, &self.q)"
-    // )]
     #[br(args((n_length as usize / 16)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub q: BigUint,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /16)",
-    //     writer = "write_biguint(deku::output, &self.dmp1)"
-    // )]
     #[br(args((n_length as usize / 16)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub dmp1: BigUint,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /16)",
-    //     writer = "write_biguint(deku::output, &self.dmq1)"
-    // )]
     #[br(args((n_length as usize / 16)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub dmq1: BigUint,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /16)",
-    //     writer = "write_biguint(deku::output, &self.iqmp)"
-    // )]
     #[br(args((n_length as usize / 16)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub iqmp: BigUint,
 
-    // #[deku(
-    //     reader = "read_biguint(deku::rest, *n_length as usize /8)",
-    //     writer = "write_biguint(deku::output, &self.d)"
-    // )]
     #[br(args((n_length as usize / 8)))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]

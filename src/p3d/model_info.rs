@@ -1,5 +1,5 @@
 use crate::core::types::RGBAColor;
-use crate::core::types::XYZTripletBinrw;
+use crate::core::types::XYZTriplet;
 use binrw::BinRead;
 use binrw::NullString;
 
@@ -8,7 +8,7 @@ use super::ODOLArgs;
 use crate::core::binrw_utils::read_compressed_array;
 use derivative::Derivative;
 
-#[derive(BinRead, Derivative)]
+#[derive(BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs, lod_count: u32))]
 pub struct ModelInfo {
@@ -18,28 +18,28 @@ pub struct ModelInfo {
     pub remarks: u32,
     pub and_hints: u32,
     pub or_hints: u32,
-    pub aiming_center: XYZTripletBinrw,
+    pub aiming_center: XYZTriplet,
     pub map_icon_color: RGBAColor,
     pub map_selected_color: RGBAColor,
     pub view_density: f32,
-    pub bbox_min_pos: XYZTripletBinrw,
-    pub bbox_max_pos: XYZTripletBinrw,
+    pub bbox_min_pos: XYZTriplet,
+    pub bbox_max_pos: XYZTriplet,
     #[br(if(args.version >= 70))]
     pub lod_density_coef: Option<f32>,
 
     #[br(if(args.version >= 71))]
     pub draw_importance: Option<f32>,
     #[br(if(args.version >= 52))]
-    pub bbox_min_visual: Option<XYZTripletBinrw>,
+    pub bbox_min_visual: Option<XYZTriplet>,
     #[br(if(args.version >= 52))]
-    pub bbox_max_visual: Option<XYZTripletBinrw>,
+    pub bbox_max_visual: Option<XYZTriplet>,
 
-    pub bounding_center: XYZTripletBinrw,
-    pub geometry_center: XYZTripletBinrw,
-    pub center_of_mass: XYZTripletBinrw,
+    pub bounding_center: XYZTriplet,
+    pub geometry_center: XYZTriplet,
+    pub center_of_mass: XYZTriplet,
 
     #[br(count = 3)]
-    pub inv_intertia: Vec<XYZTripletBinrw>,
+    pub inv_intertia: Vec<XYZTriplet>,
     #[br(map = |x: u8| x != 0)]
     pub auto_center: bool,
     #[br(map = |x: u8| x != 0)]
@@ -85,7 +85,7 @@ pub struct ModelInfo {
     #[br(args(args.version))]
     pub skeleton: Skeleton,
 
-    pub map_type: MapType,
+    pub map_type: u8,
 
     #[br(args(4, args))]
     #[br(parse_with = read_compressed_array)]
@@ -125,7 +125,9 @@ pub struct ModelInfo {
 
     pub property_class: NullString,
     pub property_damage: NullString,
-    pub property_frequent: NullString,
+
+    #[br(map = |x: u8| x != 0)]
+    pub property_frequent: bool,
 
     #[br(if(args.version >= 31))]
     pub unknown_int: u32,
@@ -142,7 +144,7 @@ pub struct ModelInfo {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative)]
+#[derive(BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub enum SBSource {
     #[derivative(Default)]
@@ -161,7 +163,7 @@ pub enum SBSource {
 impl ModelInfo {}
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative)]
+#[derive(BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = u8)]
 pub enum MapType {

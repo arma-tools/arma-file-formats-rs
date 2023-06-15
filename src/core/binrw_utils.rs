@@ -6,24 +6,14 @@ use binrw::BinRead;
 use binrw::BinResult;
 use binrw::Endian;
 use derivative::Derivative;
-use lzokay_rust_native::decompress::decompress_stream;
+use lzokay_rust_native::decompress::decompress_reader;
 use rsa::BigUint;
 
 use crate::p3d::ODOLArgs;
 
 use super::decompress_lzss;
 use super::types::STPair;
-use super::types::XYZTripletBinrw;
-
-// #[binrw::parser(reader, endian)]
-// fn read_lzo(expected_size: usize) -> BinResult<Vec<u8>> {
-//     let pre_pos = reader.stream_position()?;
-//     let mut buf_reader = BufReader::new(reader);
-//     decompress_stream(&mut buf_reader, Some(expected_size)).map_err(|e| binrw::Error::Custom {
-//         err: Box::new(e),
-//         pos: pre_pos,
-//     })
-// }
+use super::types::XYZTriplet;
 
 #[binrw::parser(reader, endian)]
 pub(crate) fn read_compressed_size_cond(
@@ -44,15 +34,6 @@ pub(crate) fn read_compressed_size_cond(
         Ok(None)
     }
 }
-
-// #[binrw::parser(reader, endian)]
-// pub(crate) fn read_compressed_size(
-//     elemen_size: usize,
-//     count: usize,
-//     args: ODOLArgs,
-// ) -> BinResult<Vec<u8>> {
-//     decompress_data(reader, endian, elemen_size, count, args)
-// }
 
 #[binrw::parser(reader, endian)]
 pub(crate) fn read_compressed(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<u8>> {
@@ -112,8 +93,6 @@ pub(crate) fn read_compressed_data_cond_count(
     count: usize,
     odol_args: ODOLArgs,
 ) -> BinResult<Option<Vec<u8>>> {
-    // dbg!(count);
-    // dbg!(odol_args);
     if condition {
         Ok(Some(decompress_data(reader, endian, 1, count, odol_args)?))
     } else {
@@ -132,22 +111,24 @@ fn decompress_data(
         return Ok(Vec::new());
     }
     let pre_pos = reader.stream_position()?;
+    //dbg!(pre_pos);
     let data = if odol_args.use_lzo {
-        let mut flag = expected_size > 1024;
+        let mut flag = expected_size >= 1024;
         if odol_args.use_compression_flag {
             flag = u8::read_options(reader, endian, ())? != 0;
         }
 
         if !flag {
             let mut data = vec![0; expected_size];
-            let read = reader.read(&mut data).map_err(|e| binrw::Error::Custom {
-                err: Box::new(e),
-                pos: pre_pos,
-            })?;
-            assert_eq!(read, expected_size);
+            reader
+                .read_exact(&mut data)
+                .map_err(|e| binrw::Error::Custom {
+                    err: Box::new(e),
+                    pos: pre_pos,
+                })?;
             data
         } else {
-            decompress_stream(reader, Some(count * elemen_size)).map_err(|e| {
+            decompress_reader(reader, Some(count * elemen_size)).map_err(|e| {
                 binrw::Error::Custom {
                     err: Box::new(e),
                     pos: pre_pos,
@@ -156,11 +137,12 @@ fn decompress_data(
         }
     } else if expected_size < 1024 {
         let mut data = vec![0; expected_size];
-        let read = reader.read(&mut data).map_err(|e| binrw::Error::Custom {
-            err: Box::new(e),
-            pos: pre_pos,
-        })?;
-        assert_eq!(read, expected_size);
+        reader
+            .read_exact(&mut data)
+            .map_err(|e| binrw::Error::Custom {
+                err: Box::new(e),
+                pos: pre_pos,
+            })?;
         data
     } else {
         decompress_lzss(reader, expected_size, false)
@@ -181,8 +163,6 @@ pub(crate) fn read_condensed_array_cond<T, 'a>(
 ) -> BinResult<Option<Vec<T>>>
 where
     T: BinRead<Args<'a> = ()> + Clone,
-    // T::Args<'a>: Clone,
-    // T: Clone,
 {
     if cond {
         Ok(Some(condensed_array(reader, endian, elemen_size, args)?))
@@ -190,16 +170,6 @@ where
         Ok(None)
     }
 }
-
-// #[binrw::parser(reader, endian)]
-// pub(crate) fn read_condensed_array<T, 'a>(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<T>>
-// where
-//     T: BinRead<Args<'a> = ()> + Clone,
-//     // T::Args<'a>: Clone,
-//     // T: Clone,
-// {
-//     condensed_array(reader, endian, elemen_size, args)
-// }
 
 fn condensed_array<'a, T>(
     reader: &mut (impl Read + Seek),
@@ -248,7 +218,7 @@ fn read_vertex_index(
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_normals_parse(args: (ODOLArgs,)) -> BinResult<Vec<XYZTripletBinrw>> {
+pub(crate) fn read_normals_parse(args: (ODOLArgs,)) -> BinResult<Vec<XYZTriplet>> {
     read_normals(reader, endian, args.0)
 }
 
@@ -256,18 +226,16 @@ pub(crate) fn read_normals(
     reader: &mut (impl Read + Seek),
     endian: Endian,
     args: ODOLArgs,
-) -> BinResult<Vec<XYZTripletBinrw>> {
+) -> BinResult<Vec<XYZTriplet>> {
     if args.version >= 45 {
         let comp = condensed_array::<i32>(reader, endian, 4, args)?;
         Ok(comp.into_iter().map(decompress_xyz).collect())
     } else {
-        Ok(condensed_array::<XYZTripletBinrw>(
-            reader, endian, 12, args,
-        )?)
+        Ok(condensed_array::<XYZTriplet>(reader, endian, 12, args)?)
     }
 }
 
-pub(crate) fn decompress_xyz(val: i32) -> XYZTripletBinrw {
+pub(crate) fn decompress_xyz(val: i32) -> XYZTriplet {
     let mut x = val & 1023;
     let mut y = val >> 10 & 1023;
     let mut z = val >> 20 & 1023;
@@ -286,7 +254,7 @@ pub(crate) fn decompress_xyz(val: i32) -> XYZTripletBinrw {
 
     let factor = -0.001_956_947_1_f32;
 
-    XYZTripletBinrw {
+    XYZTriplet {
         x: x as f32 * factor,
         y: y as f32 * factor,
         z: z as f32 * factor,
@@ -341,23 +309,3 @@ pub(crate) fn write_biguint(biguint: &BigUint) -> BinResult<()> {
     writer.write_all(&buf)?;
     Ok(())
 }
-
-// pub(crate) fn read_biguint(
-//     rest: &BitSlice<u8, Msb0>,
-//     length: usize,
-// ) -> Result<(&BitSlice<u8, Msb0>, BigUint), DekuError> {
-//     let (bigint_bytes, rest) = rest.split_at(length * 8);
-//     Ok((
-//         rest,
-//         BigUint::from_bytes_le(&bigint_bytes.to_bitvec().into_vec()),
-//     ))
-// }
-
-// pub(crate) fn write_biguint(
-//     output: &mut BitVec<u8, Msb0>,
-//     bigint: &BigUint,
-// ) -> Result<(), DekuError> {
-//     let bigint_bytes = bigint.to_bytes_le();
-//     output.write_all(&bigint_bytes).unwrap();
-//     Ok(())
-// }

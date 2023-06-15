@@ -21,12 +21,25 @@ where
             reader,
             pbo: Pbo::new(),
         };
-
         pbo_reader.pbo.read(&mut pbo_reader.reader, true)?;
         Ok(pbo_reader)
     }
 
-    pub fn get_entry(&mut self, entry_path: String) -> Result<Option<Entry>, RvffError> {
+    pub fn get_entry(&mut self, entry_path: &str) -> Result<Option<Entry>, RvffError> {
         self.pbo.get_entry(entry_path, &mut self.reader)
+    }
+
+    pub fn get_prefix(&self) -> String {
+        self.pbo.get_prefix()
+    }
+
+    pub fn extract_single_file(
+        &mut self,
+        entry_path: &str,
+        out_path: &str,
+        full_path: bool,
+    ) -> Result<(), RvffError> {
+        self.pbo
+            .extract_single_file(entry_path, out_path, full_path, &mut self.reader)
     }
 }

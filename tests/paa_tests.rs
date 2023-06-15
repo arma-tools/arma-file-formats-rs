@@ -1,6 +1,9 @@
-use std::{fs::File, io::BufReader};
+use std::{
+    fs::{self, File},
+    io::{BufReader, Cursor},
+};
 
-use image::{GenericImageView, ImageBuffer};
+use image::ImageBuffer;
 use rvff::{
     self,
     paa::{Paa, Tagg},
@@ -13,6 +16,43 @@ const OUTPUT_PATH_PREFIX: &str = "./tests/test-data/paa_out/";
 #[test]
 fn default_test() {
     Paa::default();
+}
+
+#[test]
+#[serial]
+fn arma_test() {
+    let file = File::open(format!("{}black_co_dxt1.paa", INPUT_PATH_PREFIX)).unwrap();
+    let mut dxt1 = Paa::from_reader(&mut BufReader::new(file), None).unwrap();
+    let mut mm_data = dxt1.mipmaps[0].data.clone();
+
+    for i in 0..dxt1.mipmaps[0].width as usize * 100 * 4 {
+        mm_data[i] = 0xFF;
+    }
+
+    dxt1.mipmaps[0].data = mm_data;
+
+    let mut buf = Vec::new();
+    let mut cursor = Cursor::new(&mut buf);
+
+    dxt1.write(&mut cursor, None).unwrap();
+    fs::write(format!("{}black_co.paa", OUTPUT_PATH_PREFIX), buf).unwrap();
+
+    let file = File::open(format!("{}medic_cross_ca_dxt5.paa", INPUT_PATH_PREFIX)).unwrap();
+    let mut dxt5 = Paa::from_reader(&mut BufReader::new(file), None).unwrap();
+
+    let mut mm_data = dxt5.mipmaps[0].data.clone();
+
+    for i in 0..dxt5.mipmaps[0].width as usize * 10 * 4 {
+        mm_data[i] = 0xFF;
+    }
+
+    dxt5.mipmaps[0].data = mm_data;
+
+    let mut buf = Vec::new();
+    let mut cursor = Cursor::new(&mut buf);
+
+    dxt5.write(&mut cursor, None).unwrap();
+    fs::write(format!("{}medic_cross_ca.paa", OUTPUT_PATH_PREFIX), buf).unwrap();
 }
 
 #[test]
@@ -127,5 +167,28 @@ fn ai_88_plus_decoding() {
 
     img_buf
         .save(format!("{}ai88_plus.png", OUTPUT_PATH_PREFIX))
+        .unwrap();
+}
+
+#[test]
+#[serial]
+fn argb4444_staszow_decoding() {
+    let file = File::open(format!(
+        "{}argb4444_StaszowWinter_ca.paa",
+        INPUT_PATH_PREFIX
+    ))
+    .unwrap();
+    let paa = Paa::from_reader(&mut BufReader::new(file), Some(&[0])).unwrap();
+
+    let mm = paa.mipmaps.first().unwrap();
+
+    let img_buf: ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+        ImageBuffer::from_raw(mm.width.into(), mm.height.into(), mm.data.clone()).unwrap();
+
+    img_buf
+        .save(format!(
+            "{}argb4444_StaszowWinter_ca.png",
+            OUTPUT_PATH_PREFIX
+        ))
         .unwrap();
 }

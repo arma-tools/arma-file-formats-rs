@@ -218,8 +218,8 @@ fn read_vertex_index(
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_normals_parse(args: (ODOLArgs,)) -> BinResult<Vec<XYZTriplet>> {
-    read_normals(reader, endian, args.0)
+pub(crate) fn read_normals_parse(args: ODOLArgs) -> BinResult<Vec<XYZTriplet>> {
+    read_normals(reader, endian, args)
 }
 
 pub(crate) fn read_normals(
@@ -262,8 +262,8 @@ pub(crate) fn decompress_xyz(val: i32) -> XYZTriplet {
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_st_parse(args: (ODOLArgs,)) -> BinResult<Vec<STPair>> {
-    read_st(reader, endian, args.0)
+pub(crate) fn read_st_parse(args: ODOLArgs) -> BinResult<Vec<STPair>> {
+    read_st(reader, endian, args)
 }
 
 pub(crate) fn read_st(
@@ -297,8 +297,8 @@ impl From<STPairCompress> for STPair {
 }
 
 #[binrw::parser(reader)]
-pub(crate) fn read_biguint(length: (usize,)) -> BinResult<BigUint> {
-    let mut buf = vec![0_u8; length.0];
+pub(crate) fn read_biguint(length: usize) -> BinResult<BigUint> {
+    let mut buf = vec![0_u8; length];
     reader.read_exact(&mut buf)?;
     Ok(BigUint::from_bytes_le(&buf))
 }

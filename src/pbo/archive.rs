@@ -96,20 +96,27 @@ impl Pbo {
         }
         reader.read_u8()?;
 
+        // Apparently, a pbo can have multiple entries with the same filename, which is just hilarious.
+        let mut entries = Vec::new();
         while reader.peek_u8()? != 0 {
             let mut entry = Entry::new();
             entry.read(reader)?;
 
-            self.entries.insert(entry.filename.clone(), entry);
+            entries.push(entry);
         }
 
         reader.read_bytes(21)?;
         let mut data_pos = reader.stream_position()?;
 
-        for entry in &mut self.entries {
-            entry.1.data_offset = data_pos;
-            data_pos += entry.1.data_size as u64;
+        for entry in &mut entries {
+            entry.data_offset = data_pos;
+            data_pos += entry.data_size as u64;
         }
+
+        self.entries = entries
+            .into_iter()
+            .map(|x| (x.filename.clone(), x))
+            .collect();
 
         if !skip_data {
             for entry in &mut self.entries {

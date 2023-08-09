@@ -113,11 +113,11 @@ pub struct Lod {
     #[br(parse_with = read_compressed_array)]
     pub vertices: Vec<XYZTriplet>,
 
-    #[br(args(args,))]
+    #[br(args(args))]
     #[br(parse_with = read_normals_parse)]
     pub normals: Vec<XYZTriplet>,
 
-    #[br(args(args,))]
+    #[br(args(args))]
     #[br(parse_with = read_st_parse)]
     pub st_coords: Vec<STPair>,
 

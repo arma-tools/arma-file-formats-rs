@@ -39,14 +39,14 @@ pub struct Signature {
     pub(crate) n_length: u32,
     pub exponent: u32,
 
-    #[br(args((n_length as usize / 8)))]
+    #[br(args(n_length as usize / 8))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub n: BigUint,
 
     pub(crate) sig1_length: u32,
 
-    #[br(args((sig1_length as usize)))]
+    #[br(args(sig1_length as usize))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub sig1: BigUint,
@@ -55,14 +55,14 @@ pub struct Signature {
 
     pub(crate) sig2_length: u32,
 
-    #[br(args((sig2_length as usize)))]
+    #[br(args(sig2_length as usize))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub sig2: BigUint,
 
     pub(crate) sig3_length: u32,
 
-    #[br(args((sig3_length as usize)))]
+    #[br(args(sig3_length as usize))]
     #[br(parse_with = read_biguint)]
     #[bw(write_with = write_biguint)]
     pub sig3: BigUint,

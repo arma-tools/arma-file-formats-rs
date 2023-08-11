@@ -100,7 +100,7 @@ pub struct ODOL {
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_lods(
+pub fn read_lods(
     count: usize,
     start_address_of_lods: &[u32],
     args: ODOLArgs,
@@ -113,7 +113,7 @@ pub(crate) fn read_lods(
 
     #[allow(clippy::needless_range_loop)]
     for i in 0..count {
-        println!("Lod Index: {}", i);
+        println!("Lod Index: {i}");
         reader.seek(SeekFrom::Start(start_address_of_lods[i].into()))?;
         lods.push(Lod::read_options(reader, endian, (args,))?);
     }
@@ -131,7 +131,7 @@ pub struct Resolution {
 }
 
 #[allow(illegal_floating_point_literal_pattern)]
-#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
 #[derivative(Debug, Default)]
 #[br(import { value: f32 })]
 pub enum ResolutionEnum {
@@ -207,8 +207,8 @@ pub enum ResolutionEnum {
 }
 
 impl ODOL {
-    pub fn new() -> Self {
-        ODOL::default()
+    #[must_use] pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RvffError> {
@@ -221,14 +221,14 @@ impl ODOL {
     where
         R: Read + Seek,
     {
-        ODOL::read(reader, true)
+        Self::read(reader, true)
     }
 
     pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
     where
         R: Read + Seek,
     {
-        ODOL::read(reader, false)
+        Self::read(reader, false)
     }
 
     fn read<R>(reader: &mut R, skip_lods: bool) -> Result<Self, RvffError>
@@ -247,10 +247,10 @@ impl ODOL {
                 let data = decompress_lzss_unk_size(reader)?;
                 let mut cursor = Cursor::new(data);
 
-                return Ok(ODOL::read_le_args(&mut cursor, (opt,))?);
+                return Ok(Self::read_le_args(&mut cursor, (opt,))?);
             }
         }
-        Ok(ODOL::read_le_args(reader, (opt,))?)
+        Ok(Self::read_le_args(reader, (opt,))?)
     }
 
     pub fn read_lod<RS>(
@@ -289,9 +289,9 @@ impl<R> OdolLazyReader<R>
 where
     R: Read + Seek,
 {
-    pub fn from_reader(mut reader: R) -> Result<OdolLazyReader<R>, RvffError> {
+    pub fn from_reader(mut reader: R) -> Result<Self, RvffError> {
         let odol = ODOL::from_stream_lazy(&mut reader)?;
-        Ok(OdolLazyReader {
+        Ok(Self {
             lods: HashMap::new(),
             reader,
             odol,

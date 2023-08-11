@@ -38,11 +38,11 @@ where
     fn read_compressed_int(&mut self) -> io::Result<u32> {
         let val = ReadExtTrait::read_u8(self)?;
         let mut val = val;
-        let mut ret = val as u32;
+        let mut ret = u32::from(val);
         while (val & 0x80) != 0 {
             val = ReadExtTrait::read_u8(self)?;
             dbg!(val);
-            ret += (val.overflowing_sub(1).0).overflowing_mul(0x80).0 as u32;
+            ret += u32::from((val.overflowing_sub(1).0).overflowing_mul(0x80).0);
         }
 
         Ok(ret)

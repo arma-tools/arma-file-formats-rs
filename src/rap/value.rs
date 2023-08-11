@@ -11,7 +11,7 @@ pub enum CfgValue {
 }
 
 impl CfgValue {
-    pub fn read_value<I>(reader: &mut I, typ_id: Option<u8>) -> Result<CfgValue, RvffError>
+    pub fn read_value<I>(reader: &mut I, typ_id: Option<u8>) -> Result<Self, RvffError>
     where
         I: BufRead + Seek,
     {
@@ -22,55 +22,55 @@ impl CfgValue {
         };
 
         Ok(match typ_id {
-            0 => CfgValue::String(reader.read_string_zt()?),
-            1 => CfgValue::Float(reader.read_f32()?),
-            2 => CfgValue::Long(reader.read_i32()?),
-            3 => CfgValue::read_array(reader)?,
-            4 => CfgValue::String(reader.read_string_zt()?),
-            _ => panic!("Unknown typ id: {}", typ_id),
+            0 => Self::String(reader.read_string_zt()?),
+            1 => Self::Float(reader.read_f32()?),
+            2 => Self::Long(reader.read_i32()?),
+            3 => Self::read_array(reader)?,
+            4 => Self::String(reader.read_string_zt()?),
+            _ => panic!("Unknown typ id: {typ_id}"),
         })
     }
 
-    pub fn read_array<I>(reader: &mut I) -> Result<CfgValue, RvffError>
+    pub fn read_array<I>(reader: &mut I) -> Result<Self, RvffError>
     where
         I: BufRead + Seek,
     {
         let entry_count = reader.read_compressed_int()?;
         let mut entries = Vec::with_capacity(entry_count as usize);
         for _ in 0..entry_count {
-            let entry = CfgValue::read_value(reader, None)?;
+            let entry = Self::read_value(reader, None)?;
             entries.push(entry);
         }
 
-        Ok(CfgValue::Array(entries))
+        Ok(Self::Array(entries))
     }
 
-    pub fn as_float(&self) -> Option<f32> {
-        if let CfgValue::Float(val) = self {
+    #[must_use] pub fn as_float(&self) -> Option<f32> {
+        if let Self::Float(val) = self {
             Some(*val)
         } else {
             None
         }
     }
 
-    pub fn as_long(&self) -> Option<i32> {
-        if let CfgValue::Long(val) = self {
+    #[must_use] pub fn as_long(&self) -> Option<i32> {
+        if let Self::Long(val) = self {
             Some(*val)
         } else {
             None
         }
     }
 
-    pub fn as_string(&self) -> Option<String> {
-        if let CfgValue::String(val) = self {
+    #[must_use] pub fn as_string(&self) -> Option<String> {
+        if let Self::String(val) = self {
             Some(val.clone())
         } else {
             None
         }
     }
 
-    pub fn as_array(&self) -> Option<Vec<CfgValue>> {
-        if let CfgValue::Array(val) = self {
+    pub fn as_array(&self) -> Option<Vec<Self>> {
+        if let Self::Array(val) = self {
             Some(val.clone())
         } else {
             None
@@ -81,13 +81,13 @@ impl CfgValue {
 impl CfgValue {
     pub fn to_strr(&self) -> String {
         match self {
-            CfgValue::Float(num) => num.to_string(),
-            CfgValue::Long(num) => num.to_string(),
-            CfgValue::String(str) => format!("\"{}\"", str.trim_matches('"')),
-            CfgValue::Array(arr) => format!(
+            Self::Float(num) => num.to_string(),
+            Self::Long(num) => num.to_string(),
+            Self::String(str) => format!("\"{}\"", str.trim_matches('"')),
+            Self::Array(arr) => format!(
                 "{{ {} }}",
                 arr.iter()
-                    .map(|x| x.to_strr())
+                    .map(Self::to_strr)
                     .collect::<Vec<String>>()
                     .join(", ")
             ),

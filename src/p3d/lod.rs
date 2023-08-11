@@ -150,7 +150,7 @@ pub struct Proxy {
     pub section_index: i32,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct BoneLink {
     link_count: u32,
@@ -216,7 +216,7 @@ pub struct LodMaterial {
     pub dummy_stage_textures: Option<StageTexture>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(mat_version: u32))]
 pub struct StageTexture {
@@ -251,7 +251,7 @@ pub struct LodEdges {
     pub vertex_index: CompressedVertexIndexArray,
 }
 
-#[derive(PartialEq, Derivative, Clone)]
+#[derive(PartialEq, Eq, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct CompressedVertexIndexArray {
     pub edges: Vec<u32>,
@@ -271,15 +271,15 @@ impl BinRead for CompressedVertexIndexArray {
         } else {
             decompress_array::<u16>(reader, endian, 2, count, args)?
                 .into_iter()
-                .map(|n| n as u32)
+                .map(|n| u32::from(n))
                 .collect()
         };
 
-        Ok(CompressedVertexIndexArray { edges })
+        Ok(Self { edges })
     }
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs))]
 pub struct LodFace {
@@ -351,7 +351,7 @@ pub struct LodNameSelection {
     pub selected_vertices_weights: Vec<u8>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct LodNamedProperty {
     pub property: NullString,
@@ -423,7 +423,7 @@ pub struct AnimationRTWeight {
     pub animation_rt_pairs: Vec<AnimationRTPair>,
 }
 
-#[derive(PartialEq, Derivative, Clone)]
+#[derive(PartialEq, Eq, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct AnimationRTPair {
     pub selection_index: u8,

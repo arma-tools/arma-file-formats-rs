@@ -13,7 +13,7 @@ pub struct ClipFlags {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone, Copy)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
 #[derivative(Debug, Default)]
 #[br(repr = i32)]
 #[br(import { value: i32 })]
@@ -64,21 +64,21 @@ pub enum ClipFlagsEnum {
     //ClipFogDisable = 16384,
     #[br(pre_assert(value == 32768))]
     ClipFogSky = 32768,
-    #[br(pre_assert(value == 983040))]
-    ClipLightMask = 983040,
+    #[br(pre_assert(value == 983_040))]
+    ClipLightMask = 983_040,
     #[br(pre_assert(value == 65536))]
     ClipLightStep = 65536,
 
-    #[br(pre_assert(value == 524288))]
-    ClipLightLine = 524288,
-    #[br(pre_assert(value ==267386880))]
-    ClipUserMask = 267386880,
-    #[br(pre_assert(value ==1048576))]
-    ClipUserStep = 1048576,
+    #[br(pre_assert(value == 524_288))]
+    ClipLightLine = 524_288,
+    #[br(pre_assert(value ==267_386_880))]
+    ClipUserMask = 267_386_880,
+    #[br(pre_assert(value ==1_048_576))]
+    ClipUserStep = 1_048_576,
     #[br(pre_assert(value == 255))]
     MaxUserValue = 255,
-    #[br(pre_assert(value == 268435200))]
-    ClipHints = 268435200,
+    #[br(pre_assert(value == 268_435_200))]
+    ClipHints = 268_435_200,
 
     #[br(pre_assert(true))]
     #[derivative(Default)]
@@ -86,7 +86,7 @@ pub enum ClipFlagsEnum {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = i32)]
 pub enum EFogMode {
@@ -98,7 +98,7 @@ pub enum EFogMode {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = i32)]
 pub enum EMainLight {
@@ -119,7 +119,7 @@ pub enum EMainLight {
     clippy::enum_variant_names,
     clippy::enum_clike_unportable_variant
 )]
-#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum PixelShaderID {
@@ -255,7 +255,7 @@ pub enum PixelShaderID {
     PSSuperAToC,
     NPixelShaderID,
     //PSNone = 129,
-    PSUninitialized = 4294967295,
+    PSUninitialized = 4_294_967_295,
 }
 
 #[derive(PartialEq, BinRead, Derivative, Clone)]
@@ -268,7 +268,7 @@ pub struct VertexShaderID {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
 #[derivative(Debug, Default)]
 #[br(import { value: i32 })]
 pub enum VertexShaderIDEnum {
@@ -350,7 +350,7 @@ pub enum VertexShaderIDEnum {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum UVSource {
@@ -368,7 +368,7 @@ pub enum UVSource {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum TextureFilterType {

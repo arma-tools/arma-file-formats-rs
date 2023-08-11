@@ -21,7 +21,7 @@ use rsa::{
     BigUint, RsaPrivateKey,
 };
 
-pub(crate) const KEY_LENGTH: u32 = 1024;
+pub const KEY_LENGTH: u32 = 1024;
 const EXPONENT: u32 = 65537;
 
 const EXTENSION: &str = "biprivatekey";
@@ -41,8 +41,8 @@ pub struct PrivateKey {
     #[br(assert(unk3 == 9216))]
     #[bw(assert(unk3 == &9216))]
     unk3: u32,
-    #[br(assert(unk4 == 843141970))]
-    #[bw(assert(unk4 == &843141970))]
+    #[br(assert(unk4 == 843_141_970))]
+    #[bw(assert(unk4 == &843_141_970))]
     unk4: u32,
 
     n_length: u32,
@@ -85,13 +85,13 @@ pub struct PrivateKey {
 }
 
 impl PrivateKey {
-    fn new() -> PrivateKey {
+    fn new() -> Self {
         Self {
             authority: String::default().into(),
             unk1: 596,
             unk2: 519,
             unk3: 9216,
-            unk4: 843141970,
+            unk4: 843_141_970,
             n_length: 0,
             exponent: 0,
             n: BigUint::default(),
@@ -110,11 +110,11 @@ impl PrivateKey {
         Self::from_stream(&mut buf_reader)
     }
 
-    pub fn from_stream<R>(reader: &mut R) -> Result<PrivateKey, RvffError>
+    pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
     where
         R: Read + Seek,
     {
-        let prv_key = PrivateKey::read_options(reader, Endian::Little, ())?;
+        let prv_key = Self::read_options(reader, Endian::Little, ())?;
         Ok(prv_key)
     }
 
@@ -132,13 +132,13 @@ impl PrivateKey {
 
         self.n_length = (self.n.to_bytes_le().len() * 8) as u32;
 
-        PrivateKey::write(self, &mut cursor)?;
+        Self::write(self, &mut cursor)?;
 
         Ok(buf)
     }
 
     pub fn generate<S: Into<String>>(authority: S) -> Self {
-        let mut priv_key = PrivateKey::new();
+        let mut priv_key = Self::new();
 
         let mut rng = rand::thread_rng();
         let rsa_priv_key =
@@ -148,18 +148,17 @@ impl PrivateKey {
         priv_key.authority = Into::<String>::into(authority).into();
         priv_key.n_length = KEY_LENGTH;
         priv_key.exponent = EXPONENT;
-        priv_key.n = rsa_priv_key.n().to_owned();
+        priv_key.n = rsa_priv_key.n().clone();
         priv_key.p = rsa_priv_key.primes()[0].clone();
         priv_key.q = rsa_priv_key.primes()[1].clone();
-        priv_key.dmp1 = rsa_priv_key.dp().unwrap_or(&BigUint::default()).to_owned();
-        priv_key.dmq1 = rsa_priv_key.dq().unwrap_or(&BigUint::default()).to_owned();
+        priv_key.dmp1 = rsa_priv_key.dp().unwrap_or(&BigUint::default()).clone();
+        priv_key.dmq1 = rsa_priv_key.dq().unwrap_or(&BigUint::default()).clone();
         priv_key.iqmp = rsa_priv_key
             .qinv()
-            .unwrap() //_or(&BigInt::default())
-            .to_owned()
+            .unwrap().clone()
             .to_biguint()
             .unwrap();
-        priv_key.d = rsa_priv_key.d().to_owned();
+        priv_key.d = rsa_priv_key.d().clone();
 
         priv_key
     }

@@ -91,7 +91,7 @@ pub struct AnimationClass {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone, Copy)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum AnimType {
@@ -109,7 +109,7 @@ pub enum AnimType {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Clone, Copy)]
+#[derive(BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
 #[derivative(Debug, Default)]
 #[br(repr = u32)]
 pub enum AnimAddress {
@@ -129,7 +129,7 @@ pub struct Bones2Anims {
     pub bone_2_anim_class_list: Vec<Bone2AnimClassList>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct Bone2AnimClassList {
     anim_class_count: u32,
@@ -187,7 +187,7 @@ impl BinRead for Anims2Bones {
             }
         }
 
-        Ok(Anims2Bones {
+        Ok(Self {
             animation_class_indices,
         })
     }

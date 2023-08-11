@@ -153,11 +153,7 @@ impl PrivateKey {
         priv_key.q = rsa_priv_key.primes()[1].clone();
         priv_key.dmp1 = rsa_priv_key.dp().unwrap_or(&BigUint::default()).clone();
         priv_key.dmq1 = rsa_priv_key.dq().unwrap_or(&BigUint::default()).clone();
-        priv_key.iqmp = rsa_priv_key
-            .qinv()
-            .unwrap().clone()
-            .to_biguint()
-            .unwrap();
+        priv_key.iqmp = rsa_priv_key.qinv().unwrap().clone().to_biguint().unwrap();
         priv_key.d = rsa_priv_key.d().clone();
 
         priv_key

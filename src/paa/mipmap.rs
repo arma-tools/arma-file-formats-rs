@@ -22,7 +22,8 @@ pub struct Mipmap {
 }
 
 impl Mipmap {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             width: 0,
             height: 0,

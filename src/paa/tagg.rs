@@ -11,7 +11,8 @@ pub struct Tagg {
 impl Tagg {
     const TAGG_SIG_SIZE: usize = 8;
 
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             signature: String::new(),
             data: Vec::new(),

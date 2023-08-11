@@ -108,7 +108,8 @@ impl Cfg {
         })
     }
 
-    #[must_use] pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
+    #[must_use]
+    pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
         for entry in &self.entries {
             if let Some(entry_found) = entry.get_entry(path) {
                 return Some(entry_found);

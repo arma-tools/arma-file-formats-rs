@@ -18,7 +18,8 @@ pub struct Entry {
 }
 
 impl Entry {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             filename: String::new(),
             mime_type: String::new(),

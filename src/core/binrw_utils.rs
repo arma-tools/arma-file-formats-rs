@@ -110,12 +110,18 @@ fn decompress_data(
     let pre_pos = reader.stream_position()?;
     //dbg!(pre_pos);
     let data = if odol_args.use_lzo {
-        let mut flag = expected_size >= 1024;
-        if odol_args.use_compression_flag {
-            flag = u8::read_options(reader, endian, ())? != 0;
-        }
+        let flag = if odol_args.use_compression_flag {
+            u8::read_options(reader, endian, ())? != 0
+        } else {
+            expected_size >= 1024
+        };
 
-        if !flag {
+        if flag {
+            decompress(reader, Some(count * elemen_size)).map_err(|e| binrw::Error::Custom {
+                err: Box::new(e),
+                pos: pre_pos,
+            })?
+        } else {
             let mut data = vec![0; expected_size];
             reader
                 .read_exact(&mut data)
@@ -124,11 +130,6 @@ fn decompress_data(
                     pos: pre_pos,
                 })?;
             data
-        } else {
-            decompress(reader, Some(count * elemen_size)).map_err(|e| binrw::Error::Custom {
-                err: Box::new(e),
-                pos: pre_pos,
-            })?
         }
     } else if expected_size < 1024 {
         let mut data = vec![0; expected_size];

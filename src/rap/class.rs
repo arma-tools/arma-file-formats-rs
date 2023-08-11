@@ -34,10 +34,10 @@ impl CfgClass {
 
         Ok(Self {
             name,
-            parent: if !parent.is_empty() {
-                Some(parent)
-            } else {
+            parent: if parent.is_empty() {
                 None
+            } else {
+                Some(parent)
             },
             entries,
         })

@@ -45,6 +45,7 @@ impl Paa {
         }
     }
 
+    #[must_use]
     pub fn from_image(width: u16, height: u16, data: Vec<u8>) -> Self {
         let mut paa = Self::new();
 
@@ -230,16 +231,11 @@ impl Paa {
             );
         }
 
-        let magic_number = match paa_type {
-            Some(pt) => pt,
-            None => {
-                if avg_a == 0xFF {
-                    PaaType::DXT1
-                } else {
-                    PaaType::DXT5
-                }
-            }
-        };
+        let magic_number = paa_type.unwrap_or(if avg_a == 0xFF {
+            PaaType::DXT1
+        } else {
+            PaaType::DXT5
+        });
 
         self.write_internal(writer, magic_number, &mut taggs, Vec::new())?;
 

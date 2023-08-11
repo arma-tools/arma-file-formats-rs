@@ -240,7 +240,7 @@ pub struct StageTransform {
     pub transformation: TransformMatrix,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs))]
 pub struct LodEdges {
@@ -271,7 +271,7 @@ impl BinRead for CompressedVertexIndexArray {
         } else {
             decompress_array::<u16>(reader, endian, 2, count, args)?
                 .into_iter()
-                .map(|n| u32::from(n))
+                .map(u32::from)
                 .collect()
         };
 
@@ -325,7 +325,7 @@ pub struct LodSection {
     pub unk_matrix: TransformMatrix,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs))]
 pub struct LodNameSelection {
@@ -404,7 +404,7 @@ pub struct UVSet {
     pub uv_data: Option<Vec<u8>>,
 }
 
-#[derive(BinRead, PartialEq, Derivative, Clone)]
+#[derive(BinRead, PartialEq, Eq, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct AnimationRTWeight {
     pub small_count: i32,
@@ -416,7 +416,7 @@ pub struct AnimationRTWeight {
         let small_count = small_count as usize;
         let mut res = Vec::with_capacity(small_count);
         for i in 0..small_count {
-            res.push(AnimationRTPair { selection_index: small_space[i * 2], weight: small_space[i * 2 + 1] })
+            res.push(AnimationRTPair { selection_index: small_space[i * 2], weight: small_space[i * 2 + 1] });
         }
         res
     })]
@@ -430,7 +430,7 @@ pub struct AnimationRTPair {
     pub weight: u8,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct VertexNeighbour {
     pub pos_a: u16,

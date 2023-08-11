@@ -23,7 +23,7 @@ pub struct Mipmap {
 
 impl Mipmap {
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             width: 0,
             height: 0,
@@ -133,15 +133,15 @@ impl Mipmap {
                     let high = decompressed_data[i + 1];
                     let low = decompressed_data[i];
 
-                    let lhbyte = high & 0x0F;
-                    let hhbyte = (high & 0xF0) >> 4;
-                    let llbyte = low & 0x0F;
-                    let hlbyte = (low & 0xF0) >> 4;
+                    let low_high = high & 0x0F;
+                    let high_high = (high & 0xF0) >> 4;
+                    let low_low = low & 0x0F;
+                    let high_low = (low & 0xF0) >> 4;
 
-                    let b = ((u32::from(lhbyte) * 255) / 15) as u8;
-                    let a = ((u32::from(hhbyte) * 255) / 15) as u8;
-                    let r = ((u32::from(llbyte) * 255) / 15) as u8;
-                    let g = ((u32::from(hlbyte) * 255) / 15) as u8;
+                    let b = ((u32::from(low_high) * 255) / 15) as u8;
+                    let a = ((u32::from(high_high) * 255) / 15) as u8;
+                    let r = ((u32::from(low_low) * 255) / 15) as u8;
+                    let g = ((u32::from(high_low) * 255) / 15) as u8;
 
                     rgba_buf.push(r);
                     rgba_buf.push(g);

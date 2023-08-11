@@ -22,11 +22,10 @@ impl CfgValue {
         };
 
         Ok(match typ_id {
-            0 => Self::String(reader.read_string_zt()?),
+            0 | 4 => Self::String(reader.read_string_zt()?),
             1 => Self::Float(reader.read_f32()?),
             2 => Self::Long(reader.read_i32()?),
             3 => Self::read_array(reader)?,
-            4 => Self::String(reader.read_string_zt()?),
             _ => panic!("Unknown typ id: {typ_id}"),
         })
     }
@@ -46,7 +45,7 @@ impl CfgValue {
     }
 
     #[must_use]
-    pub fn as_float(&self) -> Option<f32> {
+    pub const fn as_float(&self) -> Option<f32> {
         if let Self::Float(val) = self {
             Some(*val)
         } else {
@@ -55,7 +54,7 @@ impl CfgValue {
     }
 
     #[must_use]
-    pub fn as_long(&self) -> Option<i32> {
+    pub const fn as_long(&self) -> Option<i32> {
         if let Self::Long(val) = self {
             Some(*val)
         } else {
@@ -72,6 +71,7 @@ impl CfgValue {
         }
     }
 
+    #[must_use]
     pub fn as_array(&self) -> Option<Vec<Self>> {
         if let Self::Array(val) = self {
             Some(val.clone())

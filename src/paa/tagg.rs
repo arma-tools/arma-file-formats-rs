@@ -12,7 +12,7 @@ impl Tagg {
     const TAGG_SIG_SIZE: usize = 8;
 
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             signature: String::new(),
             data: Vec::new(),

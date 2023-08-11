@@ -137,15 +137,13 @@ impl OPRW {
         // OPRW
         let mut magic_buf = vec![0_u8; 4];
         reader.read_exact(&mut magic_buf)?;
+        reader.rewind()?;
         if magic_buf != b"OPRW" {
-            reader.rewind()?;
             let data = decompress_lzss_unk_size(reader)?;
 
             let mut cursor = Cursor::new(data);
             let oprw = Self::read_oprw(&mut cursor)?;
             return Ok(oprw);
-        } else {
-            reader.rewind()?;
         }
         let oprw = Self::read_oprw(reader)?;
         Ok(oprw)

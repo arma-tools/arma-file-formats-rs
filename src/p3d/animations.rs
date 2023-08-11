@@ -120,7 +120,7 @@ pub enum AnimAddress {
     NAnimAddress = 3,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct Bones2Anims {
     bone_count: u32,

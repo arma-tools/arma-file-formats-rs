@@ -58,13 +58,13 @@ impl Pbo {
 
     #[must_use]
     pub fn get_prefix(&self) -> String {
-        if let Some(prefix) = self.properties.get("prefix") {
-            let mut prefix = prefix.to_string();
-            prefix.push('\\');
-            prefix.to_lowercase()
-        } else {
-            String::new()
-        }
+        self.properties
+            .get("prefix")
+            .map_or_else(String::new, |prefix| {
+                let mut prefix = prefix.to_string();
+                prefix.push('\\');
+                prefix.to_lowercase()
+            })
     }
 
     fn handle_prefix(&self, entry_path: &str) -> String {
@@ -225,9 +225,9 @@ impl Pbo {
             }
         }
         (
-            self.pad_hash(hash1, (length / 8) as usize),
-            self.pad_hash(&hash2.finalize(), (length / 8) as usize),
-            self.pad_hash(&hash3.finalize(), (length / 8) as usize),
+            Self::pad_hash(hash1, (length / 8) as usize),
+            Self::pad_hash(&hash2.finalize(), (length / 8) as usize),
+            Self::pad_hash(&hash3.finalize(), (length / 8) as usize),
         )
     }
 
@@ -255,10 +255,7 @@ impl Pbo {
     }
 
     pub fn verify(&self, public_key: &PublicKey, signature: &Signature) -> anyhow::Result<()> {
-        assert!(
-            !(public_key.authority != signature.authority),
-            "auth not same"
-        );
+        assert!(public_key.authority == signature.authority, "auth not same");
 
         // Pbo sorted?
         let (pbo_hash1, pbo_hash2, pbo_hash3) =
@@ -273,16 +270,16 @@ impl Pbo {
         dbg!(&sign_hash3);
         dbg!(&pbo_hash3);
 
-        assert!(!(sign_hash1 != pbo_hash1), "hash1 not same");
+        assert!(sign_hash1 == pbo_hash1, "hash1 not same");
 
-        assert!(!(sign_hash2 != pbo_hash2), "hash2 not same");
+        assert!(sign_hash2 == pbo_hash2, "hash2 not same");
 
-        assert!(!(sign_hash3 != pbo_hash3), "hash3 not same");
+        assert!(sign_hash3 == pbo_hash3, "hash3 not same");
 
         Ok(())
     }
 
-    pub(crate) fn pad_hash(&self, hash: &[u8], size: usize) -> BigUint {
+    pub(crate) fn pad_hash(hash: &[u8], size: usize) -> BigUint {
         let mut data: Vec<u8> = vec![0, 1];
         data.resize(size - 36, 255);
         data.extend(b"\x00\x30\x21\x30\x09\x06\x05\x2b");

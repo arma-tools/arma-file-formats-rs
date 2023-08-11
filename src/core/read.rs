@@ -86,14 +86,15 @@ where
         let buf = self.read_bytes(size)?;
         let str = String::from_utf8(buf);
 
-        if let Ok(str) = str {
-            Ok(str)
-        } else {
-            Err(io::Error::new(
-                ErrorKind::InvalidData,
-                "Invalid UTF8 String",
-            ))
-        }
+        str.map_or_else(
+            |_| {
+                Err(io::Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid UTF8 String",
+                ))
+            },
+            Ok,
+        )
     }
 
     fn read_string_lossy(&mut self, size: usize) -> io::Result<String> {
@@ -107,14 +108,15 @@ where
         self.read_until(b'\0', &mut buf)?;
         buf.pop();
         let str = String::from_utf8(buf);
-        if let Ok(str) = str {
-            Ok(str)
-        } else {
-            Err(io::Error::new(
-                ErrorKind::InvalidData,
-                "Invalid UTF-8 String",
-            ))
-        }
+        str.map_or_else(
+            |_| {
+                Err(io::Error::new(
+                    ErrorKind::InvalidData,
+                    "Invalid UTF-8 String",
+                ))
+            },
+            Ok,
+        )
     }
 
     fn peek_u8(&mut self) -> io::Result<u8> {

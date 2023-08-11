@@ -5,7 +5,6 @@ use std::io::Seek;
 use binrw::BinRead;
 use binrw::BinResult;
 use binrw::Endian;
-use derivative::Derivative;
 use lzokay_native::decompress;
 use rsa::BigUint;
 
@@ -276,8 +275,7 @@ pub fn read_st(
     }
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
 struct STPairCompress {
     s: i32,
     t: i32,

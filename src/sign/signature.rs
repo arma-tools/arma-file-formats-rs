@@ -10,7 +10,6 @@ use crate::core::write::WriteExtTrait;
 use crate::errors::RvffError;
 use binrw::{binrw, BinRead, Endian};
 use binrw::{BinWrite, NullString};
-use derivative::Derivative;
 use rsa::BigUint;
 
 const EXTENSION: &str = "bisign";
@@ -69,8 +68,7 @@ pub struct Signature {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, BinWrite, Derivative, Eq, PartialEq, Clone, Copy)]
-#[derivative(Debug)]
+#[derive(Debug, BinRead, BinWrite, Eq, PartialEq, Clone, Copy)]
 #[brw(repr = u32)]
 pub enum SignVersion {
     V2 = 2,

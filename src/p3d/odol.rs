@@ -17,8 +17,7 @@ use super::animations::Animations;
 use super::face_data::FaceData;
 use super::lod::Lod;
 
-#[derive(Derivative)]
-#[derivative(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct ODOLArgs {
     pub version: u32,
     pub use_lzo: bool,
@@ -26,14 +25,12 @@ pub struct ODOLArgs {
     pub skip_lods: bool,
 }
 
-#[derive(Derivative)]
-#[derivative(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct ODOLOptions {
     pub skip_lods: bool,
 }
 
-#[derive(BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(BinRead, Debug, Default, Clone)]
 #[br(magic = b"ODOL")]
 #[br(import(options: ODOLOptions))]
 pub struct ODOL {
@@ -121,8 +118,7 @@ pub fn read_lods(
     Ok(lods)
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 pub struct Resolution {
     pub value: f32,
 
@@ -131,8 +127,8 @@ pub struct Resolution {
 }
 
 #[allow(illegal_floating_point_literal_pattern)]
-#[derive(BinRead, Derivative, PartialEq, Eq, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, BinRead, Derivative, PartialEq, Eq, Clone)]
+#[derivative(Default)]
 #[br(import { value: f32 })]
 pub enum ResolutionEnum {
     #[br(pre_assert(value < 1E3f32))]

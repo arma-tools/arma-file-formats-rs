@@ -6,8 +6,7 @@ use crate::core::types::XYZTriplet;
 
 use super::ODOLArgs;
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct Animations {
     pub animation_class_count: u32,
@@ -26,8 +25,7 @@ pub struct Animations {
     pub anims_2_bones: Vec<Anims2Bones>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 #[br(import(version: u32))]
 pub struct AnimationClass {
     pub anim_transform_type: AnimType,
@@ -91,8 +89,8 @@ pub struct AnimationClass {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
+#[derivative(Default)]
 #[br(repr = u32)]
 pub enum AnimType {
     #[derivative(Default)]
@@ -109,8 +107,8 @@ pub enum AnimType {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
+#[derivative(Default)]
 #[br(repr = u32)]
 pub enum AnimAddress {
     #[derivative(Default)]
@@ -120,8 +118,7 @@ pub enum AnimAddress {
     NAnimAddress = 3,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 pub struct Bones2Anims {
     bone_count: u32,
 
@@ -129,8 +126,7 @@ pub struct Bones2Anims {
     pub bone_2_anim_class_list: Vec<Bone2AnimClassList>,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 pub struct Bone2AnimClassList {
     anim_class_count: u32,
 
@@ -138,14 +134,12 @@ pub struct Bone2AnimClassList {
     pub animation_class_index: Vec<u32>,
 }
 
-#[derive(PartialEq, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct Anims2Bones {
     pub animation_class_indices: Vec<AnimBones>,
 }
 
-#[derive(PartialEq, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct AnimBones {
     pub skeleton_bone_name_index: i32,
 

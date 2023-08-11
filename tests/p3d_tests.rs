@@ -50,7 +50,7 @@ fn aa_p3d() {
 
 #[test]
 fn lzss_debug() {
-    let odol = ODOL::from_path(format!("{}test_all\\fbbear.p3d", INPUT_PATH_PREFIX)).unwrap();
+    let odol = ODOL::from_path(format!("{}test_all/fbbear.p3d", INPUT_PATH_PREFIX)).unwrap();
     for lod in odol.lods {
         dbg!(lod.named_selection.clone());
     }
@@ -59,7 +59,7 @@ fn lzss_debug() {
 #[test]
 fn single_debug() {
     let odol = ODOL::from_path(format!(
-        "{}test_all\\sfp_wamako_hut01.p3d",
+        "{}test_all/sfp_wamako_hut01.p3d",
         INPUT_PATH_PREFIX
     ))
     .unwrap();

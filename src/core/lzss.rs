@@ -41,20 +41,7 @@ where
             let val = reader.read_u8().unwrap();
             num5 = i32::from(val) | 65280;
         }
-        if (num5 & 1) != 0 {
-            let val = reader.read_u8().unwrap();
-            if use_signed_checksum {
-                calculated_hash += i32::from(val as i8);
-            } else {
-                calculated_hash = calculated_hash.overflowing_add(i32::from(val)).0;
-            }
-            dst[num2 as usize] = val;
-            num2 += 1;
-            remaining_size -= 1;
-            array[num4 as usize] = val;
-            num4 += 1;
-            num4 &= 4095;
-        } else {
+        if (num5 & 1) == 0 {
             let mut i = i32::from(reader.read_u8().unwrap());
             let mut val = i32::from(reader.read_u8().unwrap());
             i |= (val & 240) << 4;
@@ -80,6 +67,19 @@ where
                 num4 &= 4095;
                 j += 1;
             }
+        } else {
+            let val = reader.read_u8().unwrap();
+            if use_signed_checksum {
+                calculated_hash += i32::from(val as i8);
+            } else {
+                calculated_hash = calculated_hash.overflowing_add(i32::from(val)).0;
+            }
+            dst[num2 as usize] = val;
+            num2 += 1;
+            remaining_size -= 1;
+            array[num4 as usize] = val;
+            num4 += 1;
+            num4 &= 4095;
         }
     }
 
@@ -120,17 +120,7 @@ where
         if (flags & 256) == 0 {
             flags = i32::from(reader.read_u8()?) | 0xff00;
         }
-        if (flags & 1) != 0 {
-            let data = reader.read_u8()?;
-            check_sum = check_sum.overflowing_add(i32::from(data)).0;
-
-            out.push(data);
-            size += 1;
-
-            text_buffer[text_buffer_index as usize] = data;
-            text_buffer_index += 1;
-            text_buffer_index &= sliding_winding_size - 1;
-        } else {
+        if (flags & 1) == 0 {
             let mut pos: i32 = i32::from(reader.read_u8()?);
             let mut len: i32 = i32::from(reader.read_u8()?);
 
@@ -153,6 +143,16 @@ where
 
                 buffer_pos += 1;
             }
+        } else {
+            let data = reader.read_u8()?;
+            check_sum = check_sum.overflowing_add(i32::from(data)).0;
+
+            out.push(data);
+            size += 1;
+
+            text_buffer[text_buffer_index as usize] = data;
+            text_buffer_index += 1;
+            text_buffer_index &= sliding_winding_size - 1;
         }
     }
 

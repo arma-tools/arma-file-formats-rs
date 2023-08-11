@@ -25,10 +25,8 @@ enum Token {
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Num(n) => write!(f, "{n}"),
-            Self::Str(s) => write!(f, "{s}"),
+            Self::Str(s) | Self::Ident(s) | Self::Num(s) => write!(f, "{s}"),
             Self::Ctrl(c) => write!(f, "{c}"),
-            Self::Ident(s) => write!(f, "{s}"),
             Self::Class => write!(f, "class"),
             Self::Delete => write!(f, "delete"),
             Self::StringConcat => write!(f, " \\n "),
@@ -71,7 +69,7 @@ fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         .map(Token::Str);
 
     // strings concated by " \n "
-    let strs = str_
+    let concat_stings = str_
         .separated_by(string_concat)
         .at_least(1)
         .map(|tokens| {
@@ -105,7 +103,7 @@ fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
 
     let token = ident
         .or(ctrl)
-        .or(strs)
+        .or(concat_stings)
         .or(num)
         .recover_with(skip_then_retry_until([]));
 
@@ -174,10 +172,10 @@ fn entry_parser() -> impl Parser<Token, Vec<Spanned<EntryExpr>>, Error = Simple<
     let val = select! {
         Token::Num(n) => {
             let num = n.parse::<f32>().unwrap();
-            if num.fract() != 0.0 {
-                ValueExpr::Float(num)
-            } else{
+            if num.fract() == 0.0 {
                 ValueExpr::Long(num as i32)
+            } else{
+                ValueExpr::Float(num)
 
             }
         },
@@ -279,6 +277,7 @@ pub fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
     let parse_errs = if let Some(tokens) = tokens {
         //dbg!(&tokens);
         let len = src.chars().count();
+        #[allow(clippy::range_plus_one)]
         let (ast, parse_errs) =
             entry_parser().parse_recovery(Stream::from_iter(len..len + 1, tokens.into_iter()));
 
@@ -332,11 +331,8 @@ pub fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
                             "Unexpected end of input"
                         },
                         if std::iter::ExactSizeIterator::len(&e.expected()) == 0 {
-                            if let Some(lbl) = e.label() {
-                                lbl.to_string()
-                            } else {
-                                "something else".to_string()
-                            }
+                            e.label()
+                                .map_or_else(|| "something else".to_string(), ToString::to_string)
                         } else {
                             e.expected()
                                 .map(|expected| match expected {

@@ -63,16 +63,16 @@ impl Cfg {
         reader.rewind()?;
         if is_valid_bin {
             return Self::read_config(reader);
-        } else {
-            reader.read_u8()?;
-            if matches!(reader.read_u32(), Ok(v) if v == RAP_MAGIC) {
-                if let Ok(data) = decompress_lzss_unk_size(reader) {
-                    let mut reader = Cursor::new(data);
-                    let is_valid_bin = Self::is_valid_rap_bin(&mut reader);
-                    reader.rewind()?;
-                    if is_valid_bin {
-                        return Self::read_config(&mut reader);
-                    }
+        }
+
+        reader.read_u8()?;
+        if matches!(reader.read_u32(), Ok(v) if v == RAP_MAGIC) {
+            if let Ok(data) = decompress_lzss_unk_size(reader) {
+                let mut reader = Cursor::new(data);
+                let is_valid_bin = Self::is_valid_rap_bin(&mut reader);
+                reader.rewind()?;
+                if is_valid_bin {
+                    return Self::read_config(&mut reader);
                 }
             }
         }

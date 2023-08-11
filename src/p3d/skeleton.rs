@@ -2,7 +2,7 @@ use binrw::BinRead;
 use binrw::NullString;
 use derivative::Derivative;
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(version: u32))]
 pub struct Skeleton {

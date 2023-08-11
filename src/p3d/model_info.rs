@@ -8,6 +8,7 @@ use super::ODOLArgs;
 use crate::core::binrw_utils::read_compressed_array;
 use derivative::Derivative;
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 #[br(import(args: ODOLArgs, lod_count: u32))]

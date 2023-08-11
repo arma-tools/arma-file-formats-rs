@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use binrw::BinRead;
 use derivative::Derivative;
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct ClipFlags {
     pub value: i32,
@@ -258,7 +258,7 @@ pub enum PixelShaderID {
     PSUninitialized = 4_294_967_295,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct VertexShaderID {
     pub value: i32,

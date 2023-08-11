@@ -4,7 +4,7 @@ use binrw::{BinRead, BinResult, Endian};
 
 use derivative::Derivative;
 
-#[derive(Debug, Default, PartialEq, BinRead)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 #[br(import(element_size: u32))]
 pub struct QuadTree {
     #[br(map = |x: u8| x != 0)]
@@ -14,7 +14,7 @@ pub struct QuadTree {
     root: QuadTreeData,
 }
 
-#[derive(Debug, BinRead, Derivative, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(import(flag: bool, element_size: u32))]
 pub enum QuadTreeData {
@@ -25,7 +25,7 @@ pub enum QuadTreeData {
     Leaf(#[br(args(element_size))] QuadTreeLeaf),
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct QuadTreeNode {
     sub_trees: Vec<QuadTreeData>,
 }
@@ -58,7 +58,7 @@ impl BinRead for QuadTreeNode {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct QuadTreeLeaf {
     element_size: u32,
     data: Vec<u8>,

@@ -11,7 +11,7 @@ use squish::{Format, Params};
 use crate::core::types::PaaType;
 use crate::errors::PaaError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Mipmap {
     pub width: u16,
     pub height: u16,
@@ -23,14 +23,9 @@ pub struct Mipmap {
 
 impl Mipmap {
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            width: 0,
-            height: 0,
-            data_size: 0,
-            data: Vec::new(),
-            is_lzo_compressed: false,
-            data_pos: None,
+            ..Default::default()
         }
     }
 
@@ -267,11 +262,5 @@ impl Mipmap {
             self.is_lzo_compressed = false;
             Ok(None)
         }
-    }
-}
-
-impl Default for Mipmap {
-    fn default() -> Self {
-        Self::new()
     }
 }

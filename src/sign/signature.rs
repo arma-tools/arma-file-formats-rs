@@ -14,7 +14,7 @@ use rsa::BigUint;
 
 const EXTENSION: &str = "bisign";
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[binrw]
 #[brw(little)]
 pub struct Signature {
@@ -68,7 +68,7 @@ pub struct Signature {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(Debug, BinRead, BinWrite, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, BinWrite)]
 #[brw(repr = u32)]
 pub enum SignVersion {
     V2 = 2,

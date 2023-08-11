@@ -4,7 +4,7 @@ use crate::{core::read::ReadExtTrait, errors::RvffError};
 
 use super::{class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty, EntryReturn};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum CfgEntry {
     Property(CfgProperty),
     Class(CfgClass),

@@ -3,7 +3,7 @@ use std::io::{BufRead, Seek};
 use super::{pretty_print::PrettyPrint, value::CfgValue};
 use crate::{core::read::ReadExtTrait, errors::RvffError};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CfgProperty {
     pub name: String,
     pub value: CfgValue,

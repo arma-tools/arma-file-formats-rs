@@ -13,7 +13,7 @@ pub use self::pretty_print::PrettyPrint;
 pub use self::{class::CfgClass, property::CfgProperty};
 pub use self::{entry::CfgEntry, value::CfgValue};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum EntryReturn {
     Entry(CfgEntry),
     Value(CfgValue),
@@ -95,7 +95,7 @@ impl EntryReturn {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
 pub enum EntryError {
     #[error("Entry not found")]
     NotFound,

@@ -26,7 +26,7 @@ const EXPONENT: u32 = 65537;
 
 const EXTENSION: &str = "biprivatekey";
 
-#[derive(Eq, PartialEq, Clone, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[binrw]
 #[brw(little)]
 pub struct PrivateKey {

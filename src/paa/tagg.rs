@@ -2,7 +2,7 @@ use std::io::{self, BufRead, Seek, Write};
 
 use crate::core::{read::ReadExtTrait, write::WriteExtTrait};
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Tagg {
     pub signature: String,
     pub data: Vec<u8>,
@@ -12,10 +12,9 @@ impl Tagg {
     const TAGG_SIG_SIZE: usize = 8;
 
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            signature: String::new(),
-            data: Vec::new(),
+            ..Default::default()
         }
     }
 
@@ -39,11 +38,5 @@ impl Tagg {
         stream.write_bytes(&self.data)?;
 
         Ok(())
-    }
-}
-
-impl Default for Tagg {
-    fn default() -> Self {
-        Self::new()
     }
 }

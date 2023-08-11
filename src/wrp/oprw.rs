@@ -21,7 +21,7 @@ use derivative::Derivative;
 
 const OPRW_SIZE_OF_WPROBJECT: u32 = 60;
 
-#[derive(Debug, Default, BinRead)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(magic = b"OPRW")]
 pub struct OPRW {
     #[br(assert(version >= 10, "OPRW Version {} Unsupported", version))]
@@ -155,7 +155,7 @@ impl OPRW {
     }
 }
 
-#[derive(Debug, Default, PartialEq, BinRead)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 pub struct ClassedModel {
     pub class_name: NullString,
     pub model_path: NullString,
@@ -163,13 +163,13 @@ pub struct ClassedModel {
     pub obj_id: u32,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct Texture {
     pub texture_filename: NullString,
     flag: NullString,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(version: u32))]
 pub struct RoadNet {
     road_part_count: u32,
@@ -179,7 +179,7 @@ pub struct RoadNet {
     pub road_parts: Vec<RoadPart>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(version: u32))]
 pub struct RoadPart {
     road_pos_count: u16,
@@ -200,7 +200,7 @@ pub struct RoadPart {
     pub transform_matrix: Option<TransformMatrix>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead)]
+#[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]
 #[br(import(version: u32))]
 pub struct Object {
     pub object_id: u32,
@@ -211,7 +211,7 @@ pub struct Object {
     pub shape_params: Option<u32>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 pub struct MapInfo {
     pub id: u32,
     #[br(args(id))]
@@ -223,7 +223,7 @@ const MAP_TYPE_2_IDS: [u32; 3] = [24, 31, 32];
 const MAP_TYPE_3_IDS: [u32; 5] = [25, 33, 41, 42, 43]; // 41, 42, 43 (stratis)
 const MAP_TYPE_4_IDS: [u32; 14] = [3, 4, 8, 9, 18, 19, 20, 21, 28, 29, 36, 37, 38, 39]; // 36 (malden), 37,38 (altis), 39 (stratis) no doc
 
-#[derive(Debug, PartialEq, BinRead, Derivative)]
+#[derive(Debug, PartialEq, Clone, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(import(id: u32))]
 pub enum MapData {

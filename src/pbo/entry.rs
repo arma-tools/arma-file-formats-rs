@@ -3,7 +3,7 @@ use std::io::{BufRead, Seek, SeekFrom, Write};
 use crate::core::read::ReadExtTrait;
 use crate::core::write::WriteExtTrait;
 use crate::errors::RvffError;
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Entry {
     pub filename: String,
     pub mime_type: String,
@@ -19,16 +19,9 @@ pub struct Entry {
 
 impl Entry {
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            filename: String::new(),
-            mime_type: String::new(),
-            original_size: 0,
-            offset: 0,
-            timestamp: 0,
-            data_size: 0,
-            data: Vec::new(),
-            data_offset: 0,
+            ..Default::default()
         }
     }
 
@@ -66,11 +59,5 @@ impl Entry {
         writer.write_u32(self.data_size)?;
 
         Ok(())
-    }
-}
-
-impl Default for Entry {
-    fn default() -> Self {
-        Self::new()
     }
 }

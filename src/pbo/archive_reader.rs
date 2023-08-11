@@ -4,6 +4,7 @@ use crate::errors::RvffError;
 
 use super::{Entry, Pbo};
 
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct PboReader<R>
 where
     R: BufRead + Seek,

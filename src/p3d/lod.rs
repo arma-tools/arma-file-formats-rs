@@ -9,7 +9,7 @@ use binrw::{BinRead, BinResult, NullString};
 
 use super::ODOLArgs;
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct Lod {
     pub proxy_count: i32,
@@ -134,7 +134,7 @@ pub struct Lod {
     unk_end_2: Option<u8>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct Proxy {
     pub proxy_model: NullString,
@@ -147,7 +147,7 @@ pub struct Proxy {
     pub section_index: i32,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct BoneLink {
     link_count: u32,
 
@@ -155,7 +155,7 @@ pub struct BoneLink {
     pub values: Vec<u32>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 pub struct LodMaterial {
     pub material_name: NullString,
 
@@ -211,7 +211,7 @@ pub struct LodMaterial {
     pub dummy_stage_textures: Option<StageTexture>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 #[br(import(mat_version: u32))]
 pub struct StageTexture {
     #[br(if(mat_version >= 5))]
@@ -227,13 +227,13 @@ pub struct StageTexture {
     pub use_world_env: Option<bool>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]
 pub struct StageTransform {
     pub uv_source: u32,
     pub transformation: TransformMatrix,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct LodEdges {
     #[br(args_raw(args))]
@@ -270,7 +270,7 @@ impl BinRead for CompressedVertexIndexArray {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct LodFace {
     pub face_type: u8,
@@ -280,7 +280,7 @@ pub struct LodFace {
     pub vertex_indices: Vec<u32>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct LodSection {
     #[br(calc = args.version < 69)]
@@ -314,7 +314,7 @@ pub struct LodSection {
     pub unk_matrix: TransformMatrix,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct LodNameSelection {
     pub name: NullString,
@@ -339,13 +339,13 @@ pub struct LodNameSelection {
     pub selected_vertices_weights: Vec<u8>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct LodNamedProperty {
     pub property: NullString,
     pub value: NullString,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 pub struct LodFrame {
     pub frame_time: f32,
     pub bone_count: u32,
@@ -354,7 +354,7 @@ pub struct LodFrame {
     pub bone_positions: Vec<XYZTriplet>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct UVSet {
     #[br(calc = args.version >= 45)]
@@ -389,7 +389,7 @@ pub struct UVSet {
     pub uv_data: Option<Vec<u8>>,
 }
 
-#[derive(Debug, Default, BinRead, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct AnimationRTWeight {
     pub small_count: i32,
 
@@ -407,13 +407,13 @@ pub struct AnimationRTWeight {
     pub animation_rt_pairs: Vec<AnimationRTPair>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, BinRead)]
 pub struct AnimationRTPair {
     pub selection_index: u8,
     pub weight: u8,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct VertexNeighbour {
     pub pos_a: u16,
     unk_pos: u16,

@@ -16,7 +16,7 @@ use crate::{
 
 use super::{Mipmap, Tagg};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Paa {
     pub magic_number: PaaType,
     pub mipmaps: Vec<Mipmap>,

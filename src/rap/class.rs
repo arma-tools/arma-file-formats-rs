@@ -4,7 +4,7 @@ use crate::{core::read::ReadExtTrait, errors::RvffError};
 
 use super::{entry::CfgEntry, pretty_print::PrettyPrint, EntryReturn};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct CfgClass {
     pub name: String,
     pub parent: Option<String>,

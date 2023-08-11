@@ -17,7 +17,7 @@ use super::animations::Animations;
 use super::face_data::FaceData;
 use super::lod::Lod;
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ODOLArgs {
     pub version: u32,
     pub use_lzo: bool,
@@ -25,12 +25,12 @@ pub struct ODOLArgs {
     pub skip_lods: bool,
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ODOLOptions {
     pub skip_lods: bool,
 }
 
-#[derive(BinRead, Debug, Default, Clone)]
+#[derive(Debug, Default, PartialEq,  Clone, BinRead)]
 #[br(magic = b"ODOL")]
 #[br(import(options: ODOLOptions))]
 pub struct ODOL {
@@ -118,7 +118,7 @@ pub fn read_lods(
     Ok(lods)
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]
 pub struct Resolution {
     pub value: f32,
 
@@ -127,7 +127,7 @@ pub struct Resolution {
 }
 
 #[allow(illegal_floating_point_literal_pattern)]
-#[derive(Debug, BinRead, Derivative, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(import { value: f32 })]
 pub enum ResolutionEnum {
@@ -273,6 +273,7 @@ impl ODOL {
     }
 }
 
+#[derive(Debug, Default, Clone)]
 pub struct OdolLazyReader<R>
 where
     R: Read + Seek,

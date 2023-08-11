@@ -2,7 +2,7 @@ use binrw::BinRead;
 
 use super::ODOLArgs;
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct FaceData {
     pub header_face_count: u32,

@@ -2,7 +2,7 @@ use std::io::{BufRead, Seek};
 
 use crate::{core::read::ReadExtTrait, errors::RvffError};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum CfgValue {
     Float(f32),
     Long(i32),

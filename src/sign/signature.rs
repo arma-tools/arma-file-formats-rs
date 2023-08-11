@@ -78,7 +78,8 @@ pub enum SignVersion {
 }
 
 impl Signature {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             authority: String::default().into(),
             unk1: 148,

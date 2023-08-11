@@ -32,7 +32,8 @@ pub struct Pbo {
 }
 
 impl Pbo {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             properties: IndexMap::new(),
             entries: IndexMap::new(),
@@ -55,7 +56,8 @@ impl Pbo {
         Ok(pbo)
     }
 
-    #[must_use] pub fn get_prefix(&self) -> String {
+    #[must_use]
+    pub fn get_prefix(&self) -> String {
         if let Some(prefix) = self.properties.get("prefix") {
             let mut prefix = prefix.to_string();
             prefix.push('\\');
@@ -75,7 +77,8 @@ impl Pbo {
         }
     }
 
-    #[must_use] pub fn has_entry(&self, entry_path: &str) -> bool {
+    #[must_use]
+    pub fn has_entry(&self, entry_path: &str) -> bool {
         self.entries.contains_key(&self.handle_prefix(entry_path))
     }
 
@@ -228,7 +231,8 @@ impl Pbo {
         )
     }
 
-    #[must_use] pub fn sign(&self, version: SignVersion, priv_key: &PrivateKey) -> Signature {
+    #[must_use]
+    pub fn sign(&self, version: SignVersion, priv_key: &PrivateKey) -> Signature {
         let (hash1, hash2, hash3) = self.generate_hashes(version, KEY_LENGTH);
 
         let mut sig = Signature::new();
@@ -251,7 +255,10 @@ impl Pbo {
     }
 
     pub fn verify(&self, public_key: &PublicKey, signature: &Signature) -> anyhow::Result<()> {
-        assert!(!(public_key.authority != signature.authority), "auth not same");
+        assert!(
+            !(public_key.authority != signature.authority),
+            "auth not same"
+        );
 
         // Pbo sorted?
         let (pbo_hash1, pbo_hash2, pbo_hash3) =

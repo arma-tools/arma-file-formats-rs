@@ -42,10 +42,7 @@ pub fn read_compressed(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<u8>>
 }
 
 #[binrw::parser(reader, endian)]
-pub fn read_compressed_array<T, 'a>(
-    elemen_size: usize,
-    odol_args: ODOLArgs,
-) -> BinResult<Vec<T>>
+pub fn read_compressed_array<T, 'a>(elemen_size: usize, odol_args: ODOLArgs) -> BinResult<Vec<T>>
 where
     T: BinRead<Args<'a> = ()>,
 {

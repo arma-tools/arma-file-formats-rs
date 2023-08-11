@@ -25,15 +25,18 @@ pub struct Paa {
 }
 
 impl Paa {
-    #[must_use] pub fn max_mipmap_count(width: usize, height: usize) -> usize {
+    #[must_use]
+    pub fn max_mipmap_count(width: usize, height: usize) -> usize {
         (width.max(height) as f64).log2().floor() as usize
     }
 
-    #[must_use] pub fn dim_at_level(dim: usize, i: u32) -> usize {
+    #[must_use]
+    pub fn dim_at_level(dim: usize, i: u32) -> usize {
         (dim / 2_usize.pow(i)).max(1)
     }
 
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             magic_number: PaaType::UNKNOWN,
             mipmaps: Vec::new(),
@@ -55,7 +58,10 @@ impl Paa {
         paa
     }
 
-    pub fn from_reader<R>(reader: &mut R, indicies_to_load: Option<&[u32]>) -> Result<Self, PaaError>
+    pub fn from_reader<R>(
+        reader: &mut R,
+        indicies_to_load: Option<&[u32]>,
+    ) -> Result<Self, PaaError>
     where
         R: BufRead + Seek,
     {

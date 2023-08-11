@@ -27,7 +27,8 @@ impl CfgEntry {
             _ => panic!("Unknown typ id: {typ_id}"),
         })
     }
-    #[must_use] pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
+    #[must_use]
+    pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
         let cur = *path.first().unwrap();
         let last = path.len() == 1;
         match self {
@@ -58,7 +59,8 @@ impl CfgEntry {
         None
     }
 
-    #[must_use] pub fn as_property(&self) -> Option<CfgProperty> {
+    #[must_use]
+    pub fn as_property(&self) -> Option<CfgProperty> {
         if let Self::Property(val) = self {
             Some(val.clone())
         } else {
@@ -66,7 +68,8 @@ impl CfgEntry {
         }
     }
 
-    #[must_use] pub fn as_class(&self) -> Option<CfgClass> {
+    #[must_use]
+    pub fn as_class(&self) -> Option<CfgClass> {
         if let Self::Class(val) = self {
             Some(val.clone())
         } else {
@@ -74,7 +77,8 @@ impl CfgEntry {
         }
     }
 
-    #[must_use] pub fn as_extern(&self) -> Option<String> {
+    #[must_use]
+    pub fn as_extern(&self) -> Option<String> {
         if let Self::Extern(val) = self {
             Some(val.clone())
         } else {
@@ -82,7 +86,8 @@ impl CfgEntry {
         }
     }
 
-    #[must_use] pub fn as_delete(&self) -> Option<String> {
+    #[must_use]
+    pub fn as_delete(&self) -> Option<String> {
         if let Self::Delete(val) = self {
             Some(val.clone())
         } else {

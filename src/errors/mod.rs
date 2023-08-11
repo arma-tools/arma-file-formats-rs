@@ -2,7 +2,7 @@ use std::{io, string::FromUtf8Error};
 
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error)]
 pub enum PaaError {
     #[error("No mipmaps were set")]
     NoMipmapError,
@@ -26,7 +26,7 @@ pub enum PaaError {
     Unknown,
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
 pub enum RvffLzssError {
     #[error("LZSS Checksum Missmatch")]
     ChecksumMissmatch,
@@ -35,7 +35,7 @@ pub enum RvffLzssError {
     Overflow,
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
 pub enum RvffOdolError {
     #[error("Signature Missing")]
     SignatureMissing,
@@ -47,7 +47,7 @@ pub enum RvffOdolError {
     UnsupportedVersion(u32),
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error)]
 pub enum RvffError {
     #[error("IO failed {0}")]
     RvffIOError(#[from] io::Error),

@@ -6,7 +6,7 @@ use crate::core::types::XYZTriplet;
 
 use super::ODOLArgs;
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(args: ODOLArgs))]
 pub struct Animations {
     pub animation_class_count: u32,
@@ -25,7 +25,7 @@ pub struct Animations {
     pub anims_2_bones: Vec<Anims2Bones>,
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(version: u32))]
 pub struct AnimationClass {
     pub anim_transform_type: AnimType,
@@ -89,7 +89,7 @@ pub struct AnimationClass {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(Debug, BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u32)]
 pub enum AnimType {
@@ -107,7 +107,7 @@ pub enum AnimType {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(Debug, BinRead, Derivative, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u32)]
 pub enum AnimAddress {
@@ -118,7 +118,7 @@ pub enum AnimAddress {
     NAnimAddress = 3,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct Bones2Anims {
     bone_count: u32,
 
@@ -126,7 +126,7 @@ pub struct Bones2Anims {
     pub bone_2_anim_class_list: Vec<Bone2AnimClassList>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct Bone2AnimClassList {
     anim_class_count: u32,
 
@@ -139,7 +139,7 @@ pub struct Anims2Bones {
     pub animation_class_indices: Vec<AnimBones>,
 }
 
-#[derive(Debug, Default, PartialEq, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub struct AnimBones {
     pub skeleton_bone_name_index: i32,
 

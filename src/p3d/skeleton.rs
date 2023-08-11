@@ -1,7 +1,7 @@
 use binrw::BinRead;
 use binrw::NullString;
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 #[br(import(version: u32))]
 pub struct Skeleton {
     pub name: NullString,
@@ -19,7 +19,7 @@ pub struct Skeleton {
     pub pivots_name_obsolete: Option<NullString>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct Bone {
     pub bone_name: NullString,
     pub bone_parent: NullString,

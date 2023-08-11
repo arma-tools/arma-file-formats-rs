@@ -9,7 +9,7 @@ use crate::core::binrw_utils::read_compressed_array;
 use derivative::Derivative;
 
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Debug, Default, BinRead, Clone)]
+#[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(import(args: ODOLArgs, lod_count: u32))]
 pub struct ModelInfo {
     pub index: u32,
@@ -144,7 +144,7 @@ pub struct ModelInfo {
 }
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(Debug, BinRead, Derivative, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 pub enum SBSource {
     #[derivative(Default)]
@@ -163,7 +163,7 @@ pub enum SBSource {
 impl ModelInfo {}
 
 #[allow(non_camel_case_types, clippy::enum_variant_names)]
-#[derive(Debug, BinRead, Derivative, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u8)]
 pub enum MapType {

@@ -17,7 +17,7 @@ use super::PrivateKey;
 
 const EXTENSION: &str = "bikey";
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[binrw]
 #[brw(little)]
 pub struct PublicKey {

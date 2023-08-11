@@ -23,7 +23,7 @@ const V3_INCLUDE_LIST: [&str; 11] = [
     "sqf", "inc", "bikb", "ext", "fsm", "sqm", "hpp", "cfg", "sqs", "h", "sqfc",
 ];
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Pbo {
     pub properties: IndexMap<String, String>,
 
@@ -35,9 +35,7 @@ impl Pbo {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            properties: IndexMap::new(),
-            entries: IndexMap::new(),
-            hash: Vec::new(),
+            ..Default::default()
         }
     }
 
@@ -330,11 +328,5 @@ impl Pbo {
         }
 
         hash.finalize()
-    }
-}
-
-impl Default for Pbo {
-    fn default() -> Self {
-        Self::new()
     }
 }

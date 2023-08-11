@@ -275,7 +275,7 @@ pub fn read_st(
     }
 }
 
-#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, BinRead)]
 struct STPairCompress {
     s: i32,
     t: i32,

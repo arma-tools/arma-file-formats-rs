@@ -6,7 +6,7 @@ use crate::{
     errors::RvffError,
 };
 
-const RAP_MAGIC: u32 = 1348563456;
+const RAP_MAGIC: u32 = 1_348_563_456;
 #[derive(Debug)]
 pub struct Cfg {
     #[allow(dead_code)]
@@ -24,11 +24,11 @@ impl Cfg {
             && matches!(reader.read_u32(), Ok(v) if v == 8)
     }
 
-    pub fn read_config<I>(reader: &mut I) -> Result<Cfg, RvffError>
+    pub fn read_config<I>(reader: &mut I) -> Result<Self, RvffError>
     where
         I: BufRead + Seek,
     {
-        if !Cfg::is_valid_rap_bin(reader) {
+        if !Self::is_valid_rap_bin(reader) {
             return Err(RvffError::InvalidFileError);
         }
 
@@ -43,19 +43,19 @@ impl Cfg {
             entries.push(entry);
         }
 
-        Ok(Cfg {
+        Ok(Self {
             enum_offset,
             inherited_classname,
             entries,
         })
     }
 
-    pub fn read_data(data: &[u8]) -> Result<Cfg, RvffError> {
+    pub fn read_data(data: &[u8]) -> Result<Self, RvffError> {
         let mut reader = Cursor::new(data);
         Self::read(&mut reader)
     }
 
-    pub fn read<I>(reader: &mut I) -> Result<Cfg, RvffError>
+    pub fn read<I>(reader: &mut I) -> Result<Self, RvffError>
     where
         I: BufRead + Seek,
     {
@@ -85,7 +85,7 @@ impl Cfg {
             if let Ok(uncomp_data) = decompress_lzss_unk_size(reader) {
                 if let Ok(cfg) = String::from_utf8(uncomp_data) {
                     if let Ok(entries) = parse(&cfg) {
-                        return Ok(Cfg {
+                        return Ok(Self {
                             enum_offset: 0,
                             inherited_classname: String::new(),
                             entries,
@@ -99,16 +99,16 @@ impl Cfg {
         Self::parse_config(&cfg_text)
     }
 
-    pub fn parse_config(cfg: &str) -> Result<Cfg, RvffError> {
+    pub fn parse_config(cfg: &str) -> Result<Self, RvffError> {
         let entries = parse(cfg)?;
-        Ok(Cfg {
+        Ok(Self {
             enum_offset: 0,
             inherited_classname: String::new(),
             entries,
         })
     }
 
-    pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
+    #[must_use] pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
         for entry in &self.entries {
             if let Some(entry_found) = entry.get_entry(path) {
                 return Some(entry_found);
@@ -120,7 +120,7 @@ impl Cfg {
 
 impl PrettyPrint for Cfg {
     fn pretty_print(&self, indentation_count: u32) {
-        for e in self.entries.iter() {
+        for e in &self.entries {
             e.pretty_print(indentation_count);
         }
     }

@@ -22,8 +22,8 @@ pub struct Mipmap {
 }
 
 impl Mipmap {
-    pub fn new() -> Self {
-        Mipmap {
+    #[must_use] pub fn new() -> Self {
+        Self {
             width: 0,
             height: 0,
             data_size: 0,
@@ -45,7 +45,7 @@ impl Mipmap {
         }
 
         self.height = reader.read_u16()?;
-        self.data_size = reader.read_u24()? as i64;
+        self.data_size = i64::from(reader.read_u24()?);
 
         self.data_pos = Some(reader.stream_position()?);
 
@@ -137,10 +137,10 @@ impl Mipmap {
                     let llbyte = low & 0x0F;
                     let hlbyte = (low & 0xF0) >> 4;
 
-                    let b = ((lhbyte as u32 * 255) / 15) as u8;
-                    let a = ((hhbyte as u32 * 255) / 15) as u8;
-                    let r = ((llbyte as u32 * 255) / 15) as u8;
-                    let g = ((hlbyte as u32 * 255) / 15) as u8;
+                    let b = ((u32::from(lhbyte) * 255) / 15) as u8;
+                    let a = ((u32::from(hhbyte) * 255) / 15) as u8;
+                    let r = ((u32::from(llbyte) * 255) / 15) as u8;
+                    let g = ((u32::from(hlbyte) * 255) / 15) as u8;
 
                     rgba_buf.push(r);
                     rgba_buf.push(g);

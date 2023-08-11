@@ -21,7 +21,7 @@ pub struct Skeleton {
     pub pivots_name_obsolete: Option<NullString>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
+#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct Bone {
     pub bone_name: NullString,

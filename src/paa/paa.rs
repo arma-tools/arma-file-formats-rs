@@ -25,16 +25,16 @@ pub struct Paa {
 }
 
 impl Paa {
-    pub fn max_mipmap_count(width: usize, height: usize) -> usize {
+    #[must_use] pub fn max_mipmap_count(width: usize, height: usize) -> usize {
         (width.max(height) as f64).log2().floor() as usize
     }
 
-    pub fn dim_at_level(dim: usize, i: u32) -> usize {
+    #[must_use] pub fn dim_at_level(dim: usize, i: u32) -> usize {
         (dim / 2_usize.pow(i)).max(1)
     }
 
-    pub fn new() -> Self {
-        Paa {
+    #[must_use] pub fn new() -> Self {
+        Self {
             magic_number: PaaType::UNKNOWN,
             mipmaps: Vec::new(),
             taggs: HashMap::new(),
@@ -42,8 +42,8 @@ impl Paa {
         }
     }
 
-    pub fn from_image(width: u16, height: u16, data: Vec<u8>) -> Paa {
-        let mut paa = Paa::new();
+    pub fn from_image(width: u16, height: u16, data: Vec<u8>) -> Self {
+        let mut paa = Self::new();
 
         let mut mm = Mipmap::new();
         mm.width = width;
@@ -55,11 +55,11 @@ impl Paa {
         paa
     }
 
-    pub fn from_reader<R>(reader: &mut R, indicies_to_load: Option<&[u32]>) -> Result<Paa, PaaError>
+    pub fn from_reader<R>(reader: &mut R, indicies_to_load: Option<&[u32]>) -> Result<Self, PaaError>
     where
         R: BufRead + Seek,
     {
-        let mut paa = Paa::new();
+        let mut paa = Self::new();
 
         reader.rewind()?;
         paa.magic_number = PaaType::try_from(reader.read_u16()?).unwrap_or(PaaType::UNKNOWN);
@@ -126,7 +126,6 @@ impl Paa {
         let mut prev_data = self.mipmaps[0].data.clone();
 
         let mut mipmaps: Vec<Mipmap> = (1..level_count)
-            .into_iter()
             .map(|level| -> Mipmap {
                 let desired_width = initial_width >> level;
                 let desired_height = initial_height >> level;

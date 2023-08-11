@@ -11,8 +11,8 @@ pub struct Tagg {
 impl Tagg {
     const TAGG_SIG_SIZE: usize = 8;
 
-    pub fn new() -> Self {
-        Tagg {
+    #[must_use] pub fn new() -> Self {
+        Self {
             signature: String::new(),
             data: Vec::new(),
         }
@@ -22,7 +22,7 @@ impl Tagg {
     where
         T: BufRead + Seek,
     {
-        self.signature = stream.read_string(Tagg::TAGG_SIG_SIZE)?;
+        self.signature = stream.read_string(Self::TAGG_SIG_SIZE)?;
         let size = stream.read_u32()? as usize;
         self.data = stream.read_bytes(size)?;
 

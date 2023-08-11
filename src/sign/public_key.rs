@@ -35,8 +35,8 @@ pub struct PublicKey {
     #[bw(assert(unk3 == &9216))]
     unk3: u32,
 
-    #[br(assert(unk4 == 826364754))]
-    #[bw(assert(unk4 == &826364754))]
+    #[br(assert(unk4 == 826_364_754))]
+    #[bw(assert(unk4 == &826_364_754))]
     unk4: u32,
 
     n_length: u32,
@@ -49,13 +49,13 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    pub fn new() -> Self {
-        PublicKey {
+    #[must_use] pub fn new() -> Self {
+        Self {
             authority: String::default().into(),
             unk1: 148,
             unk2: 518,
             unk3: 9216,
-            unk4: 826364754,
+            unk4: 826_364_754,
             n_length: 0,
             exponent: 0,
             n: BigUint::default(),
@@ -67,11 +67,11 @@ impl PublicKey {
         Self::from_stream(&mut buf_reader)
     }
 
-    pub fn from_stream<R>(reader: &mut R) -> Result<PublicKey, RvffError>
+    pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
     where
         R: Read + Seek,
     {
-        let pub_key = PublicKey::read_options(reader, Endian::Little, ())?;
+        let pub_key = Self::read_options(reader, Endian::Little, ())?;
         Ok(pub_key)
     }
 
@@ -89,7 +89,7 @@ impl PublicKey {
 
         self.n_length = (self.n.to_bytes_le().len() * 8) as u32;
 
-        PublicKey::write(self, &mut cursor)?;
+        Self::write(self, &mut cursor)?;
 
         Ok(buf)
     }
@@ -103,7 +103,7 @@ impl Default for PublicKey {
 
 impl From<PrivateKey> for PublicKey {
     fn from(priv_key: PrivateKey) -> Self {
-        let mut pub_key = PublicKey::new();
+        let mut pub_key = Self::new();
         pub_key.authority = priv_key.authority;
         pub_key.exponent = priv_key.exponent;
         pub_key.n_length = (priv_key.n.to_bytes_le().len() * 8) as u32;

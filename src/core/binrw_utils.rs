@@ -16,7 +16,7 @@ use super::types::STPair;
 use super::types::XYZTriplet;
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_compressed_size_cond(
+pub fn read_compressed_size_cond(
     condition: bool,
     elemen_size: usize,
     count: usize,
@@ -36,13 +36,13 @@ pub(crate) fn read_compressed_size_cond(
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_compressed(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<u8>> {
+pub fn read_compressed(elemen_size: usize, args: ODOLArgs) -> BinResult<Vec<u8>> {
     let count = u32::read_options(reader, endian, ())? as usize;
     decompress_data(reader, endian, elemen_size, count, args)
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_compressed_array<T, 'a>(
+pub fn read_compressed_array<T, 'a>(
     elemen_size: usize,
     odol_args: ODOLArgs,
 ) -> BinResult<Vec<T>>
@@ -54,7 +54,7 @@ where
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_compressed_array_count<T, 'a>(
+pub fn read_compressed_array_count<T, 'a>(
     elemen_size: usize,
     count: usize,
     odol_args: ODOLArgs,
@@ -65,7 +65,7 @@ where
     decompress_array(reader, endian, elemen_size, count, odol_args)
 }
 
-pub(crate) fn decompress_array<'a, T>(
+pub fn decompress_array<'a, T>(
     reader: &mut (impl Read + Seek),
     endian: Endian,
     elemen_size: usize,
@@ -88,7 +88,7 @@ where
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_compressed_data_cond_count(
+pub fn read_compressed_data_cond_count(
     condition: bool,
     count: usize,
     odol_args: ODOLArgs,
@@ -154,7 +154,7 @@ fn decompress_data(
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_condensed_array_cond<T, 'a>(
+pub fn read_condensed_array_cond<T, 'a>(
     cond: bool,
     elemen_size: usize,
     args: ODOLArgs,
@@ -193,7 +193,7 @@ where
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_vertex_index_array(args: ODOLArgs, count: usize) -> BinResult<Vec<u32>> {
+pub fn read_vertex_index_array(args: ODOLArgs, count: usize) -> BinResult<Vec<u32>> {
     let mut res = Vec::with_capacity(count);
 
     for _ in 0..count {
@@ -211,16 +211,16 @@ fn read_vertex_index(
     if args.version >= 69 {
         u32::read_options(reader, endian, ())
     } else {
-        Ok(u16::read_options(reader, endian, ())? as u32)
+        Ok(u32::from(u16::read_options(reader, endian, ())?))
     }
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_normals_parse(args: ODOLArgs) -> BinResult<Vec<XYZTriplet>> {
+pub fn read_normals_parse(args: ODOLArgs) -> BinResult<Vec<XYZTriplet>> {
     read_normals(reader, endian, args)
 }
 
-pub(crate) fn read_normals(
+pub fn read_normals(
     reader: &mut (impl Read + Seek),
     endian: Endian,
     args: ODOLArgs,
@@ -233,7 +233,7 @@ pub(crate) fn read_normals(
     }
 }
 
-pub(crate) fn decompress_xyz(val: i32) -> XYZTriplet {
+pub fn decompress_xyz(val: i32) -> XYZTriplet {
     let mut x = val & 1023;
     let mut y = val >> 10 & 1023;
     let mut z = val >> 20 & 1023;
@@ -260,11 +260,11 @@ pub(crate) fn decompress_xyz(val: i32) -> XYZTriplet {
 }
 
 #[binrw::parser(reader, endian)]
-pub(crate) fn read_st_parse(args: ODOLArgs) -> BinResult<Vec<STPair>> {
+pub fn read_st_parse(args: ODOLArgs) -> BinResult<Vec<STPair>> {
     read_st(reader, endian, args)
 }
 
-pub(crate) fn read_st(
+pub fn read_st(
     reader: &mut (impl Read + Seek),
     endian: Endian,
     args: ODOLArgs,
@@ -272,7 +272,7 @@ pub(crate) fn read_st(
     let count = u32::read_options(reader, endian, ())? as usize;
     if args.version >= 45 {
         let comp = decompress_array::<STPairCompress>(reader, endian, 8, count, args)?;
-        Ok(comp.into_iter().map(|x| x.into()).collect())
+        Ok(comp.into_iter().map(std::convert::Into::into).collect())
     } else {
         Ok(decompress_array::<STPair>(reader, endian, 24, count, args)?)
     }
@@ -287,7 +287,7 @@ struct STPairCompress {
 
 impl From<STPairCompress> for STPair {
     fn from(val: STPairCompress) -> Self {
-        STPair {
+        Self {
             s: decompress_xyz(val.s),
             t: decompress_xyz(val.t),
         }
@@ -295,14 +295,14 @@ impl From<STPairCompress> for STPair {
 }
 
 #[binrw::parser(reader)]
-pub(crate) fn read_biguint(length: usize) -> BinResult<BigUint> {
+pub fn read_biguint(length: usize) -> BinResult<BigUint> {
     let mut buf = vec![0_u8; length];
     reader.read_exact(&mut buf)?;
     Ok(BigUint::from_bytes_le(&buf))
 }
 
 #[binrw::writer(writer)]
-pub(crate) fn write_biguint(biguint: &BigUint) -> BinResult<()> {
+pub fn write_biguint(biguint: &BigUint) -> BinResult<()> {
     let buf = biguint.to_bytes_le();
     writer.write_all(&buf)?;
     Ok(())

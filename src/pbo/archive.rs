@@ -32,8 +32,8 @@ pub struct Pbo {
 }
 
 impl Pbo {
-    pub fn new() -> Self {
-        Pbo {
+    #[must_use] pub fn new() -> Self {
+        Self {
             properties: IndexMap::new(),
             entries: IndexMap::new(),
             hash: Vec::new(),
@@ -43,19 +43,19 @@ impl Pbo {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RvffError> {
         let file = File::open(path)?;
         let mut buf_reader = BufReader::new(file);
-        Pbo::from_stream(&mut buf_reader)
+        Self::from_stream(&mut buf_reader)
     }
 
     pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
     where
         R: BufRead + Seek,
     {
-        let mut pbo = Pbo::new();
+        let mut pbo = Self::new();
         pbo.read(reader, false)?;
         Ok(pbo)
     }
 
-    pub fn get_prefix(&self) -> String {
+    #[must_use] pub fn get_prefix(&self) -> String {
         if let Some(prefix) = self.properties.get("prefix") {
             let mut prefix = prefix.to_string();
             prefix.push('\\');
@@ -75,7 +75,7 @@ impl Pbo {
         }
     }
 
-    pub fn has_entry(&self, entry_path: &str) -> bool {
+    #[must_use] pub fn has_entry(&self, entry_path: &str) -> bool {
         self.entries.contains_key(&self.handle_prefix(entry_path))
     }
 
@@ -110,7 +110,7 @@ impl Pbo {
 
         for entry in &mut entries {
             entry.data_offset = data_pos;
-            data_pos += entry.data_size as u64;
+            data_pos += u64::from(entry.data_size);
         }
 
         self.entries = entries
@@ -188,7 +188,7 @@ impl Pbo {
 
             Ok(())
         } else {
-            Err(RvffError::PboEntryNotFound(entry_path.to_owned()))
+            Err(RvffError::PboEntryNotFound(entry_path.clone()))
         }
     }
 
@@ -228,7 +228,7 @@ impl Pbo {
         )
     }
 
-    pub fn sign(&self, version: SignVersion, priv_key: &PrivateKey) -> Signature {
+    #[must_use] pub fn sign(&self, version: SignVersion, priv_key: &PrivateKey) -> Signature {
         let (hash1, hash2, hash3) = self.generate_hashes(version, KEY_LENGTH);
 
         let mut sig = Signature::new();
@@ -251,9 +251,7 @@ impl Pbo {
     }
 
     pub fn verify(&self, public_key: &PublicKey, signature: &Signature) -> anyhow::Result<()> {
-        if public_key.authority != signature.authority {
-            panic!("auth not same");
-        }
+        assert!(!(public_key.authority != signature.authority), "auth not same");
 
         // Pbo sorted?
         let (pbo_hash1, pbo_hash2, pbo_hash3) =
@@ -268,17 +266,11 @@ impl Pbo {
         dbg!(&sign_hash3);
         dbg!(&pbo_hash3);
 
-        if sign_hash1 != pbo_hash1 {
-            panic!("hash1 not same");
-        }
+        assert!(!(sign_hash1 != pbo_hash1), "hash1 not same");
 
-        if sign_hash2 != pbo_hash2 {
-            panic!("hash2 not same");
-        }
+        assert!(!(sign_hash2 != pbo_hash2), "hash2 not same");
 
-        if sign_hash3 != pbo_hash3 {
-            panic!("hash3 not same");
-        }
+        assert!(!(sign_hash3 != pbo_hash3), "hash3 not same");
 
         Ok(())
     }

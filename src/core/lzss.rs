@@ -9,7 +9,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 
 use crate::errors::{RvffError, RvffLzssError};
 
-pub(crate) fn decompress_lzss<R>(
+pub fn decompress_lzss<R>(
     reader: &mut R,
     expected_size: usize,
     use_signed_checksum: bool,
@@ -39,14 +39,14 @@ where
         num5 >>= 1;
         if (num5 & 256) == 0 {
             let val = reader.read_u8().unwrap();
-            num5 = val as i32 | 65280;
+            num5 = i32::from(val) | 65280;
         }
         if (num5 & 1) != 0 {
             let val = reader.read_u8().unwrap();
             if use_signed_checksum {
-                calculated_hash += val as i8 as i32;
+                calculated_hash += i32::from(val as i8);
             } else {
-                calculated_hash = calculated_hash.overflowing_add(val as i32).0;
+                calculated_hash = calculated_hash.overflowing_add(i32::from(val)).0;
             }
             dst[num2 as usize] = val;
             num2 += 1;
@@ -55,8 +55,8 @@ where
             num4 += 1;
             num4 &= 4095;
         } else {
-            let mut i = reader.read_u8().unwrap() as i32;
-            let mut val = reader.read_u8().unwrap() as i32;
+            let mut i = i32::from(reader.read_u8().unwrap());
+            let mut val = i32::from(reader.read_u8().unwrap());
             i |= (val & 240) << 4;
             val &= 15;
             val += 2;
@@ -68,9 +68,9 @@ where
             while j <= num8 {
                 let num6 = array[(j & 4095) as usize];
                 if use_signed_checksum {
-                    calculated_hash += num6 as i8 as i32;
+                    calculated_hash += i32::from(num6 as i8);
                 } else {
-                    calculated_hash = calculated_hash.overflowing_add(num6 as i32).0;
+                    calculated_hash = calculated_hash.overflowing_add(i32::from(num6)).0;
                 }
                 dst[num2 as usize] = num6;
                 num2 += 1;
@@ -118,11 +118,11 @@ where
     while reader.stream_position()? < (in_size - 4) {
         flags >>= 1;
         if (flags & 256) == 0 {
-            flags = reader.read_u8()? as i32 | 0xff00;
+            flags = i32::from(reader.read_u8()?) | 0xff00;
         }
         if (flags & 1) != 0 {
             let data = reader.read_u8()?;
-            check_sum = check_sum.overflowing_add(data as i32).0;
+            check_sum = check_sum.overflowing_add(i32::from(data)).0;
 
             out.push(data);
             size += 1;
@@ -131,8 +131,8 @@ where
             text_buffer_index += 1;
             text_buffer_index &= sliding_winding_size - 1;
         } else {
-            let mut pos: i32 = reader.read_u8()? as i32;
-            let mut len: i32 = reader.read_u8()? as i32;
+            let mut pos: i32 = i32::from(reader.read_u8()?);
+            let mut len: i32 = i32::from(reader.read_u8()?);
 
             pos |= (len & 0xf0) << 4;
             len &= 0x0f;
@@ -143,7 +143,7 @@ where
 
             while buffer_pos <= buffer_len {
                 let data = text_buffer[(buffer_pos & (sliding_winding_size - 1)) as usize];
-                check_sum = check_sum.overflowing_add(data as i32).0;
+                check_sum = check_sum.overflowing_add(i32::from(data)).0;
                 out.push(data);
                 size += 1;
 

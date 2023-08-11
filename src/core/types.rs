@@ -66,7 +66,7 @@ pub struct D3DColorValue {
     pub a: f32,
 }
 
-#[derive(BinRead, PartialEq, Derivative, Clone)]
+#[derive(BinRead, PartialEq, Eq, Derivative, Clone)]
 #[derivative(Debug, Default)]
 pub struct RGBAColor {
     pub a: u8,

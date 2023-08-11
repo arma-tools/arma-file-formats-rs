@@ -12,12 +12,12 @@ pub struct CfgClass {
 }
 
 impl CfgClass {
-    pub fn read_class<I>(reader: &mut I) -> Result<CfgClass, RvffError>
+    pub fn read_class<I>(reader: &mut I) -> Result<Self, RvffError>
     where
         I: BufRead + Seek,
     {
         let name = reader.read_string_zt()?;
-        let offset = reader.read_u32()? as u64;
+        let offset = u64::from(reader.read_u32()?);
 
         let pos = reader.stream_position()?;
         reader.seek(std::io::SeekFrom::Start(offset))?;
@@ -32,7 +32,7 @@ impl CfgClass {
         }
         reader.seek(std::io::SeekFrom::Start(pos))?;
 
-        Ok(CfgClass {
+        Ok(Self {
             name,
             parent: if !parent.is_empty() {
                 Some(parent)
@@ -43,7 +43,7 @@ impl CfgClass {
         })
     }
 
-    pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
+    #[must_use] pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
         let cur = *path.first().unwrap();
         let last = path.len() == 1;
 
@@ -86,13 +86,13 @@ impl PrettyPrint for CfgClass {
         let parent = self
             .parent
             .as_ref()
-            .map(|f| format!(": {}", f))
+            .map(|f| format!(": {f}"))
             .unwrap_or_default();
         println!("{}class {} {}", indent, self.name, parent);
-        println!("{}{{", indent);
-        for entry in self.entries.iter() {
+        println!("{indent}{{");
+        for entry in &self.entries {
             entry.pretty_print(indentation_count + 4);
         }
-        println!("{}}};", indent);
+        println!("{indent}}};");
     }
 }

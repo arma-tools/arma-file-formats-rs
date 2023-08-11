@@ -17,7 +17,7 @@ where
     R: BufRead + Seek,
 {
     pub fn from_stream(reader: R) -> Result<Self, RvffError> {
-        let mut pbo_reader = PboReader {
+        let mut pbo_reader = Self {
             reader,
             pbo: Pbo::new(),
         };

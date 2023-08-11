@@ -25,14 +25,14 @@ enum Token {
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Token::Num(n) => write!(f, "{}", n),
-            Token::Str(s) => write!(f, "{}", s),
-            Token::Ctrl(c) => write!(f, "{}", c),
-            Token::Ident(s) => write!(f, "{}", s),
-            Token::Class => write!(f, "class"),
-            Token::Delete => write!(f, "delete"),
-            Token::StringConcat => write!(f, " \\n "),
-            Token::Bool(b) => write!(f, "{}", b),
+            Self::Num(n) => write!(f, "{n}"),
+            Self::Str(s) => write!(f, "{s}"),
+            Self::Ctrl(c) => write!(f, "{c}"),
+            Self::Ident(s) => write!(f, "{s}"),
+            Self::Class => write!(f, "class"),
+            Self::Delete => write!(f, "delete"),
+            Self::StringConcat => write!(f, " \\n "),
+            Self::Bool(b) => write!(f, "{b}"),
         }
     }
 }
@@ -80,7 +80,7 @@ fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
                     .iter()
                     .map(|t| {
                         if let Token::Str(s) = t {
-                            s.to_owned()
+                            s.clone()
                         } else {
                             String::new()
                         }
@@ -136,17 +136,17 @@ enum EntryExpr {
 impl From<EntryExpr> for CfgEntry {
     fn from(val: EntryExpr) -> Self {
         match val {
-            EntryExpr::Prop(name, value) => CfgEntry::Property(CfgProperty {
+            EntryExpr::Prop(name, value) => Self::Property(CfgProperty {
                 name,
                 value: value.0.into(),
             }),
-            EntryExpr::Class(name, parent, entries) => CfgEntry::Class(CfgClass {
+            EntryExpr::Class(name, parent, entries) => Self::Class(CfgClass {
                 name,
                 parent,
                 entries: entries.into_iter().map(|e| e.0.into()).collect(),
             }),
-            EntryExpr::Extern(e) => CfgEntry::Extern(e),
-            EntryExpr::Delete(d) => CfgEntry::Delete(d),
+            EntryExpr::Extern(e) => Self::Extern(e),
+            EntryExpr::Delete(d) => Self::Delete(d),
         }
     }
 }
@@ -162,10 +162,10 @@ enum ValueExpr {
 impl From<ValueExpr> for CfgValue {
     fn from(val: ValueExpr) -> Self {
         match val {
-            ValueExpr::Long(l) => CfgValue::Long(l),
-            ValueExpr::Float(f) => CfgValue::Float(f),
-            ValueExpr::Str(s) => CfgValue::String(s),
-            ValueExpr::Array(a) => CfgValue::Array(a.into_iter().map(|e| e.0.into()).collect()),
+            ValueExpr::Long(l) => Self::Long(l),
+            ValueExpr::Float(f) => Self::Float(f),
+            ValueExpr::Str(s) => Self::String(s),
+            ValueExpr::Array(a) => Self::Array(a.into_iter().map(|e| e.0.into()).collect()),
         }
     }
 }
@@ -182,7 +182,7 @@ fn entry_parser() -> impl Parser<Token, Vec<Spanned<EntryExpr>>, Error = Simple<
             }
         },
         Token::Str(s) => ValueExpr::Str(s),
-        Token::Bool(b) => ValueExpr::Long(b as i32),
+        Token::Bool(b) => ValueExpr::Long(i32::from(b)),
     }
     .map_with_span(|ident, span| (ident, span))
     .labelled("value");
@@ -271,7 +271,7 @@ fn entry_parser() -> impl Parser<Token, Vec<Spanned<EntryExpr>>, Error = Simple<
     class.or(entry).repeated().then_ignore(end())
 }
 
-pub(crate) fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
+pub fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
     let (tokens, errs) = lexer().parse_recovery(src);
     // dbg!(&tokens);
     // dbg!(errs.clone());

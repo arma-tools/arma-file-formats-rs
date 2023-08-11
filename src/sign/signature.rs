@@ -32,8 +32,8 @@ pub struct Signature {
     #[bw(assert(unk3 == &9216))]
     unk3: u32,
 
-    #[br(assert(unk4 == 826364754))]
-    #[bw(assert(unk4 == &826364754))]
+    #[br(assert(unk4 == 826_364_754))]
+    #[bw(assert(unk4 == &826_364_754))]
     unk4: u32,
 
     pub(crate) n_length: u32,
@@ -78,13 +78,13 @@ pub enum SignVersion {
 }
 
 impl Signature {
-    pub fn new() -> Self {
-        Signature {
+    #[must_use] pub fn new() -> Self {
+        Self {
             authority: String::default().into(),
             unk1: 148,
             unk2: 518,
             unk3: 9216,
-            unk4: 826364754,
+            unk4: 826_364_754,
             n_length: 0,
             exponent: 0,
             n: BigUint::default(),
@@ -104,11 +104,11 @@ impl Signature {
         Self::from_stream(&mut buf_reader)
     }
 
-    pub fn from_stream<R>(reader: &mut R) -> Result<Signature, RvffError>
+    pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
     where
         R: Read + Seek,
     {
-        let sig = Signature::read_options(reader, Endian::Little, ())?;
+        let sig = Self::read_options(reader, Endian::Little, ())?;
         Ok(sig)
     }
 
@@ -126,7 +126,7 @@ impl Signature {
 
         self.n_length = (self.n.to_bytes_le().len() * 8) as u32;
 
-        Signature::write(self, &mut cursor)?;
+        Self::write(self, &mut cursor)?;
 
         Ok(buf)
     }

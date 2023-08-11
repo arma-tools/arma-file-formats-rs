@@ -10,20 +10,20 @@ pub struct CfgProperty {
 }
 
 impl CfgProperty {
-    pub fn read_property<I>(reader: &mut I, is_array: bool) -> Result<CfgProperty, RvffError>
+    pub fn read_property<I>(reader: &mut I, is_array: bool) -> Result<Self, RvffError>
     where
         I: BufRead + Seek,
     {
         if is_array {
             let name = reader.read_string_zt()?;
-            Ok(CfgProperty {
+            Ok(Self {
                 name,
                 value: CfgValue::read_array(reader)?,
             })
         } else {
             let typ_id = reader.read_u8()?;
             let name = reader.read_string_zt()?;
-            Ok(CfgProperty {
+            Ok(Self {
                 name,
                 value: CfgValue::read_value(reader, Some(typ_id))?,
             })

@@ -45,7 +45,7 @@ impl BinRead for QuadTreeNode {
         let mut sub_trees = Vec::with_capacity(16);
         for _ in 0..16 {
             if (bit_mask & 1) == 1 {
-                sub_trees.push(QuadTreeData::Node(QuadTreeNode::read_options(
+                sub_trees.push(QuadTreeData::Node(Self::read_options(
                     reader, endian, args,
                 )?));
             } else {
@@ -56,11 +56,11 @@ impl BinRead for QuadTreeNode {
             bit_mask >>= 1;
         }
 
-        Ok(QuadTreeNode { sub_trees })
+        Ok(Self { sub_trees })
     }
 }
 
-#[derive(Derivative, PartialEq)]
+#[derive(Derivative, PartialEq, Eq)]
 #[derivative(Debug, Default)]
 pub struct QuadTreeLeaf {
     element_size: u32,
@@ -78,7 +78,7 @@ impl BinRead for QuadTreeLeaf {
         let mut data = vec![0_u8; 4];
         reader.read_exact(&mut data)?;
 
-        Ok(QuadTreeLeaf {
+        Ok(Self {
             element_size: args.0,
             data,
         })
@@ -87,12 +87,12 @@ impl BinRead for QuadTreeLeaf {
 
 impl QuadTreeLeaf {
     pub fn get<'a, T: BinRead<Args<'a> = ()>>(&self, x: u32, y: u32) -> BinResult<Option<T>> {
-        let offset = match self.element_size {
+        let offset = u64::from(match self.element_size {
             1 => 0,
             2 => x * 2,
             4 => (y << 1) + x,
             _ => todo!(),
-        } as u64;
+        });
 
         let mut data_reader = Cursor::new(&self.data);
 

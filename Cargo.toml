@@ -37,7 +37,7 @@ ariadne = "0.3.0"
 chumsky = "0.9.0"
 
 # LZO
-lzokay-rust-native = { git = "https://github.com/TheWillard/lzokay-rust-native.git", branch = "main" }
+lzokay-native = "0.1"
 
 [dev-dependencies]
 image = "0.24.6"

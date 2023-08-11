@@ -6,7 +6,7 @@ use binrw::BinRead;
 use binrw::BinResult;
 use binrw::Endian;
 use derivative::Derivative;
-use lzokay_rust_native::decompress::decompress_reader;
+use lzokay_native::decompress;
 use rsa::BigUint;
 
 use crate::p3d::ODOLArgs;
@@ -128,11 +128,9 @@ fn decompress_data(
                 })?;
             data
         } else {
-            decompress_reader(reader, Some(count * elemen_size)).map_err(|e| {
-                binrw::Error::Custom {
-                    err: Box::new(e),
-                    pos: pre_pos,
-                }
+            decompress(reader, Some(count * elemen_size)).map_err(|e| binrw::Error::Custom {
+                err: Box::new(e),
+                pos: pre_pos,
             })?
         }
     } else if expected_size < 1024 {

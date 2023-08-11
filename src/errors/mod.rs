@@ -1,6 +1,5 @@
 use std::{io, string::FromUtf8Error};
 
-use lzokay_rust_native::util::LzokayError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -15,7 +14,7 @@ pub enum PaaError {
     PaaIOError(#[from] io::Error),
 
     #[error("Paa lzo failed")]
-    PaaLzoErr(#[from] LzokayError),
+    PaaLzoErr(#[from] lzokay_native::Error),
 
     #[error("LZSS Error")]
     RvffLzssError(#[from] RvffLzssError),

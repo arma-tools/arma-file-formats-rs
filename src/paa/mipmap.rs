@@ -5,8 +5,7 @@ use crate::core::decompress_lzss;
 use crate::core::read::ReadExtTrait;
 use crate::core::write::WriteExtTrait;
 use anyhow::Result;
-use lzokay_rust_native::compress::{compress_with_dict, Dict};
-use lzokay_rust_native::decompress::decompress_reader;
+use lzokay_native::{compress_with_dict, decompress_all, Dict};
 use squish::{Format, Params};
 
 use crate::core::types::PaaType;
@@ -82,7 +81,7 @@ impl Mipmap {
             PaaType::UNKNOWN => todo!(),
             PaaType::DXT1 => {
                 if self.is_lzo_compressed {
-                    self.data = decompress_reader(&mut Cursor::new(self.data.clone()), None)?;
+                    self.data = decompress_all(&self.data, None)?;
                 }
 
                 let format = Format::Bc1;
@@ -102,7 +101,7 @@ impl Mipmap {
             PaaType::DXT4 => todo!(),
             PaaType::DXT5 => {
                 if self.is_lzo_compressed {
-                    self.data = decompress_reader(&mut Cursor::new(self.data.clone()), None)?;
+                    self.data = decompress_all(&self.data, None)?;
                 }
 
                 let format = Format::Bc3;

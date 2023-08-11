@@ -4,7 +4,7 @@ use std::{
     io::{BufRead, Seek, SeekFrom, Write},
 };
 
-use lzokay_rust_native::compress::Dict;
+use lzokay_native::Dict;
 
 #[cfg(feature = "parallel")]
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};

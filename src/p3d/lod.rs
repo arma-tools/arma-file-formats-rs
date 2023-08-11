@@ -6,12 +6,10 @@ use crate::core::{
     types::{D3DColorValue, STPair, TransformMatrix, XYZTriplet},
 };
 use binrw::{BinRead, BinResult, NullString};
-use derivative::Derivative;
 
 use super::ODOLArgs;
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct Lod {
     pub proxy_count: i32,
@@ -136,8 +134,7 @@ pub struct Lod {
     unk_end_2: Option<u8>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct Proxy {
     pub proxy_model: NullString,
@@ -150,8 +147,7 @@ pub struct Proxy {
     pub section_index: i32,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 pub struct BoneLink {
     link_count: u32,
 
@@ -159,8 +155,7 @@ pub struct BoneLink {
     pub values: Vec<u32>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 pub struct LodMaterial {
     pub material_name: NullString,
 
@@ -216,8 +211,7 @@ pub struct LodMaterial {
     pub dummy_stage_textures: Option<StageTexture>,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 #[br(import(mat_version: u32))]
 pub struct StageTexture {
     #[br(if(mat_version >= 5))]
@@ -233,15 +227,13 @@ pub struct StageTexture {
     pub use_world_env: Option<bool>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 pub struct StageTransform {
     pub uv_source: u32,
     pub transformation: TransformMatrix,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct LodEdges {
     #[br(args_raw(args))]
@@ -251,8 +243,7 @@ pub struct LodEdges {
     pub vertex_index: CompressedVertexIndexArray,
 }
 
-#[derive(PartialEq, Eq, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct CompressedVertexIndexArray {
     pub edges: Vec<u32>,
 }
@@ -279,8 +270,7 @@ impl BinRead for CompressedVertexIndexArray {
     }
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct LodFace {
     pub face_type: u8,
@@ -290,8 +280,7 @@ pub struct LodFace {
     pub vertex_indices: Vec<u32>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct LodSection {
     #[br(calc = args.version < 69)]
@@ -325,8 +314,7 @@ pub struct LodSection {
     pub unk_matrix: TransformMatrix,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct LodNameSelection {
     pub name: NullString,
@@ -351,15 +339,13 @@ pub struct LodNameSelection {
     pub selected_vertices_weights: Vec<u8>,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 pub struct LodNamedProperty {
     pub property: NullString,
     pub value: NullString,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 pub struct LodFrame {
     pub frame_time: f32,
     pub bone_count: u32,
@@ -368,8 +354,7 @@ pub struct LodFrame {
     pub bone_positions: Vec<XYZTriplet>,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct UVSet {
     #[br(calc = args.version >= 45)]
@@ -404,8 +389,7 @@ pub struct UVSet {
     pub uv_data: Option<Vec<u8>>,
 }
 
-#[derive(BinRead, PartialEq, Eq, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, BinRead, PartialEq, Eq, Clone)]
 pub struct AnimationRTWeight {
     pub small_count: i32,
 
@@ -423,15 +407,13 @@ pub struct AnimationRTWeight {
     pub animation_rt_pairs: Vec<AnimationRTPair>,
 }
 
-#[derive(PartialEq, Eq, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct AnimationRTPair {
     pub selection_index: u8,
     pub weight: u8,
 }
 
-#[derive(PartialEq, Eq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq, BinRead, Clone)]
 pub struct VertexNeighbour {
     pub pos_a: u16,
     unk_pos: u16,

@@ -1,10 +1,8 @@
 use binrw::BinRead;
-use derivative::Derivative;
 
 use super::ODOLArgs;
 
-#[derive(PartialEq, BinRead, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone)]
 #[br(import(args: ODOLArgs))]
 pub struct FaceData {
     pub header_face_count: u32,

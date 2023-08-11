@@ -1,5 +1,4 @@
 use binrw::BinRead;
-use derivative::Derivative;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 #[derive(IntoPrimitive, TryFromPrimitive, Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,8 +16,7 @@ pub enum PaaType {
     GRAYwAlpha = 0x8080,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
 pub struct BoundingBox {
     pub a: XY,
     pub b: XY,
@@ -26,30 +24,26 @@ pub struct BoundingBox {
     pub d: XY,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
 pub struct XY {
     pub x: f32,
     pub y: f32,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
 pub struct XYZTriplet {
     pub x: f32,
     pub y: f32,
     pub z: f32,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
 pub struct STPair {
     pub s: XYZTriplet,
     pub t: XYZTriplet,
 }
 
-#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
 pub struct TransformMatrix(
     pub XYZTriplet,
     pub XYZTriplet,
@@ -57,8 +51,7 @@ pub struct TransformMatrix(
     pub XYZTriplet,
 );
 
-#[derive(PartialEq, BinRead, Derivative, Clone, Copy)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, PartialEq, BinRead, Clone, Copy)]
 pub struct D3DColorValue {
     pub r: f32,
     pub g: f32,
@@ -66,8 +59,7 @@ pub struct D3DColorValue {
     pub a: f32,
 }
 
-#[derive(BinRead, PartialEq, Eq, Derivative, Clone)]
-#[derivative(Debug, Default)]
+#[derive(Debug, Default, BinRead, PartialEq, Eq, Clone)]
 pub struct RGBAColor {
     pub a: u8,
     pub b: u8,

@@ -3,7 +3,6 @@ use serial_test::serial;
 use std::fs::{self, File};
 
 const INPUT_PATH_PREFIX: &str = "./tests/test-data/util_in/";
-#[allow(dead_code)]
 const OUTPUT_PATH_PREFIX: &str = "./tests/test-data/util_out/";
 
 #[test]

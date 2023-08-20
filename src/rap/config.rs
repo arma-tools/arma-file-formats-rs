@@ -9,7 +9,6 @@ use crate::{
 const RAP_MAGIC: u32 = 1_348_563_456;
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct Cfg {
-    #[allow(dead_code)]
     pub enum_offset: u32,
     pub inherited_classname: String,
     pub entries: Vec<CfgEntry>,

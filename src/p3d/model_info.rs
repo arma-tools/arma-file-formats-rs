@@ -143,26 +143,24 @@ pub struct ModelInfo {
     pub prefferred_shadow_buffer_lod_vis: Option<Vec<i32>>,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 pub enum SBSource {
     #[derivative(Default)]
     #[br(magic = 0i32)]
-    SBS_Visual = 0,
+    Visual = 0,
     #[br(magic = 1i32)]
-    SBS_ShadowVolume = 1,
+    ShadowVolume = 1,
     #[br(magic = 2i32)]
-    SBS_Explicit = 2,
+    Explicit = 2,
     #[br(magic = 3i32)]
-    SBS_None = 3,
+    None = 3,
     #[br(magic = 4i32)]
-    SBS_VisualEx = 4,
+    VisualEx = 4,
 }
 
 impl ModelInfo {}
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u8)]

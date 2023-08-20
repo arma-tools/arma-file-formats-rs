@@ -126,7 +126,6 @@ pub struct Resolution {
     pub res: ResolutionEnum,
 }
 
-#[allow(illegal_floating_point_literal_pattern)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(import { value: f32 })]

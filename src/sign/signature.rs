@@ -67,7 +67,6 @@ pub struct Signature {
     pub sig3: BigUint,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, BinWrite)]
 #[brw(repr = u32)]
 pub enum SignVersion {

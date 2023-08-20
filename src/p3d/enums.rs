@@ -11,7 +11,6 @@ pub struct ClipFlags {
     pub res: ClipFlagsEnum,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = i32)]
@@ -84,40 +83,34 @@ pub enum ClipFlagsEnum {
     Unknown,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = i32)]
 pub enum EFogMode {
     #[derivative(Default)]
-    FM_None,
-    FM_Fog,
-    FM_Alpha,
-    FM_FogAlpha,
+    None,
+    Fog,
+    Alpha,
+    FogAlpha,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = i32)]
 pub enum EMainLight {
     #[derivative(Default)]
-    ML_None,
-    ML_Sun,
-    ML_Sky,
-    ML_Horizon,
-    ML_Stars,
-    ML_SunObject,
-    ML_SunHaloObject,
-    ML_MoonObject,
-    ML_MoonHaloObject,
+    None,
+    Sun,
+    Sky,
+    Horizon,
+    Stars,
+    SunObject,
+    SunHaloObject,
+    MoonObject,
+    MoonHaloObject,
 }
 
-#[allow(
-    non_camel_case_types,
-    clippy::enum_variant_names,
-    clippy::enum_clike_unportable_variant
-)]
+#[allow(clippy::enum_clike_unportable_variant)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u32)]
@@ -265,7 +258,6 @@ pub struct VertexShaderID {
     pub e: VertexShaderIDEnum,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(import { value: i32 })]
@@ -347,7 +339,6 @@ pub enum VertexShaderIDEnum {
     Unknown(PhantomData<f32>),
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u32)]
@@ -365,7 +356,6 @@ pub enum UVSource {
     NUVSource,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u32)]

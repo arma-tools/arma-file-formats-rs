@@ -88,7 +88,6 @@ pub struct AnimationClass {
     pub unknown_hide: Option<f32>,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u32)]
@@ -106,7 +105,6 @@ pub enum AnimType {
     Hide = 9,
 }
 
-#[allow(non_camel_case_types, clippy::enum_variant_names)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
 #[br(repr = u32)]

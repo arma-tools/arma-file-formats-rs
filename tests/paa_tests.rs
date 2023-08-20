@@ -25,6 +25,7 @@ fn arma_test() {
     let mut dxt1 = Paa::from_reader(&mut BufReader::new(file), None).unwrap();
     let mut mm_data = dxt1.mipmaps[0].data.clone();
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..dxt1.mipmaps[0].width as usize * 100 * 4 {
         mm_data[i] = 0xFF;
     }
@@ -42,6 +43,7 @@ fn arma_test() {
 
     let mut mm_data = dxt5.mipmaps[0].data.clone();
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..dxt5.mipmaps[0].width as usize * 10 * 4 {
         mm_data[i] = 0xFF;
     }

@@ -2,6 +2,12 @@
 name = "rvff"
 version = "0.1.0"
 edition = "2021"
+description = "Pure rust implementation of most of the Real Virtuality file formats."
+license = "MIT"
+repository = "https://github.com/arma-tools/rvff/"
+readme = "README.md"
+keywords = ["pbo", "paa", "p3d", "wrp", "real-virtuality", "decoding"]
+categories = ["decoding", "parser-implementations", "parsing"]
 
 [lib]
 crate-type = ["lib", "staticlib"]

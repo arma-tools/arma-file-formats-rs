@@ -89,7 +89,7 @@ impl PrettyPrint for CfgClass {
             .as_ref()
             .map(|f| format!(": {f}"))
             .unwrap_or_default();
-        println!("{}class {} {}", indent, self.name, parent);
+        println!("{indent}class {} {parent}", self.name);
         println!("{indent}{{");
         for entry in &self.entries {
             entry.pretty_print(indentation_count + 4);

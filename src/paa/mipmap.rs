@@ -50,7 +50,7 @@ impl Mipmap {
         Ok(())
     }
 
-    pub fn read<T>(&mut self, reader: &mut T, paa_type: &PaaType) -> Result<(), PaaError>
+    pub fn read<T>(&mut self, reader: &mut T, paa_type: PaaType) -> Result<(), PaaError>
     where
         T: BufRead + Seek,
     {
@@ -68,7 +68,7 @@ impl Mipmap {
         }
     }
 
-    fn decompress_data(&mut self, paa_type: &PaaType) -> Result<(), PaaError> {
+    fn decompress_data(&mut self, paa_type: PaaType) -> Result<(), PaaError> {
         let expected_size = self.width as usize * self.height as usize;
 
         if self.is_lzo_compressed {}
@@ -234,12 +234,12 @@ impl Mipmap {
 
         self.data_size = self.data.len() as i64;
 
-        self.writer_internal(writer, out_data)?;
+        self.writer_internal(writer, &out_data)?;
 
         Ok(())
     }
 
-    fn writer_internal<W>(&mut self, writer: &mut W, out_data: Vec<u8>) -> io::Result<()>
+    fn writer_internal<W>(&mut self, writer: &mut W, out_data: &[u8]) -> io::Result<()>
     where
         W: Write + Seek,
     {
@@ -250,7 +250,7 @@ impl Mipmap {
         }
         writer.write_u16(self.height)?;
         writer.write_u24(out_data.len() as u32)?;
-        writer.write_bytes(&out_data)?;
+        writer.write_bytes(out_data)?;
         Ok(())
     }
 

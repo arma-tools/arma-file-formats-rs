@@ -93,7 +93,7 @@ impl Paa {
                 || indicies_to_load.unwrap().is_empty()
                 || indicies_to_load.unwrap().contains(&index_counter)
             {
-                mipmap.read(reader, &paa.magic_number)?;
+                mipmap.read(reader, paa.magic_number)?;
             }
 
             paa.mipmaps.push(mipmap);
@@ -103,6 +103,7 @@ impl Paa {
         Ok(paa)
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn write<W>(&mut self, writer: &mut W, paa_type: Option<PaaType>) -> Result<(), PaaError>
     where
         W: Write + Seek,
@@ -237,7 +238,7 @@ impl Paa {
             PaaType::DXT5
         });
 
-        self.write_internal(writer, magic_number, &mut taggs, Vec::new())?;
+        self.write_internal(writer, magic_number, &mut taggs, &Vec::new())?;
 
         Ok(())
     }
@@ -247,7 +248,7 @@ impl Paa {
         writer: &mut W,
         magic_number: PaaType,
         taggs: &mut HashMap<String, Tagg>,
-        palette: Vec<u8>,
+        palette: &[u8],
     ) -> Result<(), PaaError>
     where
         W: Write + Seek,
@@ -270,7 +271,7 @@ impl Paa {
         // Palette
         writer.write_u16(palette.len().try_into().unwrap_or_default())?;
         if !palette.is_empty() {
-            writer.write_bytes(&palette)?;
+            writer.write_bytes(palette)?;
         }
 
         // Mipmaps

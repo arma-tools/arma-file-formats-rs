@@ -35,9 +35,9 @@ impl PrettyPrint for CfgProperty {
     fn pretty_print(&self, indentation_count: u32) {
         let indent = (0..indentation_count).map(|_| " ").collect::<String>();
         if let CfgValue::Array(_) = self.value {
-            println!("{}{}[] = {};", indent, self.name, self.value.to_strr());
+            println!("{indent}{}[] = {};", self.name, self.value.to_strr());
         } else {
-            println!("{}{} = {};", indent, self.name, self.value.to_strr());
+            println!("{indent}{} = {};", self.name, self.value.to_strr());
         }
     }
 }

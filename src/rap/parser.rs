@@ -335,9 +335,11 @@ pub fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
                                 .map_or_else(|| "something else".to_string(), ToString::to_string)
                         } else {
                             e.expected()
-                                .map(|expected| match expected {
-                                    Some(expected) => expected.to_string(),
-                                    None => "end of input".to_string(),
+                                .map(|expected| {
+                                    expected.as_ref().map_or_else(
+                                        || "end of input".to_string(),
+                                        ToString::to_string,
+                                    )
                                 })
                                 .collect::<Vec<_>>()
                                 .join(", ")

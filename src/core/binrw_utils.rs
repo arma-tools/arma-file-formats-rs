@@ -269,7 +269,7 @@ pub fn read_st(
     let count = u32::read_options(reader, endian, ())? as usize;
     if args.version >= 45 {
         let comp = decompress_array::<STPairCompress>(reader, endian, 8, count, args)?;
-        Ok(comp.into_iter().map(std::convert::Into::into).collect())
+        Ok(comp.into_iter().map(Into::into).collect())
     } else {
         Ok(decompress_array::<STPair>(reader, endian, 24, count, args)?)
     }

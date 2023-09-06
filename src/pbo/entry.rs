@@ -20,9 +20,7 @@ pub struct Entry {
 impl Entry {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self::default()
     }
 
     pub fn read<R>(&mut self, reader: &mut R) -> Result<(), RvffError>

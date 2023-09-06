@@ -45,7 +45,12 @@ impl CfgClass {
 
     #[must_use]
     pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
-        let cur = *path.first().unwrap();
+        let Some(first) = path.first() else {
+            return None;
+        };
+
+        let cur = *first;
+
         let last = path.len() == 1;
 
         for entry in &self.entries {

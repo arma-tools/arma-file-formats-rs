@@ -34,9 +34,7 @@ pub struct Pbo {
 impl Pbo {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self::default()
     }
 
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RvffError> {

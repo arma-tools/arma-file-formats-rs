@@ -24,9 +24,7 @@ pub struct Mipmap {
 impl Mipmap {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self::default()
     }
 
     pub(crate) fn read_header<R>(&mut self, reader: &mut R) -> Result<(), PaaError>

@@ -13,9 +13,7 @@ impl Tagg {
 
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self::default()
     }
 
     pub fn read<T>(&mut self, stream: &mut T) -> io::Result<()>

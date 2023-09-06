@@ -30,7 +30,7 @@ derivative = "2.2.0"
 squish = "2.0.0-beta1"
 
 # PBO
-indexmap = "1.9.1"
+indexmap = "2.0.0"
 sha-1 = "0.10.1"
 
 # Sign

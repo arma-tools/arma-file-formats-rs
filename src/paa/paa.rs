@@ -10,11 +10,11 @@ use lzokay_native::Dict;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::{
-    core::{read::ReadExtTrait, types::PaaType, write::WriteExtTrait},
+    core::{read::ReadExtTrait, write::WriteExtTrait},
     errors::PaaError,
 };
 
-use super::{Mipmap, Tagg};
+use super::{Mipmap, PaaType, Tagg};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Paa {

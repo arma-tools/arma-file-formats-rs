@@ -8,7 +8,7 @@ use anyhow::Result;
 use lzokay_native::{compress_with_dict, decompress_all, Dict};
 use squish::{Format, Params};
 
-use crate::core::types::PaaType;
+use super::PaaType;
 use crate::errors::PaaError;
 
 #[derive(Debug, Default, PartialEq, Eq, Clone)]

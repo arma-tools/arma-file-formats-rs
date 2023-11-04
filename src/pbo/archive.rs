@@ -287,7 +287,7 @@ impl Pbo {
     pub(crate) fn namehash(&self) -> Output<Sha1> {
         let mut hash = Sha1::new();
 
-        for entry in self.entries.iter() {
+        for entry in &self.entries {
             if entry.1.data.is_empty() {
                 continue;
             }
@@ -303,7 +303,7 @@ impl Pbo {
 
         let mut empty = true;
 
-        for entry in self.entries.iter() {
+        for entry in &self.entries {
             let file_ext = entry.0.split('.').last().unwrap();
 
             if V2_EXCLUDE_LIST.contains(&file_ext) {

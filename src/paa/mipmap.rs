@@ -69,8 +69,6 @@ impl Mipmap {
     fn decompress_data(&mut self, paa_type: PaaType) -> Result<(), PaaError> {
         let expected_size = self.width as usize * self.height as usize;
 
-        if self.is_lzo_compressed {}
-
         match paa_type {
             PaaType::UNKNOWN => todo!(),
             PaaType::DXT1 => {

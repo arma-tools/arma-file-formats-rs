@@ -38,7 +38,7 @@ impl Paa {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            magic_number: PaaType::UNKNOWN,
+            magic_number: PaaType::Unknown,
             mipmaps: Vec::new(),
             taggs: HashMap::new(),
             palette: Vec::new(),
@@ -69,7 +69,7 @@ impl Paa {
         let mut paa = Self::new();
 
         reader.rewind()?;
-        paa.magic_number = PaaType::try_from(reader.read_u16()?).unwrap_or(PaaType::UNKNOWN);
+        paa.magic_number = PaaType::try_from(reader.read_u16()?).unwrap_or(PaaType::Unknown);
 
         while reader.peek_string_lossy(4)?.starts_with("GGAT") {
             let mut tagg = Tagg::new();
@@ -233,9 +233,9 @@ impl Paa {
         }
 
         let magic_number = paa_type.unwrap_or(if avg_a == 0xFF {
-            PaaType::DXT1
+            PaaType::Dxt1
         } else {
-            PaaType::DXT5
+            PaaType::Dxt5
         });
 
         self.write_internal(writer, magic_number, &mut taggs, &Vec::new())?;

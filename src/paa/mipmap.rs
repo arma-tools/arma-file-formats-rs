@@ -70,8 +70,8 @@ impl Mipmap {
         let expected_size = self.width as usize * self.height as usize;
 
         match paa_type {
-            PaaType::UNKNOWN => todo!(),
-            PaaType::DXT1 => {
+            PaaType::Unknown => todo!(),
+            PaaType::Dxt1 => {
                 if self.is_lzo_compressed {
                     self.data = decompress_all(&self.data, None)?;
                 }
@@ -88,10 +88,10 @@ impl Mipmap {
 
                 self.data = decompressed;
             }
-            PaaType::DXT2 => todo!(),
-            PaaType::DXT3 => todo!(),
-            PaaType::DXT4 => todo!(),
-            PaaType::DXT5 => {
+            PaaType::Dxt2 => todo!(),
+            PaaType::Dxt3 => todo!(),
+            PaaType::Dxt4 => todo!(),
+            PaaType::Dxt5 => {
                 if self.is_lzo_compressed {
                     self.data = decompress_all(&self.data, None)?;
                 }
@@ -108,7 +108,7 @@ impl Mipmap {
 
                 self.data = decompressed;
             }
-            PaaType::RGBA4444 => {
+            PaaType::Rgba4444 => {
                 let mut cursor_data = Cursor::new(&self.data);
 
                 let (_, decompressed_data) = decompress_lzss(
@@ -142,9 +142,9 @@ impl Mipmap {
 
                 self.data = rgba_buf;
             }
-            PaaType::RGBA5551 => todo!(),
-            PaaType::RGBA8888 => todo!(),
-            PaaType::GRAYwAlpha => {
+            PaaType::Rgba5551 => todo!(),
+            PaaType::Rgba8888 => todo!(),
+            PaaType::GrayWAlpha => {
                 let mut cursor_data = Cursor::new(&self.data);
 
                 let (_, decompressed_data) = decompress_lzss(
@@ -182,8 +182,8 @@ impl Mipmap {
     {
         let mut out_data: Vec<u8>;
         match paa_type {
-            PaaType::UNKNOWN => todo!(),
-            PaaType::DXT1 => {
+            PaaType::Unknown => todo!(),
+            PaaType::Dxt1 => {
                 let format = Format::Bc1;
 
                 let comp_size = format.compressed_size(self.width.into(), self.height.into());
@@ -201,10 +201,10 @@ impl Mipmap {
                     out_data = compressed_data;
                 }
             }
-            PaaType::DXT2 => todo!(),
-            PaaType::DXT3 => todo!(),
-            PaaType::DXT4 => todo!(),
-            PaaType::DXT5 => {
+            PaaType::Dxt2 => todo!(),
+            PaaType::Dxt3 => todo!(),
+            PaaType::Dxt4 => todo!(),
+            PaaType::Dxt5 => {
                 let format = Format::Bc3;
 
                 let comp_size = format.compressed_size(self.width.into(), self.height.into());
@@ -222,10 +222,10 @@ impl Mipmap {
                     out_data = compressed_data;
                 }
             }
-            PaaType::RGBA4444 => todo!(),
-            PaaType::RGBA5551 => todo!(),
-            PaaType::RGBA8888 => todo!(),
-            PaaType::GRAYwAlpha => todo!(),
+            PaaType::Rgba4444 => todo!(),
+            PaaType::Rgba5551 => todo!(),
+            PaaType::Rgba8888 => todo!(),
+            PaaType::GrayWAlpha => todo!(),
         }
 
         self.data_size = self.data.len() as i64;

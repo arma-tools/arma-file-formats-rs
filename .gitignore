@@ -4,5 +4,6 @@
 tarpaulin-report.html
 *.profraw
 .env
+lcov.info
 
 /tests/real_virtuality/test-data/*

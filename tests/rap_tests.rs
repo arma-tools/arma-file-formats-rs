@@ -167,3 +167,15 @@ fn grad_base_parse() {
         "Land_Shoot_House_Panels_F"
     );
 }
+
+#[test]
+fn entry_return_test() {
+    let file = File::open(format!("{}test.rvmat", INPUT_PATH_PREFIX)).unwrap();
+    let mut buf = BufReader::new(file);
+
+    let cfg = Cfg::read(&mut buf).unwrap();
+
+    let entry = cfg.get_entry(&["TexGen3", "uvTransform", "pos"]).unwrap();
+    let n = entry.as_array().unwrap();
+    dbg!(n);
+}

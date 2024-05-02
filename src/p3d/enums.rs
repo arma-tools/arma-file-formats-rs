@@ -121,7 +121,7 @@ pub enum EMainLight {
 )]
 #[derive(BinRead, Derivative, PartialEq, Clone)]
 #[derivative(Debug, Default)]
-#[br(repr = u32)]
+#[br(repr = i32)]
 pub enum PixelShaderID {
     #[derivative(Default)]
     PSNormal,
@@ -255,7 +255,7 @@ pub enum PixelShaderID {
     PSSuperAToC,
     NPixelShaderID,
     //PSNone = 129,
-    PSUninitialized = 4294967295,
+    PSUninitialized = -1,
 }
 
 #[derive(PartialEq, BinRead, Derivative, Clone)]

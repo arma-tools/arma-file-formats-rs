@@ -13,5 +13,3 @@ pub use self::lod::*;
 pub use self::model_info::*;
 pub use self::odol::*;
 pub use self::skeleton::*;
-
-pub(crate) use self::odol::ODOLArgs;

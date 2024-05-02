@@ -1,10 +1,11 @@
+workspace = { members = ["tests/test-data-setup"] }
 [package]
-name = "rvff"
+name = "arma-file-formats"
 version = "0.1.0"
 edition = "2021"
-description = "Pure rust implementation of most of the Real Virtuality file formats."
+description = "Pure rust implementation of most of the Real Virtuality & Enfusion file formats."
 license = "MIT"
-repository = "https://github.com/arma-tools/rvff/"
+repository = "https://github.com/arma-tools/arma-file-formats/"
 readme = "README.md"
 keywords = ["pbo", "paa", "p3d", "wrp", "real-virtuality", "decoding"]
 categories = ["decoding", "parser-implementations", "parsing"]
@@ -50,4 +51,8 @@ image = "0.24.6"
 serial_test = "2.0.0"
 
 [features]
+default = ["real_virtuality", "enfusion"]
+
 parallel = ["squish/rayon", "rayon"]
+real_virtuality = []
+enfusion = []

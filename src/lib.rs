@@ -16,13 +16,10 @@
 #![allow(clippy::float_cmp)]
 #![allow(clippy::multiple_crate_versions)]
 
-pub mod core;
-
-pub mod p3d;
-pub mod paa;
-pub mod pbo;
-pub mod rap;
-pub mod sign;
-pub mod wrp;
-
 pub mod errors;
+
+#[cfg(feature = "real_virtuality")]
+pub mod real_virtuality;
+
+#[cfg(feature = "enfusion")]
+pub mod enfusion;

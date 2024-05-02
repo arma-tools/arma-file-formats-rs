@@ -26,8 +26,11 @@ pub enum PaaError {
     Unknown,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
+#[derive(Debug, Error)]
 pub enum RvffLzssError {
+    #[error("IO failed")]
+    IOError(#[from] io::Error),
+
     #[error("LZSS Checksum Missmatch")]
     ChecksumMissmatch,
 

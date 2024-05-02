@@ -113,7 +113,7 @@ pub enum EMainLight {
 #[allow(clippy::enum_clike_unportable_variant)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, BinRead, Derivative)]
 #[derivative(Default)]
-#[br(repr = u32)]
+#[br(repr = i32)]
 pub enum PixelShaderID {
     #[derivative(Default)]
     PSNormal,
@@ -247,7 +247,7 @@ pub enum PixelShaderID {
     PSSuperAToC,
     NPixelShaderID,
     //PSNone = 129,
-    PSUninitialized = 4_294_967_295,
+    PSUninitialized = -1,
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, BinRead)]

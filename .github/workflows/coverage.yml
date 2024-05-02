@@ -17,6 +17,8 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        with:
+          lfs: 'true'
 
       - uses: dtolnay/rust-toolchain@stable
         with:

@@ -14,7 +14,6 @@ jobs:
 
     env:
       #RUSTFLAGS: -D warnings
-      AFF_TEST_DATA_PW: ${{ secrets.AFF_TEST_DATA_PW }}
       CARGO_TERM_COLOR: always
     steps:
       - name: Checkout
@@ -37,7 +36,7 @@ jobs:
             ${{ runner.os }}-lfs-
 
       - name: ls checkout
-        run: ls tests/test-data
+        run: ls -lha tests/test-data
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -61,5 +60,6 @@ jobs:
         uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          AFF_TEST_DATA_PW: ${{ secrets.AFF_TEST_DATA_PW }}
         with:
           files: lcov.info

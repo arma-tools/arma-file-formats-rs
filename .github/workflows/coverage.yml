@@ -14,6 +14,7 @@ jobs:
 
     env:
       #RUSTFLAGS: -D warnings
+      AFF_TEST_DATA_PW: ${{ secrets.AFF_TEST_DATA_PW }}
       CARGO_TERM_COLOR: always
     steps:
       - name: Checkout

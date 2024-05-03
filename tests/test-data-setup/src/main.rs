@@ -8,7 +8,9 @@ fn main() {
         return;
     }
 
-    dotenvy::dotenv().expect("dotenvy failed");
+    if dotenvy::dotenv().is_err() {
+        println!(".env not found...");
+    }
 
     println!("Extracting test data...");
 

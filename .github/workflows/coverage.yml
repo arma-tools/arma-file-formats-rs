@@ -36,7 +36,7 @@ jobs:
             ${{ runner.os }}-lfs-
 
       - name: ls checkout
-        run: ls tests
+        run: ls tests/test-data
 
       - uses: dtolnay/rust-toolchain@stable
         with:

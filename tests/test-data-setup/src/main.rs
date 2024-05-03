@@ -3,9 +3,7 @@ use std::{env, path::Path};
 fn main() {
     if Path::new("tests/real_virtuality/test-data")
         .read_dir()
-        .expect("read_dir failed")
-        .next()
-        .is_some()
+        .is_ok_and(|mut rd| rd.next().is_some())
     {
         return;
     }

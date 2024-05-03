@@ -18,6 +18,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
+  
+      - name: Git LFS Pull 
+        run: git lfs pull
 
       - name: Create LFS file list
         run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-assets-id
@@ -30,11 +35,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-lfs-
 
-      - name: Git LFS Pull
-        run: git lfs pull
-
       - name: ls checkout
-        run: ls
+        run: ls tests
 
       - uses: dtolnay/rust-toolchain@stable
         with:

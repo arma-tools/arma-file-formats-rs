@@ -1,7 +1,7 @@
 use std::io::{BufRead, Seek};
 
 use super::{pretty_print::PrettyPrint, value::CfgValue};
-use crate::{errors::RvffError, real_virtuality::core::read::ReadExtTrait};
+use crate::{errors::AffError, real_virtuality::core::read::ReadExtTrait};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CfgProperty {
@@ -10,7 +10,7 @@ pub struct CfgProperty {
 }
 
 impl CfgProperty {
-    pub fn read_property<I>(reader: &mut I, is_array: bool) -> Result<Self, RvffError>
+    pub fn read_property<I>(reader: &mut I, is_array: bool) -> Result<Self, AffError>
     where
         I: BufRead + Seek,
     {

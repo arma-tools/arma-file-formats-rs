@@ -1,6 +1,6 @@
 use std::io::{BufRead, Seek, SeekFrom, Write};
 
-use crate::errors::RvffError;
+use crate::errors::AffError;
 use crate::real_virtuality::core::read::ReadExtTrait;
 use crate::real_virtuality::core::write::WriteExtTrait;
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
@@ -23,7 +23,7 @@ impl Entry {
         Self::default()
     }
 
-    pub fn read<R>(&mut self, reader: &mut R) -> Result<(), RvffError>
+    pub fn read<R>(&mut self, reader: &mut R) -> Result<(), AffError>
     where
         R: BufRead + Seek,
     {
@@ -36,7 +36,7 @@ impl Entry {
 
         Ok(())
     }
-    pub fn read_data<R>(&mut self, reader: &mut R) -> Result<(), RvffError>
+    pub fn read_data<R>(&mut self, reader: &mut R) -> Result<(), AffError>
     where
         R: BufRead + Seek,
     {
@@ -45,7 +45,7 @@ impl Entry {
         Ok(())
     }
 
-    pub fn write<R>(&mut self, writer: &mut R) -> Result<(), RvffError>
+    pub fn write<R>(&mut self, writer: &mut R) -> Result<(), AffError>
     where
         R: Write + Seek,
     {

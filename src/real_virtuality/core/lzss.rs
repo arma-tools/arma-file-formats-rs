@@ -7,13 +7,13 @@ use std::{
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::errors::{RvffError, RvffLzssError};
+use crate::errors::{AffError, LzssError};
 
 pub fn decompress_lzss<R>(
     reader: &mut R,
     expected_size: usize,
     use_signed_checksum: bool,
-) -> Result<(u64, Vec<u8>), RvffLzssError>
+) -> Result<(u64, Vec<u8>), LzssError>
 where
     R: Read + Seek,
 {
@@ -38,19 +38,19 @@ where
     while remaining_size > 0 {
         num5 >>= 1;
         if (num5 & 256) == 0 {
-            let val = reader.read_u8().unwrap();
+            let val = reader.read_u8()?;
             num5 = i32::from(val) | 65280;
         }
         if (num5 & 1) == 0 {
-            let mut i = i32::from(reader.read_u8().unwrap());
-            let mut val = i32::from(reader.read_u8().unwrap());
+            let mut i = i32::from(reader.read_u8()?);
+            let mut val = i32::from(reader.read_u8()?);
             i |= (val & 240) << 4;
             val &= 15;
             val += 2;
             let mut j = num4 - i;
             let num8 = val + j;
             if (val + 1) as usize > remaining_size {
-                return Err(RvffLzssError::Overflow);
+                return Err(LzssError::Overflow);
             }
             while j <= num8 {
                 let num6 = array[(j & 4095) as usize];
@@ -68,7 +68,7 @@ where
                 j += 1;
             }
         } else {
-            let val = reader.read_u8().unwrap();
+            let val = reader.read_u8()?;
             if use_signed_checksum {
                 calculated_hash += i32::from(val as i8);
             } else {
@@ -83,15 +83,15 @@ where
         }
     }
 
-    let hash = reader.read_i32::<LittleEndian>().unwrap();
+    let hash = reader.read_i32::<LittleEndian>()?;
     if hash != calculated_hash {
-        return Err(RvffLzssError::ChecksumMissmatch);
+        return Err(LzssError::ChecksumMissmatch);
     }
-    let size = reader.stream_position().unwrap() - pos;
+    let size = reader.stream_position()? - pos;
     Ok((size, dst))
 }
 
-pub fn decompress_lzss_unk_size<R>(reader: &mut R) -> Result<Vec<u8>, RvffError>
+pub fn decompress_lzss_unk_size<R>(reader: &mut R) -> Result<Vec<u8>, AffError>
 where
     R: Read + Seek,
 {
@@ -105,8 +105,7 @@ where
     let threshold: i32 = 2;
 
     let mut text_buffer = vec![0_u8; (sliding_winding_size + best_match - 1) as usize];
-    let mut out = Vec::new();
-    out.reserve(in_size as usize * 4);
+    let mut out = Vec::with_capacity(in_size as usize * 4);
 
     let mut check_sum = 0_i32;
     let mut flags = 0_i32;
@@ -161,14 +160,14 @@ where
         out.truncate(size);
         Ok(out)
     } else {
-        Err(RvffError::Unknown)
+        Err(AffError::Unknown)
     }
 }
 
 pub fn check_for_magic_and_decompress_lzss<R>(
     reader: &mut R,
     magic: &[u8],
-) -> Result<Option<Vec<u8>>, RvffError>
+) -> Result<Option<Vec<u8>>, AffError>
 where
     R: Read + Seek,
 {
@@ -194,7 +193,7 @@ where
 pub fn check_for_magic_and_decompress_lzss_file<P: AsRef<Path>>(
     path: P,
     magic: &[u8],
-) -> Result<bool, RvffError> {
+) -> Result<bool, AffError> {
     let mut file = File::open(&path)?;
     let uncomp_data = check_for_magic_and_decompress_lzss(&mut file, magic)?;
 

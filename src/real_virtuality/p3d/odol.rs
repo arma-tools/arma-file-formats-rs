@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::real_virtuality::core::decompress_lzss_unk_size;
-use crate::{errors::RvffError, real_virtuality::p3d::model_info::ModelInfo};
+use crate::{errors::AffError, real_virtuality::p3d::model_info::ModelInfo};
 use derivative::Derivative;
 
 use super::animations::Animations;
@@ -207,27 +207,27 @@ impl ODOL {
         Self::default()
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RvffError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, AffError> {
         let file = File::open(path)?;
         let mut buf_reader = BufReader::new(file);
         Self::from_stream(&mut buf_reader)
     }
 
-    pub(crate) fn from_stream_lazy<R>(reader: &mut R) -> Result<Self, RvffError>
+    pub(crate) fn from_stream_lazy<R>(reader: &mut R) -> Result<Self, AffError>
     where
         R: Read + Seek,
     {
         Self::read(reader, true)
     }
 
-    pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
+    pub fn from_stream<R>(reader: &mut R) -> Result<Self, AffError>
     where
         R: Read + Seek,
     {
         Self::read(reader, false)
     }
 
-    fn read<R>(reader: &mut R, skip_lods: bool) -> Result<Self, RvffError>
+    fn read<R>(reader: &mut R, skip_lods: bool) -> Result<Self, AffError>
     where
         R: Read + Seek,
     {
@@ -249,11 +249,7 @@ impl ODOL {
         Ok(Self::read_le_args(reader, (opt,))?)
     }
 
-    pub fn read_lod<RS>(
-        &self,
-        reader: &mut RS,
-        resolution: ResolutionEnum,
-    ) -> Result<Lod, RvffError>
+    pub fn read_lod<RS>(&self, reader: &mut RS, resolution: ResolutionEnum) -> Result<Lod, AffError>
     where
         RS: Read + Seek,
     {
@@ -286,7 +282,7 @@ impl<R> OdolLazyReader<R>
 where
     R: Read + Seek,
 {
-    pub fn from_reader(mut reader: R) -> Result<Self, RvffError> {
+    pub fn from_reader(mut reader: R) -> Result<Self, AffError> {
         let odol = ODOL::from_stream_lazy(&mut reader)?;
         Ok(Self {
             lods: HashMap::new(),
@@ -295,7 +291,7 @@ where
         })
     }
 
-    pub fn read_lod(&mut self, resolution: ResolutionEnum) -> Result<Lod, RvffError> {
+    pub fn read_lod(&mut self, resolution: ResolutionEnum) -> Result<Lod, AffError> {
         if let Some(lod_index) = self
             .odol
             .resolutions

@@ -3,7 +3,7 @@ use std::io::Read;
 use std::io::Seek;
 
 use super::QuadTree;
-use crate::errors::RvffError;
+use crate::errors::AffError;
 use crate::real_virtuality::core::binrw_utils::read_compressed_array_count;
 use crate::real_virtuality::core::decompress_lzss_unk_size;
 use crate::real_virtuality::core::types::XY;
@@ -132,7 +132,7 @@ pub struct OPRW {
 }
 
 impl OPRW {
-    pub fn from_read(reader: &mut (impl Read + Seek)) -> Result<Self, RvffError> {
+    pub fn from_read(reader: &mut (impl Read + Seek)) -> Result<Self, AffError> {
         // OPRW
         let mut magic_buf = vec![0_u8; 4];
         reader.read_exact(&mut magic_buf)?;
@@ -148,7 +148,7 @@ impl OPRW {
         Ok(oprw)
     }
 
-    fn read_oprw(reader: &mut (impl Read + Seek)) -> Result<Self, RvffError> {
+    fn read_oprw(reader: &mut (impl Read + Seek)) -> Result<Self, AffError> {
         let mut oprw = Self::read_options(reader, Endian::Little, ())?;
         oprw.road_net.retain(|rn| rn.road_part_count > 0);
         Ok(oprw)

@@ -17,7 +17,7 @@ pub enum PaaError {
     PaaLzoErr(#[from] lzokay_native::Error),
 
     #[error("LZSS Error")]
-    RvffLzssError(#[from] RvffLzssError),
+    LzssError(#[from] LzssError),
 
     #[error("Invalid state")]
     InvalidState,
@@ -27,7 +27,7 @@ pub enum PaaError {
 }
 
 #[derive(Debug, Error)]
-pub enum RvffLzssError {
+pub enum LzssError {
     #[error("IO failed")]
     IOError(#[from] io::Error),
 
@@ -39,7 +39,7 @@ pub enum RvffLzssError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
-pub enum RvffOdolError {
+pub enum OdolError {
     #[error("Signature Missing")]
     SignatureMissing,
 
@@ -51,21 +51,21 @@ pub enum RvffOdolError {
 }
 
 #[derive(Debug, Error)]
-pub enum RvffError {
+pub enum AffError {
     #[error("IO failed {0}")]
-    RvffIOError(#[from] io::Error),
+    IOError(#[from] io::Error),
 
     #[error("FromUTF8 failed {0}")]
-    RvffUTFError(#[from] FromUtf8Error),
+    UTFError(#[from] FromUtf8Error),
 
     #[error("Binrw failed {0}")]
-    RvffBinrwError(#[from] binrw::Error),
+    BinrwError(#[from] binrw::Error),
 
     #[error("LZSS Error")]
-    RvffLzssError(#[from] RvffLzssError),
+    LzssError(#[from] LzssError),
 
     #[error("ODOL Error")]
-    RvffOdolError(#[from] RvffOdolError),
+    OdolError(#[from] OdolError),
 
     #[error("Invalid file")]
     InvalidFileError,
@@ -77,5 +77,5 @@ pub enum RvffError {
     Unknown,
 
     #[error("Parsing failed: {0}")]
-    RvffParseError(String),
+    ParseError(String),
 }

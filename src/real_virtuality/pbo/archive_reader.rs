@@ -1,6 +1,6 @@
 use std::io::{BufRead, Seek};
 
-use crate::errors::RvffError;
+use crate::errors::AffError;
 
 use super::{Entry, Pbo};
 
@@ -17,7 +17,7 @@ impl<R> PboReader<R>
 where
     R: BufRead + Seek,
 {
-    pub fn from_stream(reader: R) -> Result<Self, RvffError> {
+    pub fn from_stream(reader: R) -> Result<Self, AffError> {
         let mut pbo_reader = Self {
             reader,
             pbo: Pbo::new(),
@@ -26,7 +26,7 @@ where
         Ok(pbo_reader)
     }
 
-    pub fn get_entry(&mut self, entry_path: &str) -> Result<Option<Entry>, RvffError> {
+    pub fn get_entry(&mut self, entry_path: &str) -> Result<Option<Entry>, AffError> {
         self.pbo.get_entry(entry_path, &mut self.reader)
     }
 
@@ -39,7 +39,7 @@ where
         entry_path: &str,
         out_path: &str,
         full_path: bool,
-    ) -> Result<(), RvffError> {
+    ) -> Result<(), AffError> {
         self.pbo
             .extract_single_file(entry_path, out_path, full_path, &mut self.reader)
     }

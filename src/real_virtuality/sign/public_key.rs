@@ -1,5 +1,5 @@
 use crate::{
-    errors::RvffError,
+    errors::AffError,
     real_virtuality::core::{
         binrw_utils::{read_biguint, write_biguint},
         write::WriteExtTrait,
@@ -62,13 +62,13 @@ impl PublicKey {
             n: BigUint::default(),
         }
     }
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RvffError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, AffError> {
         let file = File::open(path)?;
         let mut buf_reader = BufReader::new(file);
         Self::from_stream(&mut buf_reader)
     }
 
-    pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
+    pub fn from_stream<R>(reader: &mut R) -> Result<Self, AffError>
     where
         R: Read + Seek,
     {
@@ -76,7 +76,7 @@ impl PublicKey {
         Ok(pub_key)
     }
 
-    pub fn write_file<P: AsRef<Path>>(&mut self, path: P) -> Result<(), RvffError> {
+    pub fn write_file<P: AsRef<Path>>(&mut self, path: P) -> Result<(), AffError> {
         let path: &Path = &path.as_ref().with_extension(EXTENSION);
 
         let mut file = File::create(path)?;
@@ -84,7 +84,7 @@ impl PublicKey {
         Ok(())
     }
 
-    pub fn write_data(&mut self) -> Result<Vec<u8>, RvffError> {
+    pub fn write_data(&mut self) -> Result<Vec<u8>, AffError> {
         let mut buf = Vec::new();
         let mut cursor = Cursor::new(&mut buf);
 

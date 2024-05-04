@@ -1,4 +1,4 @@
-use crate::errors::RvffError;
+use crate::errors::AffError;
 use crate::real_virtuality::rap::{CfgClass, CfgEntry, CfgProperty, CfgValue};
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 use chumsky::{prelude::*, stream::Stream};
@@ -267,7 +267,7 @@ fn entry_parser() -> impl Parser<Token, Vec<Spanned<EntryExpr>>, Error = Simple<
     class.or(entry).repeated().then_ignore(end())
 }
 
-pub fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
+pub fn parse(src: &str) -> Result<Vec<CfgEntry>, AffError> {
     let (tokens, errs) = lexer().parse_recovery(src);
     // dbg!(&tokens);
     // dbg!(errs.clone());
@@ -370,5 +370,5 @@ pub fn parse(src: &str) -> Result<Vec<CfgEntry>, RvffError> {
         })
         .collect();
 
-    Err(RvffError::RvffParseError(errs_str.join("\n")))
+    Err(AffError::ParseError(errs_str.join("\n")))
 }

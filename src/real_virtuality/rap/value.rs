@@ -1,6 +1,6 @@
 use std::io::{BufRead, Seek};
 
-use crate::{errors::RvffError, real_virtuality::core::read::ReadExtTrait};
+use crate::{errors::AffError, real_virtuality::core::read::ReadExtTrait};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CfgValue {
@@ -11,7 +11,7 @@ pub enum CfgValue {
 }
 
 impl CfgValue {
-    pub fn read_value<I>(reader: &mut I, typ_id: Option<u8>) -> Result<Self, RvffError>
+    pub fn read_value<I>(reader: &mut I, typ_id: Option<u8>) -> Result<Self, AffError>
     where
         I: BufRead + Seek,
     {
@@ -30,7 +30,7 @@ impl CfgValue {
         })
     }
 
-    pub fn read_array<I>(reader: &mut I) -> Result<Self, RvffError>
+    pub fn read_array<I>(reader: &mut I) -> Result<Self, AffError>
     where
         I: BufRead + Seek,
     {

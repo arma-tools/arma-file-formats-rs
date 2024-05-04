@@ -5,7 +5,7 @@ use std::io::Read;
 use std::io::Seek;
 use std::path::Path;
 
-use crate::errors::RvffError;
+use crate::errors::AffError;
 use crate::real_virtuality::core::binrw_utils::{read_biguint, write_biguint};
 use crate::real_virtuality::core::write::WriteExtTrait;
 use binrw::{binrw, BinRead, Endian};
@@ -96,13 +96,13 @@ impl Signature {
         }
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RvffError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, AffError> {
         let file = File::open(path)?;
         let mut buf_reader = BufReader::new(file);
         Self::from_stream(&mut buf_reader)
     }
 
-    pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
+    pub fn from_stream<R>(reader: &mut R) -> Result<Self, AffError>
     where
         R: Read + Seek,
     {
@@ -110,7 +110,7 @@ impl Signature {
         Ok(sig)
     }
 
-    pub fn write_file<P: AsRef<Path>>(&mut self, path: P) -> Result<(), RvffError> {
+    pub fn write_file<P: AsRef<Path>>(&mut self, path: P) -> Result<(), AffError> {
         let path: &Path = &path.as_ref().with_extension(EXTENSION);
 
         let mut file = File::create(path)?;
@@ -118,7 +118,7 @@ impl Signature {
         Ok(())
     }
 
-    pub fn write_data(&mut self) -> Result<Vec<u8>, RvffError> {
+    pub fn write_data(&mut self) -> Result<Vec<u8>, AffError> {
         let mut buf = Vec::new();
         let mut cursor = Cursor::new(&mut buf);
 

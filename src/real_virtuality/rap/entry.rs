@@ -1,6 +1,6 @@
 use std::io::{BufRead, Seek};
 
-use crate::{errors::RvffError, real_virtuality::core::read::ReadExtTrait};
+use crate::{errors::AffError, real_virtuality::core::read::ReadExtTrait};
 
 use super::{class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty, EntryReturn};
 
@@ -13,7 +13,7 @@ pub enum CfgEntry {
 }
 
 impl CfgEntry {
-    pub fn parse_entry<I>(reader: &mut I) -> Result<Self, RvffError>
+    pub fn parse_entry<I>(reader: &mut I) -> Result<Self, AffError>
     where
         I: BufRead + Seek,
     {

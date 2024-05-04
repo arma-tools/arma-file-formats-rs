@@ -7,7 +7,7 @@ use rsa::BigUint;
 use sha1::digest::Output;
 use sha1::{Digest, Sha1};
 
-use crate::errors::RvffError;
+use crate::errors::AffError;
 use crate::real_virtuality::core::read::ReadExtTrait;
 use crate::real_virtuality::sign::{PrivateKey, PublicKey, SignVersion, Signature, KEY_LENGTH};
 
@@ -37,13 +37,13 @@ impl Pbo {
         Self::default()
     }
 
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, RvffError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, AffError> {
         let file = File::open(path)?;
         let mut buf_reader = BufReader::new(file);
         Self::from_stream(&mut buf_reader)
     }
 
-    pub fn from_stream<R>(reader: &mut R) -> Result<Self, RvffError>
+    pub fn from_stream<R>(reader: &mut R) -> Result<Self, AffError>
     where
         R: BufRead + Seek,
     {
@@ -78,7 +78,7 @@ impl Pbo {
         self.entries.contains_key(&self.handle_prefix(entry_path))
     }
 
-    pub(crate) fn read<R>(&mut self, reader: &mut R, skip_data: bool) -> Result<(), RvffError>
+    pub(crate) fn read<R>(&mut self, reader: &mut R, skip_data: bool) -> Result<(), AffError>
     where
         R: BufRead + Seek,
     {
@@ -86,7 +86,7 @@ impl Pbo {
             || reader.read_string(4)? != PBO_MAGIC
             || reader.read_bytes(16)?.into_iter().all(|x| x != 0)
         {
-            return Err(RvffError::InvalidFileError);
+            return Err(AffError::InvalidFileError);
         }
 
         while reader.peek_u8()? != 0 {
@@ -125,7 +125,7 @@ impl Pbo {
 
         reader.seek(SeekFrom::Start(data_pos))?;
         if reader.read_u8()? != 0 {
-            return Err(RvffError::InvalidFileError);
+            return Err(AffError::InvalidFileError);
         }
 
         self.hash = reader.read_bytes(20)?;
@@ -137,7 +137,7 @@ impl Pbo {
         &mut self,
         entry_path: &str,
         reader: &mut R,
-    ) -> Result<Option<Entry>, RvffError>
+    ) -> Result<Option<Entry>, AffError>
     where
         R: BufRead + Seek,
     {
@@ -159,7 +159,7 @@ impl Pbo {
         out_path: &str,
         full_path: bool,
         reader: &mut R,
-    ) -> Result<(), RvffError>
+    ) -> Result<(), AffError>
     where
         R: BufRead + Seek,
     {
@@ -187,7 +187,7 @@ impl Pbo {
 
             Ok(())
         } else {
-            Err(RvffError::PboEntryNotFound(entry_path.clone()))
+            Err(AffError::PboEntryNotFound(entry_path.clone()))
         }
     }
 

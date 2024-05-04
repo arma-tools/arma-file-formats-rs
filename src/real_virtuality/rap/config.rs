@@ -2,7 +2,7 @@ use std::io::{BufRead, Cursor, Seek};
 
 use super::{entry::CfgEntry, parser::parse, pretty_print::PrettyPrint, EntryReturn};
 use crate::{
-    errors::RvffError,
+    errors::AffError,
     real_virtuality::core::{decompress_lzss_unk_size, read::ReadExtTrait},
 };
 
@@ -23,12 +23,12 @@ impl Cfg {
             && matches!(reader.read_u32(), Ok(v) if v == 8)
     }
 
-    pub fn read_config<I>(reader: &mut I) -> Result<Self, RvffError>
+    pub fn read_config<I>(reader: &mut I) -> Result<Self, AffError>
     where
         I: BufRead + Seek,
     {
         if !Self::is_valid_rap_bin(reader) {
-            return Err(RvffError::InvalidFileError);
+            return Err(AffError::InvalidFileError);
         }
 
         let enum_offset = reader.read_u32()?;
@@ -49,12 +49,12 @@ impl Cfg {
         })
     }
 
-    pub fn read_data(data: &[u8]) -> Result<Self, RvffError> {
+    pub fn read_data(data: &[u8]) -> Result<Self, AffError> {
         let mut reader = Cursor::new(data);
         Self::read(&mut reader)
     }
 
-    pub fn read<I>(reader: &mut I) -> Result<Self, RvffError>
+    pub fn read<I>(reader: &mut I) -> Result<Self, AffError>
     where
         I: BufRead + Seek,
     {
@@ -98,7 +98,7 @@ impl Cfg {
         Self::parse_config(&cfg_text)
     }
 
-    pub fn parse_config(cfg: &str) -> Result<Self, RvffError> {
+    pub fn parse_config(cfg: &str) -> Result<Self, AffError> {
         let entries = parse(cfg)?;
         Ok(Self {
             enum_offset: 0,

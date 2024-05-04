@@ -1,6 +1,6 @@
 use std::io::{BufRead, Seek};
 
-use crate::errors::RvffError;
+use crate::errors::AffError;
 use crate::real_virtuality::core::read::ReadExtTrait;
 
 use super::{entry::CfgEntry, pretty_print::PrettyPrint, EntryReturn};
@@ -13,7 +13,7 @@ pub struct CfgClass {
 }
 
 impl CfgClass {
-    pub fn read_class<I>(reader: &mut I) -> Result<Self, RvffError>
+    pub fn read_class<I>(reader: &mut I) -> Result<Self, AffError>
     where
         I: BufRead + Seek,
     {

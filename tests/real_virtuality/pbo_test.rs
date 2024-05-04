@@ -60,11 +60,11 @@ fn pbo_lazy() {
 #[test]
 #[serial]
 fn verify_sig() {
-    let mut pub_key_file = File::open(format!("{}RVFF_TEST_KEY.bikey", INPUT_PATH_PREFIX)).unwrap();
+    let mut pub_key_file = File::open(format!("{}AFF_TEST_KEY.bikey", INPUT_PATH_PREFIX)).unwrap();
     let pub_key = PublicKey::from_stream(&mut pub_key_file).unwrap();
 
     let mut sig_file = File::open(format!(
-        "{}grad_adminMessages.pbo.RVFF_TEST_KEY.bisign",
+        "{}grad_adminMessages.pbo.AFF_TEST_KEY.bisign",
         INPUT_PATH_PREFIX
     ))
     .unwrap();
@@ -81,7 +81,7 @@ fn verify_sig() {
 #[serial]
 fn read_priv_key() {
     let mut priv_key_file =
-        File::open(format!("{}RVFF_TEST_KEY.biprivatekey", INPUT_PATH_PREFIX)).unwrap();
+        File::open(format!("{}AFF_TEST_KEY.biprivatekey", INPUT_PATH_PREFIX)).unwrap();
     let _ = PrivateKey::from_stream(&mut priv_key_file).unwrap();
 }
 
@@ -90,20 +90,20 @@ fn read_priv_key() {
 fn sign_test() {
     let pbo = Pbo::from_path(format!("{}grad_adminMessages.pbo", INPUT_PATH_PREFIX)).unwrap();
 
-    let auth = "RVFF_TEST_KEY2";
+    let auth = "AFF_TEST_KEY2";
 
     let mut priv_key = PrivateKey::generate(auth);
     priv_key
-        .write_file(format!("{}RVFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
+        .write_file(format!("{}AFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
         .unwrap();
 
     let mut pub_key: PublicKey = priv_key.clone().into();
     pub_key
-        .write_file(format!("{}RVFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
+        .write_file(format!("{}AFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
         .unwrap();
 
     let mut sig = pbo.sign(SignVersion::V3, &priv_key);
-    sig.write_file(format!("{}RVFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
+    sig.write_file(format!("{}AFF_TEST_KEY2", OUTPUT_PATH_PREFIX))
         .unwrap();
 
     assert!(pbo.verify(&pub_key, &sig).is_ok());

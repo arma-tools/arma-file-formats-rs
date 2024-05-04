@@ -1,9 +1,7 @@
-/target
-/Cargo.lock
+/arma-file-formats/tests/real_virtuality/test-data/*
 
-tarpaulin-report.html
-*.profraw
+/target
+Cargo.lock
+
 .env
 lcov.info
-
-/tests/real_virtuality/test-data/*

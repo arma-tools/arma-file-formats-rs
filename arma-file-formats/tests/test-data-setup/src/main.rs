@@ -1,7 +1,7 @@
 use std::{env, path::Path};
 
 fn main() {
-    if Path::new("tests/real_virtuality/test-data")
+    if Path::new("arma-file-formats/tests/real_virtuality/test-data")
         .read_dir()
         .is_ok_and(|mut rd| rd.next().is_some())
     {
@@ -13,12 +13,12 @@ fn main() {
     }
 
     for i in 1..4 {
-        let file = format!("tests/test-data/rv-test-data-part-{i}.7z");
+        let file = format!("arma-file-formats/tests/test-data/rv-test-data-part-{i}.7z");
 
         println!("Extracting test data: {file}");
         sevenz_rust::decompress_file_with_password(
             file,
-            "tests/real_virtuality/",
+            "arma-file-formats/tests/real_virtuality/",
             env::var("AFF_TEST_DATA_PW")
                 .expect("AFF_TEST_DATA_PW not set")
                 .to_string()

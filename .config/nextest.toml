@@ -5,4 +5,4 @@ filter = 'all()'
 setup = 'test-data-setup'
 
 [script.test-data-setup]
-command = 'cargo run -p test-data-setup'
+command = 'cargo run -p aff-test-data-setup'

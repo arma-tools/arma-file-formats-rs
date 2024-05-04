@@ -62,7 +62,7 @@ fn single_debug() {
 
 #[test]
 fn test_all() {
-    let test_all = fs::read_dir(format!("{}", INPUT_PATH_PREFIX)).unwrap();
+    let test_all = fs::read_dir(INPUT_PATH_PREFIX).unwrap();
 
     test_all.for_each(|e| {
         if let Ok(entry) = e {

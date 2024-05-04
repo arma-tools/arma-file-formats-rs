@@ -108,11 +108,3 @@ fn sign_test() {
 
     assert!(pbo.verify(&pub_key, &sig).is_ok());
 }
-
-//projeta3-10.pbo
-
-#[test]
-#[serial]
-fn alrayak_test() {
-    let _pbo = Pbo::from_path(format!("{}projeta3-10.pbo", INPUT_PATH_PREFIX)).unwrap();
-}

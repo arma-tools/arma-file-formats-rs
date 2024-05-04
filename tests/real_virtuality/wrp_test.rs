@@ -108,14 +108,3 @@ fn fjaderholmarna_test() {
     let mut file = File::open(format!("{}fjaderholmarna.wrp", INPUT_PATH_PREFIX)).unwrap();
     let _ = OPRW::from_read(&mut file).unwrap();
 }
-
-#[test]
-#[serial]
-fn al_rayak() {
-    let mut file = File::open(format!("{}pja310.wrp", INPUT_PATH_PREFIX)).unwrap();
-
-    let wrp = OPRW::from_read(&mut file).unwrap();
-
-    dbg!(wrp.road_net.len());
-    dbg!(&wrp.road_net[123]);
-}

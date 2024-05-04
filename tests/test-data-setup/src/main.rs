@@ -12,18 +12,21 @@ fn main() {
         println!(".env not found...");
     }
 
-    println!("Extracting test data...");
+    for i in 1..4 {
+        let file = format!("tests/test-data/rv-test-data-part-{i}.7z");
 
-    sevenz_rust::decompress_file_with_password(
-        "tests/test-data/rv-test-data.7z",
-        "tests/real_virtuality/",
-        env::var("AFF_TEST_DATA_PW")
-            .expect("AFF_TEST_DATA_PW not set")
-            .to_string()
-            .as_str()
-            .into(),
-    )
-    .expect("Test data decompression failed");
+        println!("Extracting test data: {file}");
+        sevenz_rust::decompress_file_with_password(
+            file,
+            "tests/real_virtuality/",
+            env::var("AFF_TEST_DATA_PW")
+                .expect("AFF_TEST_DATA_PW not set")
+                .to_string()
+                .as_str()
+                .into(),
+        )
+        .expect("Test data decompression failed");
+    }
 
     println!("Done!");
 }

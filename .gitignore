@@ -1,14 +1,7 @@
+/arma-file-formats/tests/real_virtuality/test-data/*
+
 /target
-/Cargo.lock
+Cargo.lock
 
-tarpaulin-report.html
-*.profraw
-
-/tests/test-data/paa_out
-/tests/test-data/pbo_out
-
-/tests/test-data/p3d_in
-/tests/test-data/wrp_in
-/tests/test-data/util_out
-
-/tests/test-data/pbo_in/projeta3-10.pbo
+.env
+lcov.info

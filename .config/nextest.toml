@@ -1,0 +1,8 @@
+experimental = ["setup-scripts"]
+
+[[profile.default.scripts]]
+filter = 'all()'
+setup = 'test-data-setup'
+
+[script.test-data-setup]
+command = 'cargo run -p aff-test-data-setup'

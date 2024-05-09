@@ -6,8 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.83"
 arma-file-formats = { path = "../arma-file-formats" }
 clap = { version = "4.5.4", features = ["derive"] }
+sha1 = "0.10.6"
+hex = "0.4.3"
+prettytable-rs = "^0.10"
 
 [features]
 default = ["real_virtuality", "enfusion"]

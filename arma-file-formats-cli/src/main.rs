@@ -7,16 +7,23 @@
 #![allow(missing_docs)]
 
 use std::{
-    fs::File,
+    borrow::Cow,
+    collections::HashMap,
+    env::current_dir,
+    fmt::Write,
+    fs::{self, File},
     io::{BufReader, Read, Seek, SeekFrom},
+    path::{Components, Path, PathBuf},
+    str::FromStr,
 };
 
 use anyhow::Result;
-use arma_file_formats::real_virtuality::pbo::PboReader;
+use arma_file_formats::real_virtuality::pbo::{Pbo, PboReader};
 use clap::{command, Args, Parser, Subcommand};
+use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use prettytable::{format, row, Table};
-use sha1::Digest;
-use sha1::Sha1;
+use ptree::{print_tree, TreeItem};
+use sha1::{Digest, Sha1};
 
 #[derive(Debug, Parser)]
 #[command(name = "aff")]
@@ -43,20 +50,69 @@ impl Commands {
     }
 }
 
-fn handle_pbo(args: &PboArgs) -> std::prelude::v1::Result<(), anyhow::Error> {
-    //let mut pbo = File::open(&args.input)?;
+#[derive(Clone)]
+struct PboEntry {
+    name: String,
+    children: HashMap<String, PboEntry>,
+}
 
+impl TreeItem for PboEntry {
+    type Child = Self;
+
+    fn write_self<W: std::io::Write>(
+        &self,
+        f: &mut W,
+        style: &ptree::Style,
+    ) -> std::io::Result<()> {
+        write!(f, "{}", style.paint(&self.name))
+    }
+
+    fn children(&self) -> Cow<[Self::Child]> {
+        let childs: Vec<Self> = self.children.values().cloned().collect();
+        Cow::from(childs)
+    }
+}
+
+fn insert(entry: &mut PboEntry, components: &mut Components) {
+    if let Some(comp) = components.next() {
+        let path = comp.as_os_str().to_str().unwrap_or_default().to_string();
+        if let Some(val) = entry.children.get_mut(&path) {
+            insert(val, components);
+        } else {
+            let mut new_entry = PboEntry {
+                name: path.clone(),
+                children: HashMap::new(),
+            };
+            insert(&mut new_entry, components);
+            entry.children.insert(path, new_entry);
+        }
+    }
+}
+
+fn handle_pbo(args: &PboArgs) -> std::prelude::v1::Result<(), anyhow::Error> {
     match &args.command {
-        PboCommands::List { input } => {
+        PboCommands::List { args } => {
+            let input = &args.input;
             let pbo = PboReader::from_stream(BufReader::new(File::open(input)?))?;
 
-            println!("PBO entries:");
+            let mut entry = PboEntry {
+                name: Path::new(input.as_str())
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_str()
+                    .unwrap_or_default()
+                    .to_string(),
+                children: HashMap::new(),
+            };
             for (name, _) in pbo.pbo.entries {
-                println!("{name}");
+                let path = Path::new(&name);
+                insert(&mut entry, &mut path.components());
             }
+            print_tree(&entry)?;
         }
-        PboCommands::HashCheck { input } => {
+        PboCommands::HashCheck { args } => {
             const BUF_SIZE: usize = 1024;
+            let input = &args.input;
             let mut pbo = File::open(input)?;
 
             let data_len = pbo.seek(SeekFrom::End(-20))?;
@@ -95,7 +151,8 @@ fn handle_pbo(args: &PboArgs) -> std::prelude::v1::Result<(), anyhow::Error> {
                 println!("Hash doesn't match");
             }
         }
-        PboCommands::Meta { input } => {
+        PboCommands::Meta { args } => {
+            let input = &args.input;
             let pbo = PboReader::from_stream(BufReader::new(File::open(input)?))?;
 
             println!("PBO properties:");
@@ -111,8 +168,51 @@ fn handle_pbo(args: &PboArgs) -> std::prelude::v1::Result<(), anyhow::Error> {
 
             table.printstd();
         }
+        PboCommands::Extract { args } => {
+            extract_pbo(args, false)?;
+        }
+        PboCommands::ExtractFlat { args } => {
+            extract_pbo(args, true)?;
+        }
     };
 
+    Ok(())
+}
+
+fn extract_pbo(args: &InputOutputCommandArgs, flat: bool) -> Result<(), anyhow::Error> {
+    let input = &args.input;
+    println!("Reading PBO...");
+    let pbo = Pbo::from_path(input)?;
+    println!("Extracting files...");
+    let data_size: usize = pbo.entries.iter().map(|(_, e)| e.data.len()).sum();
+    let pb = ProgressBar::new(data_size.try_into()?);
+    pb
+        .set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")?
+        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap())
+        .progress_chars("#>-"));
+    let base_dir = if let Some(output) = &args.output {
+        PathBuf::from_str(output)?
+    } else {
+        current_dir()?
+    };
+    let mut written = 0;
+    for (name, entry) in pbo.entries {
+        let mut cd = base_dir.clone();
+        if flat {
+            let file_name = PathBuf::from_str(&name)?;
+            let file_name = file_name.file_name().unwrap_or_default();
+            cd.push(file_name);
+        } else {
+            cd.push(name);
+            if let Some(parent) = cd.parent() {
+                fs::create_dir_all(parent)?;
+            }
+        }
+        fs::write(cd, &entry.data)?;
+        written += entry.data.len();
+        pb.set_position(written.try_into()?);
+    }
+    pb.finish_with_message("extracting complete");
     Ok(())
 }
 
@@ -127,16 +227,47 @@ pub struct PboArgs {
 #[derive(Debug, Subcommand)]
 pub enum PboCommands {
     #[command(about = "List all files and folders.", long_about = None)]
-    List { input: String },
+    List {
+        #[command(flatten)]
+        args: InputCommandArgs,
+    },
     #[command(about = "Checks the hash.", long_about = None)]
-    HashCheck { input: String },
+    HashCheck {
+        #[command(flatten)]
+        args: InputCommandArgs,
+    },
     #[command(about = "Prints the properties", long_about = None)]
-    Meta { input: String },
+    Meta {
+        #[command(flatten)]
+        args: InputCommandArgs,
+    },
+
+    #[command(about = "Extracts the file", long_about = None)]
+    Extract {
+        #[command(flatten)]
+        args: InputOutputCommandArgs,
+    },
+
+    #[command(about = "Extracts all files into the current dir", long_about = None)]
+    ExtractFlat {
+        #[command(flatten)]
+        args: InputOutputCommandArgs,
+    },
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct InputCommandArgs {
+    input: String,
+}
+
+#[derive(Args, Debug, Clone)]
+pub struct InputOutputCommandArgs {
+    input: String,
+    output: Option<String>,
 }
 
 #[derive(Args, Debug, Clone)]
 pub struct CommandArgs {
-    #[arg(short, long)]
     input: String,
     #[arg(short, long)]
     output: String,

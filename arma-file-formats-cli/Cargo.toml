@@ -12,6 +12,8 @@ clap = { version = "4.5.4", features = ["derive"] }
 sha1 = "0.10.6"
 hex = "0.4.3"
 prettytable-rs = "^0.10"
+ptree = "0.4.0"
+indicatif = "0.17.8"
 
 [features]
 default = ["real_virtuality", "enfusion"]

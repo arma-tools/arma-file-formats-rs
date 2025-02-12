@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'arma-file-formats-cli'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=arma-file-formats-cli",
+                    "--package=arma-file-formats-cli"
+                ],
+                "filter": {
+                    "name": "arma-file-formats-cli",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "pbo",
+                "list",
+                ".\\arma-file-formats\\tests\\real_virtuality\\test-data\\pbo_in\\grad_adminMessages.pbo"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+    ]
+}

@@ -1,6 +1,6 @@
 use std::{fs::File, io::BufReader};
 
-use arma_file_formats::real_virtuality::wrp::{MapData, MapInfo, OPRW};
+use arma_file_formats::real_virtuality::wrp::{MapData, MapInfo, OPRW, WVR8};
 use serial_test::serial;
 
 const INPUT_PATH_PREFIX: &str = "./tests/real_virtuality/test-data/wrp_in/";
@@ -107,4 +107,13 @@ fn ivachev_wrp() {
 fn fjaderholmarna_test() {
     let mut file = File::open(format!("{}fjaderholmarna.wrp", INPUT_PATH_PREFIX)).unwrap();
     let _ = OPRW::from_read(&mut file).unwrap();
+}
+
+#[test]
+#[serial]
+fn angel_test() {
+    let mut file = File::open(format!("{}angel.wrp", INPUT_PATH_PREFIX)).unwrap();
+    let wvr8 = WVR8::from_read(&mut file).unwrap();
+    dbg!(wvr8.rvmat_layer.materials.len());
+    dbg!(wvr8.objects);
 }

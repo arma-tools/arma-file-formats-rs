@@ -19,14 +19,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2
+      - uses: Swatinem/rust-cache@v2
 
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@af5d802f13195cc3a6becf3d19d72f7de93908d8 # v2
+        uses: taiki-e/install-action@v2
         with:
           tool: cargo-llvm-cov
 
@@ -38,7 +38,7 @@ jobs:
           AFF_TEST_DATA_PW: ${{ secrets.AFF_TEST_DATA_PW }}
           
       - name: Upload coverage data to codecov
-        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:

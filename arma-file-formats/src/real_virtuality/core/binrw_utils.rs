@@ -303,3 +303,26 @@ pub fn write_biguint(biguint: &BigUint) -> BinResult<()> {
     writer.write_all(&buf)?;
     Ok(())
 }
+
+pub fn read_8wvr_material_names(
+    reader: &mut (impl Read + Seek),
+    endian: Endian,
+    material_count: u32,
+) -> BinResult<Vec<String>> {
+    let mut materials = Vec::new();
+    for _ in 0..material_count {
+        let mut length;
+        loop {
+            length = u32::read_options(reader, endian, ())?;
+
+            if length == 0 {
+                break;
+            }
+            let mut data = vec![0; length as usize];
+            reader.read_exact(&mut data)?;
+            materials.push(String::from_utf8_lossy(&data).to_string());
+        }
+    }
+
+    Ok(materials)
+}

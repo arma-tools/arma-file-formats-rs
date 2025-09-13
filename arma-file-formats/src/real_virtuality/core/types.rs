@@ -24,10 +24,17 @@ pub struct BoundingBox {
     pub d: XY,
 }
 
+// ToDo: refactor this to be generic
 #[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]
 pub struct XY {
     pub x: f32,
     pub y: f32,
+}
+
+#[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]
+pub struct XYPair {
+    pub x: u32,
+    pub y: u32,
 }
 
 #[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]

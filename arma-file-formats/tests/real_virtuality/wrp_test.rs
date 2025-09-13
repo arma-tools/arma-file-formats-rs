@@ -114,6 +114,6 @@ fn fjaderholmarna_test() {
 fn angel_test() {
     let mut file = File::open(format!("{}angel.wrp", INPUT_PATH_PREFIX)).unwrap();
     let wvr8 = WVR8::from_read(&mut file).unwrap();
-    dbg!(wvr8.rvmat_layer.materials.len());
-    dbg!(wvr8.objects);
+    assert_eq!(wvr8.rvmat_layer.materials.len(), 238);
+    assert_eq!(wvr8.objects.len(), 62249);
 }

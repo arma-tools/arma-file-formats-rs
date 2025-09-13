@@ -40,11 +40,9 @@ impl WVR8 {
             let data = decompress_lzss_unk_size(reader)?;
 
             let mut cursor = Cursor::new(data);
-            let oprw = Self::read_wvr8(&mut cursor)?;
-            return Ok(oprw);
+            return Ok(Self::read_wvr8(&mut cursor)?);
         }
-        let oprw = Self::read_wvr8(reader)?;
-        Ok(oprw)
+        Self::read_wvr8(reader)
     }
 
     fn read_wvr8(reader: &mut (impl Read + Seek)) -> Result<Self, AffError> {

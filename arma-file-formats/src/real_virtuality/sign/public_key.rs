@@ -1,9 +1,9 @@
 use crate::{
-    errors::AffError,
-    real_virtuality::core::{
+    core::{
         binrw_utils::{read_biguint, write_biguint},
         write::WriteExtTrait,
     },
+    errors::AffError,
 };
 use binrw::{binrw, BinRead, Endian};
 use binrw::{BinWrite, NullString};

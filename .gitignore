@@ -1,4 +1,5 @@
 /arma-file-formats/tests/real_virtuality/test-data/*
+/arma-file-formats/tests/enfusion/test-data/*
 
 /target
 Cargo.lock

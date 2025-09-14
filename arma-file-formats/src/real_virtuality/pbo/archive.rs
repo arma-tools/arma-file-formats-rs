@@ -7,9 +7,8 @@ use rsa::BigUint;
 use sha1::digest::Output;
 use sha1::{Digest, Sha1};
 
-use crate::errors::AffError;
-use crate::real_virtuality::core::read::ReadExtTrait;
 use crate::real_virtuality::sign::{PrivateKey, PublicKey, SignVersion, Signature, KEY_LENGTH};
+use crate::{core::read::ReadExtTrait, errors::AffError};
 
 use super::entry::Entry;
 

@@ -1,6 +1,6 @@
 use std::io::{self, BufRead, Seek, Write};
 
-use crate::real_virtuality::core::{read::ReadExtTrait, write::WriteExtTrait};
+use crate::core::{read::ReadExtTrait, write::WriteExtTrait};
 
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Tagg {

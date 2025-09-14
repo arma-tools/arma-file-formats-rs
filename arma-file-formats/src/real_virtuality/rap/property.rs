@@ -1,7 +1,7 @@
 use std::io::{BufRead, Seek};
 
 use super::{pretty_print::PrettyPrint, value::CfgValue};
-use crate::{errors::AffError, real_virtuality::core::read::ReadExtTrait};
+use crate::{core::read::ReadExtTrait, errors::AffError};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CfgProperty {

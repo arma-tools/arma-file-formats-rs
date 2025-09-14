@@ -3,16 +3,14 @@ use std::io::Read;
 use std::io::Seek;
 
 use super::QuadTree;
-use crate::errors::AffError;
-use crate::real_virtuality::core::binrw_utils::read_compressed_array_count;
-use crate::real_virtuality::core::decompress_lzss_unk_size;
-use crate::real_virtuality::core::types::XY;
-use crate::real_virtuality::{
-    core::{
-        binrw_utils::read_compressed_data_cond_count,
-        types::{BoundingBox, TransformMatrix, XYZTriplet},
+use crate::core::decompress_lzss_unk_size;
+use crate::{
+    errors::AffError,
+    real_virtuality::binrw_utils::{read_compressed_array_count, read_compressed_data_cond_count},
+    real_virtuality::{
+        p3d::ODOLArgs,
+        types::{BoundingBox, TransformMatrix, XYZTriplet, XY},
     },
-    p3d::ODOLArgs,
 };
 use binrw::{until_eof, Endian, NullString};
 

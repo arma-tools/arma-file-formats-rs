@@ -1,18 +1,11 @@
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Cursor, Read, Seek};
 
-use binrw::BinRead;
-use binrw::BinResult;
-use binrw::Endian;
+use binrw::{BinRead, BinResult, Endian};
 use lzokay_native::decompress;
-use rsa::BigUint;
 
-use crate::real_virtuality::p3d::ODOLArgs;
+use crate::{core::decompress_lzss, real_virtuality::p3d::ODOLArgs};
 
-use super::decompress_lzss;
-use super::types::STPair;
-use super::types::XYZTriplet;
+use super::types::{STPair, XYZTriplet};
 
 #[binrw::parser(reader, endian)]
 pub fn read_compressed_size_cond(
@@ -288,20 +281,6 @@ impl From<STPairCompress> for STPair {
             t: decompress_xyz(val.t),
         }
     }
-}
-
-#[binrw::parser(reader)]
-pub fn read_biguint(length: usize) -> BinResult<BigUint> {
-    let mut buf = vec![0_u8; length];
-    reader.read_exact(&mut buf)?;
-    Ok(BigUint::from_bytes_le(&buf))
-}
-
-#[binrw::writer(writer)]
-pub fn write_biguint(biguint: &BigUint) -> BinResult<()> {
-    let buf = biguint.to_bytes_le();
-    writer.write_all(&buf)?;
-    Ok(())
 }
 
 pub fn read_8wvr_material_names(

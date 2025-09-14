@@ -1,4 +1,4 @@
-use arma_file_formats::real_virtuality::core::check_for_magic_and_decompress_lzss;
+use arma_file_formats::core::check_for_magic_and_decompress_lzss;
 use serial_test::serial;
 use std::fs::{self, File};
 

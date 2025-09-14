@@ -16,6 +16,7 @@
 #![allow(clippy::float_cmp)]
 #![allow(clippy::multiple_crate_versions)]
 
+pub mod core;
 pub mod errors;
 
 #[cfg(feature = "real_virtuality")]

@@ -1,7 +1,7 @@
 use std::io::{BufRead, Seek};
 
+use crate::core::read::ReadExtTrait;
 use crate::errors::AffError;
-use crate::real_virtuality::core::read::ReadExtTrait;
 
 use super::{entry::CfgEntry, pretty_print::PrettyPrint, EntryReturn};
 

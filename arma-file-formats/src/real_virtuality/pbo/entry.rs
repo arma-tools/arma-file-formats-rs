@@ -1,8 +1,7 @@
 use std::io::{BufRead, Seek, SeekFrom, Write};
 
-use crate::errors::AffError;
-use crate::real_virtuality::core::read::ReadExtTrait;
-use crate::real_virtuality::core::write::WriteExtTrait;
+use crate::core::read::ReadExtTrait;
+use crate::{core::write::WriteExtTrait, errors::AffError};
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Entry {
     pub filename: String,

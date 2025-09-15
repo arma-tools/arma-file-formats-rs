@@ -1,5 +1,4 @@
-use binrw::BinRead;
-use binrw::NullString;
+use binrw::{BinRead, NullString};
 use derivative::Derivative;
 
 use crate::real_virtuality::types::XYZTriplet;

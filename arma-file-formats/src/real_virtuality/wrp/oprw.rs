@@ -1,13 +1,11 @@
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Cursor, Read, Seek};
 
 use super::QuadTree;
-use crate::core::decompress_lzss_unk_size;
 use crate::{
+    core::decompress_lzss_unk_size,
     errors::AffError,
-    real_virtuality::binrw_utils::{read_compressed_array_count, read_compressed_data_cond_count},
     real_virtuality::{
+        binrw_utils::{read_compressed_array_count, read_compressed_data_cond_count},
         p3d::ODOLArgs,
         types::{BoundingBox, TransformMatrix, XYZTriplet, XY},
     },

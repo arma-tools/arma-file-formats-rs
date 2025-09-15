@@ -8,10 +8,10 @@ mod value;
 
 use thiserror::Error;
 
-pub use self::config::Cfg;
-pub use self::pretty_print::PrettyPrint;
-pub use self::{class::CfgClass, property::CfgProperty};
-pub use self::{entry::CfgEntry, value::CfgValue};
+pub use self::{
+    class::CfgClass, config::Cfg, entry::CfgEntry, pretty_print::PrettyPrint,
+    property::CfgProperty, value::CfgValue,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum EntryReturn {

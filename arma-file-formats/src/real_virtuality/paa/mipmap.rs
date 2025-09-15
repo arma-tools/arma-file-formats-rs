@@ -1,14 +1,11 @@
-use std::io::{self, Cursor, SeekFrom};
-use std::io::{BufRead, Seek, Write};
+use std::io::{self, BufRead, Cursor, Seek, SeekFrom, Write};
 
-use crate::core::write::WriteExtTrait;
-use crate::core::{decompress_lzss, read::ReadExtTrait};
+use crate::core::{decompress_lzss, read::ReadExtTrait, write::WriteExtTrait};
 use anyhow::Result;
 use lzokay_native::{compress_with_dict, decompress_all, Dict};
 use squish::{Format, Params};
 
-use crate::errors::PaaError;
-use crate::real_virtuality::types::PaaType;
+use crate::{errors::PaaError, real_virtuality::types::PaaType};
 
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Mipmap {

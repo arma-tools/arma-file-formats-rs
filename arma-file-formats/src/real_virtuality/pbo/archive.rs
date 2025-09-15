@@ -1,14 +1,18 @@
-use std::fs::{self, File};
-use std::io::{BufRead, BufReader, Seek, SeekFrom};
-use std::path::{Path, PathBuf};
+use std::{
+    fs::{self, File},
+    io::{BufRead, BufReader, Seek, SeekFrom},
+    path::{Path, PathBuf},
+};
 
 use indexmap::IndexMap;
 use rsa::BigUint;
-use sha1::digest::Output;
-use sha1::{Digest, Sha1};
+use sha1::{digest::Output, Digest, Sha1};
 
-use crate::real_virtuality::sign::{PrivateKey, PublicKey, SignVersion, Signature, KEY_LENGTH};
-use crate::{core::read::ReadExtTrait, errors::AffError};
+use crate::{
+    core::read::ReadExtTrait,
+    errors::AffError,
+    real_virtuality::sign::{PrivateKey, PublicKey, SignVersion, Signature, KEY_LENGTH},
+};
 
 use super::entry::Entry;
 

@@ -3,6 +3,4 @@ mod mipmap;
 mod paa;
 mod tagg;
 
-pub use self::mipmap::Mipmap;
-pub use self::paa::Paa;
-pub use self::tagg::Tagg;
+pub use self::{mipmap::Mipmap, paa::Paa, tagg::Tagg};

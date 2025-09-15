@@ -5,13 +5,13 @@ use crate::{
     },
     errors::AffError,
 };
-use binrw::{binrw, BinRead, Endian};
-use binrw::{BinWrite, NullString};
+use binrw::{binrw, BinRead, BinWrite, Endian, NullString};
 use rsa::BigUint;
-use std::io::Read;
-use std::io::{BufReader, Seek};
-use std::path::Path;
-use std::{fs::File, io::Cursor};
+use std::{
+    fs::File,
+    io::{BufReader, Cursor, Read, Seek},
+    path::Path,
+};
 
 use super::PrivateKey;
 

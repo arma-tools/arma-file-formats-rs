@@ -10,8 +10,9 @@ use lzokay_native::Dict;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::{
+    core::{read::ReadExtTrait, write::WriteExtTrait},
     errors::PaaError,
-    real_virtuality::core::{read::ReadExtTrait, types::PaaType, write::WriteExtTrait},
+    real_virtuality::types::PaaType,
 };
 
 use super::{Mipmap, Tagg};

@@ -78,4 +78,10 @@ pub enum AffError {
 
     #[error("Parsing failed: {0}")]
     ParseError(String),
+
+    #[error("Unknown image data format: `{0}`!\nPlease report this error at https://github.com/arma-tools/arma-file-formats-rs/issues")]
+    UnknownImageDataFormat(String),
+
+    #[error("Unknown image data type: `{0}`!\nPlease report this error at https://github.com/arma-tools/arma-file-formats-rs/issues")]
+    UnknownImageDataType(String),
 }

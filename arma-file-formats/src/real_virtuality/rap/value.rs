@@ -1,6 +1,6 @@
 use std::io::{BufRead, Seek};
 
-use crate::{errors::AffError, real_virtuality::core::read::ReadExtTrait};
+use crate::{core::read::ReadExtTrait, errors::AffError};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CfgValue {

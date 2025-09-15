@@ -9,7 +9,7 @@ use std::{
     path::Path,
 };
 
-use crate::real_virtuality::core::decompress_lzss_unk_size;
+use crate::core::decompress_lzss_unk_size;
 use crate::{errors::AffError, real_virtuality::p3d::model_info::ModelInfo};
 use derivative::Derivative;
 

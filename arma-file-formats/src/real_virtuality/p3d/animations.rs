@@ -2,7 +2,7 @@ use binrw::BinRead;
 use binrw::NullString;
 use derivative::Derivative;
 
-use crate::real_virtuality::core::types::XYZTriplet;
+use crate::real_virtuality::types::XYZTriplet;
 
 use super::ODOLArgs;
 

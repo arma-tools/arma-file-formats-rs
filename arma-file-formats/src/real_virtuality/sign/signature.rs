@@ -5,9 +5,9 @@ use std::io::Read;
 use std::io::Seek;
 use std::path::Path;
 
+use crate::core::binrw_utils::{read_biguint, write_biguint};
+use crate::core::write::WriteExtTrait;
 use crate::errors::AffError;
-use crate::real_virtuality::core::binrw_utils::{read_biguint, write_biguint};
-use crate::real_virtuality::core::write::WriteExtTrait;
 use binrw::{binrw, BinRead, Endian};
 use binrw::{BinWrite, NullString};
 use rsa::BigUint;

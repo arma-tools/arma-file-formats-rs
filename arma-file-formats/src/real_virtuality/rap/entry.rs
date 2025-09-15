@@ -1,6 +1,6 @@
 use std::io::{BufRead, Seek};
 
-use crate::{errors::AffError, real_virtuality::core::read::ReadExtTrait};
+use crate::{core::read::ReadExtTrait, errors::AffError};
 
 use super::{class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty, EntryReturn};
 

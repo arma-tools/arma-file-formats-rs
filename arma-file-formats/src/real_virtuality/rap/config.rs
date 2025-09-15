@@ -2,8 +2,8 @@ use std::io::{BufRead, Cursor, Seek};
 
 use super::{entry::CfgEntry, parser::parse, pretty_print::PrettyPrint, EntryReturn};
 use crate::{
+    core::{decompress_lzss_unk_size, read::ReadExtTrait},
     errors::AffError,
-    real_virtuality::core::{decompress_lzss_unk_size, read::ReadExtTrait},
 };
 
 const RAP_MAGIC: u32 = 1_348_563_456;

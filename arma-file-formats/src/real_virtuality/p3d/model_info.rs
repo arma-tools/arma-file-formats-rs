@@ -1,11 +1,8 @@
-use crate::real_virtuality::core::types::RGBAColor;
-use crate::real_virtuality::core::types::XYZTriplet;
-use binrw::BinRead;
-use binrw::NullString;
+use crate::real_virtuality::types::{RGBAColor, XYZTriplet};
+use binrw::{BinRead, NullString};
 
-use super::skeleton::Skeleton;
-use super::ODOLArgs;
-use crate::real_virtuality::core::binrw_utils::read_compressed_array;
+use super::{skeleton::Skeleton, ODOLArgs};
+use crate::real_virtuality::binrw_utils::read_compressed_array;
 use derivative::Derivative;
 
 #[allow(clippy::struct_excessive_bools)]

@@ -5,14 +5,10 @@ use crate::{
     },
     errors::AffError,
 };
-use binrw::{binrw, BinRead, Endian};
-use binrw::{BinWrite, NullString};
+use binrw::{binrw, BinRead, BinWrite, Endian, NullString};
 use std::{
     fs::File,
-    io::{Cursor, Seek},
-};
-use std::{
-    io::{BufReader, Read},
+    io::{BufReader, Cursor, Read, Seek},
     path::Path,
 };
 

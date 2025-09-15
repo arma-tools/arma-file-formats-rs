@@ -1,5 +1,7 @@
-use crate::errors::AffError;
-use crate::real_virtuality::rap::{CfgClass, CfgEntry, CfgProperty, CfgValue};
+use crate::{
+    errors::AffError,
+    real_virtuality::rap::{CfgClass, CfgEntry, CfgProperty, CfgValue},
+};
 use ariadne::{Color, Fmt, Label, Report, ReportKind, Source};
 use chumsky::{prelude::*, stream::Stream};
 use std::{fmt, io::Cursor};

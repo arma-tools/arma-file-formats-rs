@@ -1,21 +1,19 @@
 use binrw::{BinRead, BinResult, NullString};
 use byteorder::ReadBytesExt;
-use std::collections::HashMap;
-use std::io::{Cursor, Read, SeekFrom};
-use std::marker::PhantomData;
 use std::{
+    collections::HashMap,
     fs::File,
-    io::{BufReader, Seek},
+    io::{BufReader, Cursor, Read, Seek, SeekFrom},
+    marker::PhantomData,
     path::Path,
 };
 
-use crate::core::decompress_lzss_unk_size;
-use crate::{errors::AffError, real_virtuality::p3d::model_info::ModelInfo};
+use crate::{
+    core::decompress_lzss_unk_size, errors::AffError, real_virtuality::p3d::model_info::ModelInfo,
+};
 use derivative::Derivative;
 
-use super::animations::Animations;
-use super::face_data::FaceData;
-use super::lod::Lod;
+use super::{animations::Animations, face_data::FaceData, lod::Lod};
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy)]
 pub struct ODOLArgs {

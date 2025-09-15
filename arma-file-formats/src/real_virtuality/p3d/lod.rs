@@ -1,8 +1,10 @@
-use crate::real_virtuality::binrw_utils::{
-    decompress_array, read_compressed, read_compressed_array, read_compressed_size_cond,
-    read_condensed_array_cond, read_normals_parse, read_st_parse, read_vertex_index_array,
+use crate::real_virtuality::{
+    binrw_utils::{
+        decompress_array, read_compressed, read_compressed_array, read_compressed_size_cond,
+        read_condensed_array_cond, read_normals_parse, read_st_parse, read_vertex_index_array,
+    },
+    types::{D3DColorValue, STPair, TransformMatrix, XYZTriplet},
 };
-use crate::real_virtuality::types::{D3DColorValue, STPair, TransformMatrix, XYZTriplet};
 use binrw::{BinRead, BinResult, NullString};
 
 use super::ODOLArgs;

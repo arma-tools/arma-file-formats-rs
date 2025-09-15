@@ -1,12 +1,12 @@
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
+use std::io::{Cursor, Read, Seek};
 
-use crate::core::decompress_lzss_unk_size;
-use crate::real_virtuality::binrw_utils::read_8wvr_material_names;
 use crate::{
+    core::decompress_lzss_unk_size,
     errors::AffError,
-    real_virtuality::types::{TransformMatrix, XYPair},
+    real_virtuality::{
+        binrw_utils::read_8wvr_material_names,
+        types::{TransformMatrix, XYPair},
+    },
 };
 use binrw::{until_eof, Endian};
 

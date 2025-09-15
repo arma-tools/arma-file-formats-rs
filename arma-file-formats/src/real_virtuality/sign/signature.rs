@@ -1,15 +1,17 @@
-use std::fs::File;
-use std::io::BufReader;
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::path::Path;
+use std::{
+    fs::File,
+    io::{BufReader, Cursor, Read, Seek},
+    path::Path,
+};
 
-use crate::core::binrw_utils::{read_biguint, write_biguint};
-use crate::core::write::WriteExtTrait;
-use crate::errors::AffError;
-use binrw::{binrw, BinRead, Endian};
-use binrw::{BinWrite, NullString};
+use crate::{
+    core::{
+        binrw_utils::{read_biguint, write_biguint},
+        write::WriteExtTrait,
+    },
+    errors::AffError,
+};
+use binrw::{binrw, BinRead, BinWrite, Endian, NullString};
 use rsa::BigUint;
 
 const EXTENSION: &str = "bisign";

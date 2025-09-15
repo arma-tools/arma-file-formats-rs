@@ -1,5 +1,4 @@
-use binrw::BinRead;
-use binrw::NullString;
+use binrw::{BinRead, NullString};
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 #[br(import(version: u32))]

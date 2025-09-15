@@ -1,8 +1,9 @@
-use std::io::{self, BufRead, ErrorKind, Seek, SeekFrom};
+use std::io::{self, ErrorKind, Read, Seek, SeekFrom};
 
+use binrw::{BinRead, BinResult, NullString};
 use byteorder::LittleEndian;
 
-pub trait ReadExtTrait: BufRead + Seek {
+pub(crate) trait ReadExtTrait: Read + Seek {
     fn read_compressed_int(&mut self) -> io::Result<u32>;
 
     fn read_bool(&mut self) -> io::Result<bool>;
@@ -21,7 +22,7 @@ pub trait ReadExtTrait: BufRead + Seek {
     fn read_string(&mut self, size: usize) -> io::Result<String>;
 
     fn read_string_lossy(&mut self, size: usize) -> io::Result<String>;
-    fn read_string_zt(&mut self) -> io::Result<String>;
+    fn read_string_zt(&mut self) -> BinResult<String>;
     fn peek_u8(&mut self) -> io::Result<u8>;
 
     fn peek_u16(&mut self) -> io::Result<u16>;
@@ -33,7 +34,7 @@ pub trait ReadExtTrait: BufRead + Seek {
 
 impl<T> ReadExtTrait for T
 where
-    T: BufRead + Seek,
+    T: Read + Seek,
 {
     fn read_compressed_int(&mut self) -> io::Result<u32> {
         let val = ReadExtTrait::read_u8(self)?;
@@ -103,20 +104,8 @@ where
         Ok(str.to_string())
     }
 
-    fn read_string_zt(&mut self) -> io::Result<String> {
-        let mut buf = Vec::new();
-        self.read_until(b'\0', &mut buf)?;
-        buf.pop();
-        let str = String::from_utf8(buf);
-        str.map_or_else(
-            |_| {
-                Err(io::Error::new(
-                    ErrorKind::InvalidData,
-                    "Invalid UTF-8 String",
-                ))
-            },
-            Ok,
-        )
+    fn read_string_zt(&mut self) -> BinResult<String> {
+        Ok(NullString::read(self)?.to_string())
     }
 
     fn peek_u8(&mut self) -> io::Result<u8> {

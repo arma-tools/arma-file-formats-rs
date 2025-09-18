@@ -1,4 +1,4 @@
-use std::io::{BufRead, Seek};
+use std::io::{Read, Seek};
 
 use super::{pretty_print::PrettyPrint, value::CfgValue};
 use crate::{core::read::ReadExtTrait, errors::AffError};
@@ -12,7 +12,7 @@ pub struct CfgProperty {
 impl CfgProperty {
     pub fn read_property<I>(reader: &mut I, is_array: bool) -> Result<Self, AffError>
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         if is_array {
             let name = reader.read_string_zt()?;

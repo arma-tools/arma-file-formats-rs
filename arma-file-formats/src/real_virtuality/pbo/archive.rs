@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File},
-    io::{BufRead, BufReader, Seek, SeekFrom},
+    io::{BufReader, Read, Seek, SeekFrom},
     path::{Path, PathBuf},
 };
 
@@ -48,7 +48,7 @@ impl Pbo {
 
     pub fn from_stream<R>(reader: &mut R) -> Result<Self, AffError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         let mut pbo = Self::new();
         pbo.read(reader, false)?;
@@ -83,7 +83,7 @@ impl Pbo {
 
     pub(crate) fn read<R>(&mut self, reader: &mut R, skip_data: bool) -> Result<(), AffError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         if reader.read_u8()? != 0
             || reader.read_string(4)? != PBO_MAGIC
@@ -142,7 +142,7 @@ impl Pbo {
         reader: &mut R,
     ) -> Result<Option<Entry>, AffError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         let entry_path = &self.handle_prefix(entry_path);
 
@@ -164,7 +164,7 @@ impl Pbo {
         reader: &mut R,
     ) -> Result<(), AffError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         let entry_path = &self.handle_prefix(entry_path);
 

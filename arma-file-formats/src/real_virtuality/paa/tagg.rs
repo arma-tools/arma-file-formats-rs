@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Seek, Write};
+use std::io::{self, Read, Seek, Write};
 
 use crate::core::{read::ReadExtTrait, write::WriteExtTrait};
 
@@ -18,7 +18,7 @@ impl Tagg {
 
     pub fn read<T>(&mut self, stream: &mut T) -> io::Result<()>
     where
-        T: BufRead + Seek,
+        T: Read + Seek,
     {
         self.signature = stream.read_string(Self::TAGG_SIG_SIZE)?;
         let size = stream.read_u32()? as usize;

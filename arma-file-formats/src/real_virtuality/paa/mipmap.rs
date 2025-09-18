@@ -1,4 +1,4 @@
-use std::io::{self, BufRead, Cursor, Seek, SeekFrom, Write};
+use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 
 use crate::core::{decompress_lzss, read::ReadExtTrait, write::WriteExtTrait};
 use anyhow::Result;
@@ -25,7 +25,7 @@ impl Mipmap {
 
     pub(crate) fn read_header<R>(&mut self, reader: &mut R) -> Result<(), PaaError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         self.width = reader.read_u16()?;
 
@@ -46,7 +46,7 @@ impl Mipmap {
 
     pub fn read<T>(&mut self, reader: &mut T, paa_type: PaaType) -> Result<(), PaaError>
     where
-        T: BufRead + Seek,
+        T: Read + Seek,
     {
         if self.data_pos.is_none() {
             self.read_header(reader)?;

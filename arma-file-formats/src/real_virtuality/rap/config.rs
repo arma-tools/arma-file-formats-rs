@@ -1,4 +1,4 @@
-use std::io::{BufRead, Cursor, Seek};
+use std::io::{Cursor, Read, Seek};
 
 use super::{entry::CfgEntry, parser::parse, pretty_print::PrettyPrint, EntryReturn};
 use crate::{
@@ -16,7 +16,7 @@ pub struct Cfg {
 impl Cfg {
     pub fn is_valid_rap_bin<I>(reader: &mut I) -> bool
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         matches!(reader.read_u32(), Ok(v) if v == RAP_MAGIC)
             && matches!(reader.read_u32(), Ok(v) if v == 0)
@@ -25,7 +25,7 @@ impl Cfg {
 
     pub fn read_config<I>(reader: &mut I) -> Result<Self, AffError>
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         if !Self::is_valid_rap_bin(reader) {
             return Err(AffError::InvalidFileError);
@@ -56,7 +56,7 @@ impl Cfg {
 
     pub fn read<I>(reader: &mut I) -> Result<Self, AffError>
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         let is_valid_bin = Self::is_valid_rap_bin(reader);
         reader.rewind()?;

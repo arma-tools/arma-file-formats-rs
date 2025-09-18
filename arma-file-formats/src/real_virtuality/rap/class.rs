@@ -1,4 +1,4 @@
-use std::io::{BufRead, Seek};
+use std::io::{Read, Seek};
 
 use crate::{core::read::ReadExtTrait, errors::AffError};
 
@@ -14,7 +14,7 @@ pub struct CfgClass {
 impl CfgClass {
     pub fn read_class<I>(reader: &mut I) -> Result<Self, AffError>
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         let name = reader.read_string_zt()?;
         let offset = u64::from(reader.read_u32()?);

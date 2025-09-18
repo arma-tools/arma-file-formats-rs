@@ -1,7 +1,7 @@
 use std::{
     cmp,
     collections::HashMap,
-    io::{BufRead, Seek, SeekFrom, Write},
+    io::{Read, Seek, SeekFrom, Write},
 };
 
 use lzokay_native::Dict;
@@ -65,7 +65,7 @@ impl Paa {
         indicies_to_load: Option<&[u32]>,
     ) -> Result<Self, PaaError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         let mut paa = Self::new();
 

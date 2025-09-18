@@ -1,4 +1,4 @@
-use std::io::{BufRead, Seek};
+use std::io::{Read, Seek};
 
 use crate::{core::read::ReadExtTrait, errors::AffError};
 
@@ -13,7 +13,7 @@ pub enum CfgValue {
 impl CfgValue {
     pub fn read_value<I>(reader: &mut I, typ_id: Option<u8>) -> Result<Self, AffError>
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         let typ_id = if let Some(typ_id) = typ_id {
             typ_id
@@ -32,7 +32,7 @@ impl CfgValue {
 
     pub fn read_array<I>(reader: &mut I) -> Result<Self, AffError>
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         let entry_count = reader.read_compressed_int()?;
         let mut entries = Vec::with_capacity(entry_count as usize);

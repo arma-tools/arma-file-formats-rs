@@ -1,4 +1,4 @@
-use std::io::{BufRead, Seek};
+use std::io::{Read, Seek};
 
 use binrw::BinRead;
 use lzzzz::lz4;
@@ -35,7 +35,7 @@ pub struct Mipmap {
 impl Edds {
     pub fn from<I>(input: &mut I) -> Result<Edds, AffError>
     where
-        I: Seek + BufRead,
+        I: Seek + Read,
     {
         let header = DdsHeader::read(input)?;
         let mut mipmaps = Vec::new();

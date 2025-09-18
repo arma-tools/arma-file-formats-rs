@@ -1,4 +1,4 @@
-use std::io::{BufRead, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 use crate::{
     core::{read::ReadExtTrait, write::WriteExtTrait},
@@ -26,7 +26,7 @@ impl Entry {
 
     pub fn read<R>(&mut self, reader: &mut R) -> Result<(), AffError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         self.filename = reader.read_string_zt()?.to_lowercase();
         self.mime_type = reader.read_string(4)?;
@@ -39,7 +39,7 @@ impl Entry {
     }
     pub fn read_data<R>(&mut self, reader: &mut R) -> Result<(), AffError>
     where
-        R: BufRead + Seek,
+        R: Read + Seek,
     {
         reader.seek(SeekFrom::Start(self.data_offset))?;
         self.data = reader.read_bytes(self.data_size as usize)?;

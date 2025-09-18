@@ -1,4 +1,4 @@
-use std::io::{BufRead, Seek};
+use std::io::{Read, Seek};
 
 use crate::{core::read::ReadExtTrait, errors::AffError};
 
@@ -15,7 +15,7 @@ pub enum CfgEntry {
 impl CfgEntry {
     pub fn parse_entry<I>(reader: &mut I) -> Result<Self, AffError>
     where
-        I: BufRead + Seek,
+        I: Read + Seek,
     {
         let typ_id = reader.read_u8()?;
         Ok(match typ_id {

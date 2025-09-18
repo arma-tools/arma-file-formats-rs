@@ -1,4 +1,4 @@
-use std::io::{BufRead, Seek};
+use std::io::{Read, Seek};
 
 use crate::errors::AffError;
 
@@ -7,7 +7,7 @@ use super::{Entry, Pbo};
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct PboReader<R>
 where
-    R: BufRead + Seek,
+    R: Read + Seek,
 {
     reader: R,
     pub pbo: Pbo,
@@ -15,7 +15,7 @@ where
 
 impl<R> PboReader<R>
 where
-    R: BufRead + Seek,
+    R: Read + Seek,
 {
     pub fn from_stream(reader: R) -> Result<Self, AffError> {
         let mut pbo_reader = Self {

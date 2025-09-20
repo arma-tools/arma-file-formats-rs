@@ -10,7 +10,7 @@ use lzokay_native::Dict;
 use rayon::prelude::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 use crate::{
-    core::{read::ReadExtTrait, write::WriteExtTrait},
+    core::{read::ReadExtTrait, types::PixelType, write::WriteExtTrait},
     errors::PaaError,
     real_virtuality::types::PaaType,
 };
@@ -19,6 +19,7 @@ use super::{Mipmap, Tagg};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Paa {
+    pub pixel_type: PixelType,
     pub magic_number: PaaType,
     pub mipmaps: Vec<Mipmap>,
     taggs: HashMap<String, Tagg>,
@@ -39,6 +40,7 @@ impl Paa {
     #[must_use]
     pub fn new() -> Self {
         Self {
+            pixel_type: PixelType::Unknown,
             magic_number: PaaType::UNKNOWN,
             mipmaps: Vec::new(),
             taggs: HashMap::new(),
@@ -71,6 +73,12 @@ impl Paa {
 
         reader.rewind()?;
         paa.magic_number = PaaType::try_from(reader.read_u16()?).unwrap_or(PaaType::UNKNOWN);
+
+        paa.pixel_type = match paa.magic_number {
+            PaaType::DXT1 | PaaType::DXT5 | PaaType::RGBA4444 => PixelType::Rgba,
+            PaaType::GRAYwAlpha => PixelType::GrayAlpha,
+            _ => PixelType::Unknown,
+        };
 
         while reader.peek_string_lossy(4)?.starts_with("GGAT") {
             let mut tagg = Tagg::new();

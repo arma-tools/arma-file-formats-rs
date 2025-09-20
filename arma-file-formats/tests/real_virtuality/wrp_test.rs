@@ -13,9 +13,9 @@ fn test_defaults() {
 #[test]
 fn gm_test_summer() {
     // gm_weferlingen_summer
-    let mut file = File::open(format!("{}gm_weferlingen_summer.wrp", INPUT_PATH_PREFIX)).unwrap();
-
-    let wrp = OPRW::from_read(&mut file).unwrap();
+    let file = File::open(format!("{}gm_weferlingen_summer.wrp", INPUT_PATH_PREFIX)).unwrap();
+    let mut buf = BufReader::new(file);
+    let wrp = OPRW::from_read(&mut buf).unwrap();
 
     let rivers: Vec<&MapInfo> = wrp
         .map_infos
@@ -23,7 +23,6 @@ fn gm_test_summer() {
         .filter(|x| matches!(&x.data, MapData::MapTypeRiver { .. }))
         .collect();
 
-    dbg!(&rivers);
     dbg!(rivers.len());
 }
 

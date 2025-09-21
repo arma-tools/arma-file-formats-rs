@@ -4,7 +4,7 @@ use binrw::BinRead;
 use lzzzz::lz4;
 
 use crate::{
-    core::read::ReadExtTrait,
+    core::{read::ReadExtTrait, types::PixelType},
     enfusion::edds::{
         dds_header::DdsHeaderDX10, DdsHeader, DdsPixelFormatEnum, DxgiFormat, FourCCEnum,
     },
@@ -13,6 +13,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Edds {
+    pub pixel_type: PixelType,
     pub header: DdsHeader,
     pub mipmaps: Vec<Mipmap>,
 }
@@ -102,8 +103,12 @@ impl Edds {
                 }
             };
         }
-
-        Ok(Edds { header, mipmaps })
+        let pixel_type = get_pixel_type(&header);
+        Ok(Edds {
+            header,
+            mipmaps,
+            pixel_type,
+        })
     }
 
     fn get_dim_for_index(max_dim: u32, index: u32) -> usize {
@@ -120,6 +125,27 @@ impl Edds {
             Some(dx10_header) => decode_dx10_data(dx10_header, src, width, height),
             None => decode_four_cc_data(header, src, width, height),
         }
+    }
+}
+
+fn get_pixel_type(header: &DdsHeader) -> PixelType {
+    match &header.dx10_header {
+        Some(dx10_header) => match dx10_header.dxgi_format {
+            DxgiFormat::DXGI_FORMAT_BC4_UNORM => PixelType::Gray,
+            DxgiFormat::DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
+            | DxgiFormat::DXGI_FORMAT_BC7_UNORM_SRGB => PixelType::Rgba,
+            _ => PixelType::Unknown,
+        },
+        None => match header.pixel_format.four_cc {
+            FourCCEnum::None => match header.get_pixel_format() {
+                DdsPixelFormatEnum::D3DFMT_A8R8G8B8 | DdsPixelFormatEnum::D3DFMT_X8R8G8B8 => {
+                    PixelType::Rgba
+                }
+                _ => PixelType::Unknown,
+            },
+            FourCCEnum::DXT5 => PixelType::Rgba,
+            _ => PixelType::Unknown,
+        },
     }
 }
 

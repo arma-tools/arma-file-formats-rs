@@ -151,18 +151,7 @@ impl Mipmap {
                     true,
                 )?;
 
-                let mut rgba_buf = Vec::with_capacity((self.width * self.height * 4) as usize);
-
-                for i in (0..decompressed_data.len()).step_by(2) {
-                    let gray = decompressed_data[i];
-                    let alpha = decompressed_data[i + 1];
-                    rgba_buf.push(gray);
-                    rgba_buf.push(gray);
-                    rgba_buf.push(gray);
-                    rgba_buf.push(alpha);
-                }
-
-                self.data = rgba_buf;
+                self.data = decompressed_data;
             }
         }
 

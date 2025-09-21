@@ -5,6 +5,7 @@ use std::{
 
 use arma_file_formats::{
     self,
+    core::types::PixelType,
     real_virtuality::paa::{Paa, Tagg},
 };
 use image::ImageBuffer;
@@ -92,6 +93,8 @@ fn logo_dxt5_128_decoding() {
     img_buf
         .save(format!("{}logo_dxt5_128.png", OUTPUT_PATH_PREFIX))
         .unwrap();
+
+    assert_eq!(paa.pixel_type, PixelType::Rgba);
 }
 
 #[test]
@@ -107,6 +110,7 @@ fn logo_dxt1_2048_decoding() {
     img_buf
         .save(format!("{}logo_dxt1_2048.png", OUTPUT_PATH_PREFIX))
         .unwrap();
+    assert_eq!(paa.pixel_type, PixelType::Rgba);
 }
 
 #[test]
@@ -122,6 +126,7 @@ fn logo_dxt5_400_decoding() {
     img_buf
         .save(format!("{}logo_dxt5_400.png", OUTPUT_PATH_PREFIX))
         .unwrap();
+    assert_eq!(paa.pixel_type, PixelType::Rgba);
 }
 
 #[test]
@@ -164,12 +169,14 @@ fn ai_88_plus_decoding() {
 
     let mm = paa.mipmaps.first().unwrap();
 
-    let img_buf: ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+    let img_buf: ImageBuffer<image::LumaA<u8>, Vec<u8>> =
         ImageBuffer::from_raw(mm.width.into(), mm.height.into(), mm.data.clone()).unwrap();
 
     img_buf
         .save(format!("{}ai88_plus.png", OUTPUT_PATH_PREFIX))
         .unwrap();
+
+    assert_eq!(paa.pixel_type, PixelType::GrayAlpha);
 }
 
 #[test]
@@ -193,4 +200,6 @@ fn argb4444_staszow_decoding() {
             OUTPUT_PATH_PREFIX
         ))
         .unwrap();
+
+    assert_eq!(paa.pixel_type, PixelType::Rgba);
 }

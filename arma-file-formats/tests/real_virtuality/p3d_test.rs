@@ -61,6 +61,15 @@ fn single_debug() {
 }
 
 #[test]
+fn p3d_version_75() {
+    let odol = ODOL::from_path(format!("{}sloup_vn.p3d", INPUT_PATH_PREFIX)).unwrap();
+    assert_eq!(odol.version, 75);
+    for lod in odol.lods {
+        dbg!(lod.named_selection.clone());
+    }
+}
+
+#[test]
 fn test_all() {
     let test_all = fs::read_dir(INPUT_PATH_PREFIX).unwrap();
 

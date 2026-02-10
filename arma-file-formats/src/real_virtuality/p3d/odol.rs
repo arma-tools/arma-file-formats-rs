@@ -44,9 +44,11 @@ pub struct ODOL {
     #[br(calc = ODOLArgs{ version, use_lzo, use_compression_flag, skip_lods: options.skip_lods })]
     args: ODOLArgs,
 
-    #[br(if(version >= 75))]
+    // "Note if either is non-zero, you should abort parsing. The file is not loadable in that case." - dedmen
+    // https://github.com/arma-tools/arma-file-formats-rs/pull/21#issuecomment-3867723146
+    #[br(if(version >= 75), assert(unk_v75_a.is_none() || unk_v75_a.unwrap() == 0))]
     unk_v75_a: Option<u32>,
-    #[br(if(version >= 75))]
+    #[br(if(version >= 75), assert(unk_v75_b.is_none() || unk_v75_b.unwrap() == 0))]
     unk_v75_b: Option<u32>,
 
     #[br(if(version >= 59))]

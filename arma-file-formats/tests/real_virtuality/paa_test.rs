@@ -203,3 +203,21 @@ fn argb4444_staszow_decoding() {
 
     assert_eq!(paa.pixel_type, PixelType::Rgba);
 }
+
+#[test]
+#[serial]
+fn rgba5551_djalka_decoding() {
+    let file = File::open(format!("{}rgba5551_pictureMap_ca.paa", INPUT_PATH_PREFIX)).unwrap();
+    let paa = Paa::from_reader(&mut BufReader::new(file), Some(&[0])).unwrap();
+
+    let mm = paa.mipmaps.first().unwrap();
+
+    let img_buf: ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+        ImageBuffer::from_raw(mm.width.into(), mm.height.into(), mm.data.clone()).unwrap();
+
+    img_buf
+        .save(format!("{}rgba5551_pictureMap_ca.png", OUTPUT_PATH_PREFIX))
+        .unwrap();
+
+    assert_eq!(paa.pixel_type, PixelType::Rgba);
+}

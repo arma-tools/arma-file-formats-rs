@@ -11,7 +11,7 @@ pub enum PaaType {
     DXT4 = 0xff04,
     DXT5 = 0xff05,
     RGBA4444 = 0x4444,
-    RGBA5551 = 0x1555,
+    ARGB1555 = 0x1555,
     RGBA8888 = 0x8888,
     GRAYwAlpha = 0x8080,
 }

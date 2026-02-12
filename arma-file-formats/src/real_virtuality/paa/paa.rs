@@ -75,7 +75,9 @@ impl Paa {
         paa.magic_number = PaaType::try_from(reader.read_u16()?).unwrap_or(PaaType::UNKNOWN);
 
         paa.pixel_type = match paa.magic_number {
-            PaaType::DXT1 | PaaType::DXT5 | PaaType::RGBA4444 => PixelType::Rgba,
+            PaaType::DXT1 | PaaType::DXT5 | PaaType::RGBA4444 | PaaType::ARGB1555 => {
+                PixelType::Rgba
+            }
             PaaType::GRAYwAlpha => PixelType::GrayAlpha,
             _ => PixelType::Unknown,
         };

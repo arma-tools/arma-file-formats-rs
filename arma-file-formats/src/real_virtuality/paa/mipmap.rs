@@ -140,7 +140,37 @@ impl Mipmap {
 
                 self.data = rgba_buf;
             }
-            PaaType::RGBA5551 => todo!(),
+            PaaType::ARGB1555 => {
+                let mut cursor_data = Cursor::new(&self.data);
+
+                let (_, decompressed_data) = decompress_lzss(
+                    &mut cursor_data,
+                    self.width as usize * self.height as usize * 2,
+                    true,
+                )?;
+
+                let mut rgba_buf =
+                    Vec::with_capacity(self.width as usize * self.height as usize * 4);
+
+                for i in (0..decompressed_data.len()).step_by(2) {
+                    let low = decompressed_data[i];
+                    let high = decompressed_data[i + 1];
+
+                    let word = u16::from_le_bytes([low, high]);
+
+                    let a = if (word & 0x8000) != 0 { 255 } else { 0 };
+                    let r = ((((word & 0x7C00) >> 10) * 255) / 31) as u8;
+                    let g = ((((word & 0x03E0) >> 5) * 255) / 31) as u8;
+                    let b = (((word & 0x001F) * 255) / 31) as u8;
+
+                    rgba_buf.push(r);
+                    rgba_buf.push(g);
+                    rgba_buf.push(b);
+                    rgba_buf.push(a);
+                }
+
+                self.data = rgba_buf;
+            }
             PaaType::RGBA8888 => todo!(),
             PaaType::GRAYwAlpha => {
                 let mut cursor_data = Cursor::new(&self.data);
@@ -210,7 +240,7 @@ impl Mipmap {
                 }
             }
             PaaType::RGBA4444 => todo!(),
-            PaaType::RGBA5551 => todo!(),
+            PaaType::ARGB1555 => todo!(),
             PaaType::RGBA8888 => todo!(),
             PaaType::GRAYwAlpha => todo!(),
         }

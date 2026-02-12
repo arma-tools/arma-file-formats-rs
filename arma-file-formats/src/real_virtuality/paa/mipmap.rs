@@ -140,7 +140,35 @@ impl Mipmap {
 
                 self.data = rgba_buf;
             }
-            PaaType::RGBA5551 => todo!(),
+            PaaType::RGBA5551 => {
+                let mut cursor_data = Cursor::new(&self.data);
+
+                let (_, decompressed_data) = decompress_lzss(
+                    &mut cursor_data,
+                    self.width as usize * self.height as usize * 2,
+                    true,
+                )?;
+
+                let mut rgba_buf =
+                    Vec::with_capacity(self.width as usize * self.height as usize * 4);
+
+                for i in (0..decompressed_data.len()).step_by(2) {
+                    let pixel =
+                        u16::from(decompressed_data[i]) | (u16::from(decompressed_data[i + 1]) << 8);
+
+                    let b = ((u32::from(pixel & 0x1F) * 255) / 31) as u8;
+                    let g = ((u32::from((pixel >> 5) & 0x1F) * 255) / 31) as u8;
+                    let r = ((u32::from((pixel >> 10) & 0x1F) * 255) / 31) as u8;
+                    let a = if pixel & 0x8000 != 0 { 255u8 } else { 0u8 };
+
+                    rgba_buf.push(r);
+                    rgba_buf.push(g);
+                    rgba_buf.push(b);
+                    rgba_buf.push(a);
+                }
+
+                self.data = rgba_buf;
+            }
             PaaType::RGBA8888 => todo!(),
             PaaType::GRAYwAlpha => {
                 let mut cursor_data = Cursor::new(&self.data);

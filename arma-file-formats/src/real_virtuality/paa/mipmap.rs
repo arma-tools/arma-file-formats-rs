@@ -153,15 +153,13 @@ impl Mipmap {
                     Vec::with_capacity(self.width as usize * self.height as usize * 4);
 
                 for i in (0..decompressed_data.len()).step_by(2) {
-                    let low = decompressed_data[i];
-                    let high = decompressed_data[i + 1];
+                    let pixel =
+                        u16::from_le_bytes([decompressed_data[i], decompressed_data[i + 1]]);
 
-                    let word = u16::from_le_bytes([low, high]);
-
-                    let a = if (word & 0x8000) != 0 { 255 } else { 0 };
-                    let r = ((((word & 0x7C00) >> 10) * 255) / 31) as u8;
-                    let g = ((((word & 0x03E0) >> 5) * 255) / 31) as u8;
-                    let b = (((word & 0x001F) * 255) / 31) as u8;
+                    let a = if pixel & 0x8000 != 0 { 255 } else { 0 };
+                    let r = ((((pixel & 0x7C00) >> 10) * 255) / 31) as u8;
+                    let g = ((((pixel & 0x03E0) >> 5) * 255) / 31) as u8;
+                    let b = (((pixel & 0x001F) * 255) / 31) as u8;
 
                     rgba_buf.push(r);
                     rgba_buf.push(g);

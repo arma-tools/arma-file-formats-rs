@@ -1,9 +1,12 @@
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use crate::{
-    core::{read::ReadExtTrait, write::WriteExtTrait},
+    core::{decompress_lzss, read::ReadExtTrait, write::WriteExtTrait},
     errors::AffError,
 };
+
+const COMPRESSION_MAGIC: &str = "srpC";
+
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Entry {
     pub filename: String,
@@ -37,12 +40,40 @@ impl Entry {
 
         Ok(())
     }
+
     pub fn read_data<R>(&mut self, reader: &mut R) -> Result<(), AffError>
     where
         R: Read + Seek,
     {
         reader.seek(SeekFrom::Start(self.data_offset))?;
-        self.data = reader.read_bytes(self.data_size as usize)?;
+        let data = reader.read_bytes(self.data_size as usize)?;
+
+        self.data = if !self.mime_type.is_empty() && self.mime_type == COMPRESSION_MAGIC {
+            match decompress_lzss(
+                &mut Cursor::new(data.clone()),
+                self.original_size as usize,
+                false,
+            ) {
+                Ok((read_size, data)) => {
+                    assert_eq!(read_size, self.data_size.into());
+                    data
+                }
+                // High chance this is just obfuscation garbage
+                #[cfg(debug_assertions)]
+                Err(err) => {
+                    println!(
+                        "Lzss error '{}' at file '{}'. Possible obfuscation garbage",
+                        err, self.filename
+                    );
+                    data
+                }
+                #[cfg(not(debug_assertions))]
+                Err(_) => data,
+            }
+        } else {
+            data
+        };
+
         Ok(())
     }
 

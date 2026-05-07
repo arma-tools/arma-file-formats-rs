@@ -108,3 +108,10 @@ fn sign_test() {
 
     assert!(pbo.verify(&pub_key, &sig).is_ok());
 }
+
+#[test]
+#[serial]
+fn lingor_compression_test() {
+    let pbo = Pbo::from_path(format!("{}lingor_objects.pbo", INPUT_PATH_PREFIX)).unwrap();
+    assert_eq!(pbo.entries.get("skala3_3.p3d").unwrap().data.len(), 118923);
+}

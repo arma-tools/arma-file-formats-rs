@@ -48,13 +48,14 @@ fn pbo_lazy() {
 
     fs::write(format!("{}stringtable.xml", OUTPUT_PATH_PREFIX), file2.data).unwrap();
 
-    assert!(pbo
-        .extract_single_file(
+    assert!(
+        pbo.extract_single_file(
             "gui\\defines.hpp",
             &format!("{}extracttest/", OUTPUT_PATH_PREFIX),
             false
         )
-        .is_ok());
+        .is_ok()
+    );
 }
 
 #[test]

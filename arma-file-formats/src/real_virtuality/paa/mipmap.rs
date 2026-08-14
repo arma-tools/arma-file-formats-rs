@@ -2,7 +2,7 @@ use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 
 use crate::core::{decompress_lzss, read::ReadExtTrait, write::WriteExtTrait};
 use anyhow::Result;
-use lzokay_native::{compress_with_dict, decompress_all, Dict};
+use lzokay_native::{Dict, compress_with_dict, decompress_all};
 use squish::{Format, Params};
 
 use crate::{errors::PaaError, real_virtuality::types::PaaType};

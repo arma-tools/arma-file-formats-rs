@@ -1,7 +1,7 @@
 use crate::real_virtuality::types::{RGBAColor, XYZTriplet};
 use binrw::{BinRead, NullString};
 
-use super::{skeleton::Skeleton, ODOLArgs};
+use super::{ODOLArgs, skeleton::Skeleton};
 use crate::real_virtuality::binrw_utils::read_compressed_array;
 use derivative::Derivative;
 

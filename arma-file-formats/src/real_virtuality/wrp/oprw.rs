@@ -7,10 +7,10 @@ use crate::{
     real_virtuality::{
         binrw_utils::{read_compressed_array_count, read_compressed_data_cond_count},
         p3d::ODOLArgs,
-        types::{BoundingBox, TransformMatrix, XYZTriplet, XY},
+        types::{BoundingBox, TransformMatrix, XY, XYZTriplet},
     },
 };
-use binrw::{until_eof, Endian, NullString};
+use binrw::{Endian, NullString, helpers::until_eof};
 
 use binrw::BinRead;
 use derivative::Derivative;

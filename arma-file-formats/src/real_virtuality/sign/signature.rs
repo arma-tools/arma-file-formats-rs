@@ -11,7 +11,7 @@ use crate::{
     },
     errors::AffError,
 };
-use binrw::{binrw, BinRead, BinWrite, Endian, NullString};
+use binrw::{BinRead, BinWrite, Endian, NullString, binrw};
 use rsa::BigUint;
 
 const EXTENSION: &str = "bisign";

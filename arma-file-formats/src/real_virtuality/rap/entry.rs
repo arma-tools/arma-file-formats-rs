@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::{core::read::ReadExtTrait, errors::AffError};
 
-use super::{class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty, EntryReturn};
+use super::{EntryReturn, class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CfgEntry {

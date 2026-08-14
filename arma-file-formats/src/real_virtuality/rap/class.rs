@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::{core::read::ReadExtTrait, errors::AffError};
 
-use super::{entry::CfgEntry, pretty_print::PrettyPrint, EntryReturn};
+use super::{EntryReturn, entry::CfgEntry, pretty_print::PrettyPrint};
 
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct CfgClass {

@@ -6,12 +6,12 @@ use std::{
 
 use indexmap::IndexMap;
 use rsa::BigUint;
-use sha1::{digest::Output, Digest, Sha1};
+use sha1::{Digest, Sha1, digest::Output};
 
 use crate::{
     core::read::ReadExtTrait,
     errors::AffError,
-    real_virtuality::sign::{PrivateKey, PublicKey, SignVersion, Signature, KEY_LENGTH},
+    real_virtuality::sign::{KEY_LENGTH, PrivateKey, PublicKey, SignVersion, Signature},
 };
 
 use super::entry::Entry;

@@ -6,7 +6,7 @@ use lzzzz::lz4;
 use crate::{
     core::{read::ReadExtTrait, types::PixelType},
     enfusion::edds::{
-        dds_header::DdsHeaderDX10, DdsHeader, DdsPixelFormatEnum, DxgiFormat, FourCCEnum,
+        DdsHeader, DdsPixelFormatEnum, DxgiFormat, FourCCEnum, dds_header::DdsHeaderDX10,
     },
     errors::AffError,
 };

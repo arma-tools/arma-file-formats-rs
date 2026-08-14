@@ -1,6 +1,6 @@
 use std::io::{Cursor, Read, Seek};
 
-use super::{entry::CfgEntry, parser::parse, pretty_print::PrettyPrint, EntryReturn};
+use super::{EntryReturn, entry::CfgEntry, parser::parse, pretty_print::PrettyPrint};
 use crate::{
     core::{decompress_lzss_unk_size, read::ReadExtTrait},
     errors::AffError,

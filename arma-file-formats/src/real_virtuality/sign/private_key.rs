@@ -5,7 +5,7 @@ use crate::{
     },
     errors::AffError,
 };
-use binrw::{binrw, BinRead, BinWrite, Endian, NullString};
+use binrw::{BinRead, BinWrite, Endian, NullString, binrw};
 use std::{
     fs::File,
     io::{BufReader, Cursor, Read, Seek},
@@ -13,8 +13,8 @@ use std::{
 };
 
 use rsa::{
-    traits::{PrivateKeyParts, PublicKeyParts},
     BigUint, RsaPrivateKey,
+    traits::{PrivateKeyParts, PublicKeyParts},
 };
 
 pub const KEY_LENGTH: u32 = 1024;

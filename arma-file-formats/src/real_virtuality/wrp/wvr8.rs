@@ -8,9 +8,7 @@ use crate::{
         types::{TransformMatrix, XYPair},
     },
 };
-use binrw::{until_eof, Endian};
-
-use binrw::BinRead;
+use binrw::{BinRead, Endian, helpers::until_eof};
 
 #[derive(Debug, Default, PartialEq, Clone, BinRead)]
 #[br(magic = b"8WVR")]

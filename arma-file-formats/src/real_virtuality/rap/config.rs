@@ -65,14 +65,14 @@ impl Cfg {
         }
 
         reader.read_u8()?;
-        if matches!(reader.read_u32(), Ok(v) if v == RAP_MAGIC) {
-            if let Ok(data) = decompress_lzss_unk_size(reader) {
-                let mut reader = Cursor::new(data);
-                let is_valid_bin = Self::is_valid_rap_bin(&mut reader);
-                reader.rewind()?;
-                if is_valid_bin {
-                    return Self::read_config(&mut reader);
-                }
+        if matches!(reader.read_u32(), Ok(v) if v == RAP_MAGIC)
+            && let Ok(data) = decompress_lzss_unk_size(reader)
+        {
+            let mut reader = Cursor::new(data);
+            let is_valid_bin = Self::is_valid_rap_bin(&mut reader);
+            reader.rewind()?;
+            if is_valid_bin {
+                return Self::read_config(&mut reader);
             }
         }
 
@@ -81,16 +81,15 @@ impl Cfg {
         if let Err(err) = reader.read_to_string(&mut cfg_text) {
             // try lzss decompression
             reader.rewind()?;
-            if let Ok(uncomp_data) = decompress_lzss_unk_size(reader) {
-                if let Ok(cfg) = String::from_utf8(uncomp_data) {
-                    if let Ok(entries) = parse(&cfg) {
-                        return Ok(Self {
-                            enum_offset: 0,
-                            inherited_classname: String::new(),
-                            entries,
-                        });
-                    }
-                }
+            if let Ok(uncomp_data) = decompress_lzss_unk_size(reader)
+                && let Ok(cfg) = String::from_utf8(uncomp_data)
+                && let Ok(entries) = parse(&cfg)
+            {
+                return Ok(Self {
+                    enum_offset: 0,
+                    inherited_classname: String::new(),
+                    entries,
+                });
             }
             return Err(err.into());
         }

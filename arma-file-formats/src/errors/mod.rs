@@ -48,6 +48,9 @@ pub enum OdolError {
 
     #[error("Unsupported Version: `{0}`")]
     UnsupportedVersion(u32),
+
+    #[error("Lod not found")]
+    LodNotFound,
 }
 
 #[derive(Debug, Error)]

@@ -7,7 +7,7 @@ pub enum CfgValue {
     Float(f32),
     Long(i32),
     String(String),
-    Array(Vec<CfgValue>),
+    Array(Vec<Self>),
 }
 
 impl CfgValue {

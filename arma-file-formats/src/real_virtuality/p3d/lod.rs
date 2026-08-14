@@ -18,6 +18,7 @@ pub struct Lod {
     #[br(args { inner: (args,) })]
     pub proxies: Vec<Proxy>,
 
+    #[allow(clippy::struct_field_names)]
     lod_item_count: u32,
     #[br(count = lod_item_count)]
     pub lod_items: Vec<u32>,

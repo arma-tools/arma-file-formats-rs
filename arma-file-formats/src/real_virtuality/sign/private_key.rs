@@ -139,7 +139,7 @@ impl PrivateKey {
         let mut rng = rand::thread_rng();
         let rsa_priv_key =
             RsaPrivateKey::new_with_exp(&mut rng, KEY_LENGTH as usize, &BigUint::from(EXPONENT))
-                .unwrap();
+                .expect("This should not happen");
 
         priv_key.authority = Into::<String>::into(authority).into();
         priv_key.n_length = KEY_LENGTH;

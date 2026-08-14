@@ -3,6 +3,7 @@ use std::io::{self, Seek, SeekFrom, Write};
 use byteorder::LittleEndian;
 
 pub(crate) trait WriteExtTrait: Write + Seek {
+    #[allow(unused)]
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64>;
 
     fn write_u8(&mut self, n: u8) -> io::Result<()>;

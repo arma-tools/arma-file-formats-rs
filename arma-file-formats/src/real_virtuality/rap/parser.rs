@@ -126,7 +126,7 @@ fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
 #[derive(Debug, PartialEq, Clone)]
 enum EntryExpr {
     Prop(String, Box<Spanned<ValueExpr>>),
-    Class(String, Option<String>, Vec<Spanned<EntryExpr>>),
+    Class(String, Option<String>, Vec<Spanned<Self>>),
     Extern(String),
     Delete(String),
 }

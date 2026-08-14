@@ -31,7 +31,7 @@ pub struct XY {
     pub y: f32,
 }
 
-#[derive(Debug, Default, PartialEq, Clone, Copy, BinRead)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Copy, BinRead)]
 pub struct XYPair {
     pub x: u32,
     pub y: u32,

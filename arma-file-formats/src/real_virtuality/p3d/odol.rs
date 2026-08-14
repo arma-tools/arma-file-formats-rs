@@ -9,7 +9,9 @@ use std::{
 };
 
 use crate::{
-    core::decompress_lzss_unk_size, errors::AffError, real_virtuality::p3d::model_info::ModelInfo,
+    core::decompress_lzss_unk_size,
+    errors::{AffError, OdolError},
+    real_virtuality::p3d::model_info::ModelInfo,
 };
 use derivative::Derivative;
 
@@ -258,18 +260,15 @@ impl ODOL {
     where
         RS: Read + Seek,
     {
-        if let Some(lod_index) = self.resolutions.iter().position(|r| r.res == resolution) {
-            if let Some(start_address) = self.start_address_of_lods.get(lod_index) {
-                reader.seek(SeekFrom::Start((*start_address).into()))?;
-                let lod = Lod::read_le_args(reader, (self.args,))?;
-                //self.lods.insert(resolution, lod);
-                // doesnt handle lzss btw
-
-                return Ok(lod);
-            }
+        if let Some(lod_index) = self.resolutions.iter().position(|r| r.res == resolution)
+            && let Some(start_address) = self.start_address_of_lods.get(lod_index)
+        {
+            reader.seek(SeekFrom::Start((*start_address).into()))?;
+            let lod = Lod::read_le_args(reader, (self.args,))?;
+            return Ok(lod);
         }
 
-        todo!()
+        Err(AffError::OdolError(OdolError::LodNotFound))
     }
 }
 
@@ -302,16 +301,13 @@ where
             .resolutions
             .iter()
             .position(|r| r.res == resolution)
+            && let Some(start_address) = self.odol.start_address_of_lods.get(lod_index)
         {
-            if let Some(start_address) = self.odol.start_address_of_lods.get(lod_index) {
-                self.reader.seek(SeekFrom::Start((*start_address).into()))?;
-                let lod = Lod::read_le_args(&mut self.reader, (self.odol.args,))?;
-                //self.lods.insert(resolution, lod);
-
-                return Ok(lod);
-            }
+            self.reader.seek(SeekFrom::Start((*start_address).into()))?;
+            let lod = Lod::read_le_args(&mut self.reader, (self.odol.args,))?;
+            return Ok(lod);
         }
 
-        todo!()
+        Err(AffError::OdolError(OdolError::LodNotFound))
     }
 }

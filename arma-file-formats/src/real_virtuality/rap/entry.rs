@@ -29,9 +29,7 @@ impl CfgEntry {
     }
     #[must_use]
     pub fn get_entry(&self, path: &[&str]) -> Option<EntryReturn> {
-        let Some(first) = path.first() else {
-            return None;
-        };
+        let first = path.first()?;
 
         let cur = *first;
 
@@ -51,12 +49,12 @@ impl CfgEntry {
             }
             Self::Extern(ext) => {
                 if last && ext == cur {
-                    return Some(EntryReturn::Entry(Self::Extern(ext.to_string())));
+                    return Some(EntryReturn::Entry(Self::Extern(ext.clone())));
                 }
             }
             Self::Delete(del) => {
                 if last && del == cur {
-                    return Some(EntryReturn::Entry(Self::Delete(del.to_string())));
+                    return Some(EntryReturn::Entry(Self::Delete(del.clone())));
                 }
             }
         }

@@ -13,9 +13,9 @@ pub enum DdsHeaderFlags {
     DDSD_WIDTH = 4,
     DDSD_PITCH = 8,
     DDSD_PIXELFORMAT = 4096,
-    DDSD_MIPMAPCOUNT = 131072,
-    DDSD_LINEARSIZE = 524288,
-    DDSD_DEPTH = 8388608,
+    DDSD_MIPMAPCOUNT = 131_072,
+    DDSD_LINEARSIZE = 524_288,
+    DDSD_DEPTH = 8_388_608,
 }
 
 #[allow(non_camel_case_types)]
@@ -24,7 +24,7 @@ pub enum DdsHeaderFlags {
 #[repr(u32)]
 pub enum DdsCapsFlags {
     DDSCAPS_COMPLEX = 0x8,
-    DDSCAPS_MIPMAP = 0x400000,
+    DDSCAPS_MIPMAP = 0x40_0000,
     DDSCAPS_TEXTURE = 0x1000,
 }
 
@@ -40,7 +40,7 @@ pub enum DdsCaps2Flags {
     DDSCAPS2_CUBEMAP_NEGATIVEY = 0x2000,
     DDSCAPS2_CUBEMAP_POSITIVEZ = 0x4000,
     DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x8000,
-    DDSCAPS2_VOLUME = 0x200000,
+    DDSCAPS2_VOLUME = 0x20_0000,
 }
 
 #[derive(BinRead, Debug, Clone, PartialEq, Eq)]
@@ -81,7 +81,7 @@ pub enum DdsPixelformatFlags {
     DDPF_FOURCC = 4,
     DDPF_RGB = 64,
     DDPF_YUV = 512,
-    DDPF_LUMINANCE = 131072,
+    DDPF_LUMINANCE = 131_072,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, BinRead)]
@@ -222,10 +222,10 @@ pub enum DxgiFormat {
     DXGI_FORMAT_V408 = 132,
     DXGI_FORMAT_SAMPLER_FEEDBACK_MIN_MIP_OPAQUE,
     DXGI_FORMAT_SAMPLER_FEEDBACK_MIP_REGION_USED_OPAQUE,
-    DXGI_FORMAT_FORCE_UINT = 0xffffffff,
+    DXGI_FORMAT_FORCE_UINT = 0xffff_ffff,
 }
 
-/// https://msdn.microsoft.com/en-us/library/bb943991.aspx
+/// <https://msdn.microsoft.com/en-us/library/bb943991.aspx>
 #[derive(Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum DdsPixelFormatEnum {

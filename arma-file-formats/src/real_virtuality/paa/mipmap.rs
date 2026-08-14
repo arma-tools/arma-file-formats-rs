@@ -65,8 +65,6 @@ impl Mipmap {
     fn decompress_data(&mut self, paa_type: PaaType) -> Result<(), PaaError> {
         let expected_size = self.width as usize * self.height as usize;
 
-        if self.is_lzo_compressed {}
-
         match paa_type {
             PaaType::UNKNOWN => todo!(),
             PaaType::DXT1 => {
@@ -250,7 +248,7 @@ impl Mipmap {
         Ok(())
     }
 
-    fn writer_internal<W>(&mut self, writer: &mut W, out_data: &[u8]) -> io::Result<()>
+    fn writer_internal<W>(&self, writer: &mut W, out_data: &[u8]) -> io::Result<()>
     where
         W: Write + Seek,
     {

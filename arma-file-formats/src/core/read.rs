@@ -6,6 +6,7 @@ use byteorder::LittleEndian;
 pub(crate) trait ReadExtTrait: Read + Seek {
     fn read_compressed_int(&mut self) -> io::Result<u32>;
 
+    #[allow(unused)]
     fn read_bool(&mut self) -> io::Result<bool>;
 
     fn read_u8(&mut self) -> io::Result<u8>;
@@ -27,6 +28,7 @@ pub(crate) trait ReadExtTrait: Read + Seek {
 
     fn peek_u16(&mut self) -> io::Result<u16>;
 
+    #[allow(unused)]
     fn peek_string(&mut self, size: usize) -> io::Result<String>;
 
     fn peek_string_lossy(&mut self, size: usize) -> io::Result<String>;

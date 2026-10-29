@@ -1,0 +1,41 @@
+$object "" {
+ #version 1.0
+ #tag MergeMeshes "1"
+ #tag Coords "XZY"
+ #tag Scale "1.000000"
+ #tag SrcFile_AppVendor "Blender Foundation"
+ #tag SrcFile_AppName "Blender (stable FBX IO)"
+ #tag SrcFile_AppVersion "5.2.3 LTS"
+ $materials {
+  $material "TriMat" {
+   #UVset 0
+  }
+ }
+ $lod 0 {
+  #lodFactor 0.5
+  $mesh "tri" {
+   #texCoords 1
+   $faces {
+     0 3 0 1 2
+   }
+   $faceVerts {
+     2 0 0
+     1 0 1
+     0 0 2
+   }
+   $verts {
+     0 0 0 0
+     1 0 0 0
+     0 3 2 0
+   }
+   $texCoords {
+     0 0
+     1 1
+     0 1
+   }
+   $normals {
+     0 0.5547 -0.8321
+   }
+  }
+ }
+}

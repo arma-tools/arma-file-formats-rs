@@ -9,4 +9,5 @@ mod real_virtuality {
 
 mod enfusion {
     mod edds_test;
+    mod xob_test;
 }

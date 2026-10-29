@@ -53,6 +53,28 @@ pub enum OdolError {
     LodNotFound,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum XobError {
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("LOD {0} data lies outside of the LODS chunk")]
+    LodDataOutOfBounds(usize),
+
+    #[error("LOD {lod} decompressed to {actual} bytes, expected {expected}")]
+    LodSizeMismatch {
+        lod: usize,
+        expected: usize,
+        actual: usize,
+    },
+
+    #[error("LZ4 decompression of LOD {0} failed")]
+    Decompression(usize),
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -69,6 +91,9 @@ pub enum AffError {
 
     #[error("ODOL Error")]
     OdolError(#[from] OdolError),
+
+    #[error("XOB Error: {0}")]
+    XobError(#[from] XobError),
 
     #[error("Invalid file")]
     InvalidFileError,

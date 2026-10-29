@@ -1,7 +1,7 @@
 use std::io::{self, ErrorKind, Read, Seek, SeekFrom};
 
 use binrw::{BinRead, BinResult, NullString};
-use byteorder::LittleEndian;
+use byteorder::{BigEndian, LittleEndian};
 
 pub(crate) trait ReadExtTrait: Read + Seek {
     fn read_compressed_int(&mut self) -> io::Result<u32>;
@@ -13,6 +13,7 @@ pub(crate) trait ReadExtTrait: Read + Seek {
     fn read_u16(&mut self) -> io::Result<u16>;
     fn read_i32(&mut self) -> io::Result<i32>;
     fn read_u32(&mut self) -> io::Result<u32>;
+    fn read_u32_be(&mut self) -> io::Result<u32>;
 
     fn read_f32(&mut self) -> io::Result<f32>;
 
@@ -69,6 +70,10 @@ where
 
     fn read_u32(&mut self) -> io::Result<u32> {
         byteorder::ReadBytesExt::read_u32::<LittleEndian>(self)
+    }
+
+    fn read_u32_be(&mut self) -> io::Result<u32> {
+        byteorder::ReadBytesExt::read_u32::<BigEndian>(self)
     }
 
     fn read_f32(&mut self) -> io::Result<f32> {

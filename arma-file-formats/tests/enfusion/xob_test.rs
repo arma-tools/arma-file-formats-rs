@@ -7,7 +7,9 @@
 
 use std::{fs::File, io::BufReader, path::Path};
 
-use arma_file_formats::enfusion::xob::{Xob, XobMesh, unpack_vector};
+use arma_file_formats::enfusion::xob::{
+    Xob, XobCollider, XobColliderShape, XobMesh, unpack_vector,
+};
 
 const PROBE_PATH_PREFIX: &str = "./tests/enfusion/xob_probes/";
 
@@ -273,6 +275,55 @@ fn assert_consistent(xob: &Xob) {
         let cells: usize = grid.dimensions.iter().map(|&d| usize::from(d)).product();
         assert_eq!(grid.cells.len(), cells.div_ceil(8));
     }
+
+    for collider in &xob.colliders {
+        assert_eq!(collider.unknown_52, 0, "{}", collider.name);
+        assert!(
+            collider
+                .bone
+                .is_none_or(|b| usize::from(b) < xob.head.bones.len())
+        );
+        for axis in &collider.rotation {
+            assert!((axis.iter().map(|c| c * c).sum::<f32>() - 1.0).abs() < 1e-3);
+        }
+        match &collider.shape {
+            XobColliderShape::Convex(hull) => {
+                let (vertices, faces) = (hull.vertices.len(), hull.faces.len());
+                assert_eq!(hull.face_edges.len(), hull.edges.len() * 2);
+                assert!(hull.edges.iter().all(|e| {
+                    e.vertices.iter().all(|&v| usize::from(v) < vertices)
+                        && e.faces.iter().all(|&f| usize::from(f) < faces)
+                }));
+                let mut next = 0;
+                for face in &hull.faces {
+                    assert_eq!(face.first_edge, next);
+                    next += face.edge_count;
+                    for &edge in &hull.face_edges[usize::from(face.first_edge)..usize::from(next)] {
+                        assert!(usize::from(edge) < hull.edges.len());
+                    }
+                }
+                assert_eq!(usize::from(next), hull.face_edges.len());
+            }
+            XobColliderShape::TriMesh(mesh) => {
+                assert!(
+                    mesh.triangles
+                        .iter()
+                        .flatten()
+                        .all(|&v| usize::from(v) < mesh.vertices.len())
+                );
+                let last: Vec<_> = mesh
+                    .material_ranges
+                    .iter()
+                    .map(|r| r.last_triangle)
+                    .collect();
+                assert!(last.is_sorted());
+                if let Some(&end) = last.last() {
+                    assert_eq!(usize::from(end) + 1, mesh.triangles.len());
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 /// Sorted triangles, each rotated to start at its smallest index so the winding is kept.
@@ -329,6 +380,134 @@ fn xob_occupancy_test() {
         read_probe("biggrid").occupancy.unwrap().dimensions,
         [10, 4, 10]
     );
+}
+
+#[test]
+fn xob_colliders_test() {
+    let xob = read_probe("colliders");
+    assert_consistent(&xob);
+    let collider =
+        |name: &str| -> &XobCollider { xob.colliders.iter().find(|c| c.name == name).unwrap() };
+    let identity = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    let assert_rotation = |c: &XobCollider, rows: [[f32; 3]; 3]| {
+        for (axis, expected) in c.rotation.iter().zip(rows) {
+            assert!(close(axis, &expected, 1e-4), "{}: {:?}", c.name, c.rotation);
+        }
+    };
+    assert!(xob.colliders.iter().all(|c| c.bone.is_none()));
+
+    // 1 x 2 x 3 box at Blender (2, 0, 0), rotated 30 degrees about Blender z (engine y)
+    let box_ = collider("UBX_box");
+    assert_eq!(
+        box_.shape,
+        XobColliderShape::Box {
+            half_extents: [0.5, 1.5, 1.0]
+        }
+    );
+    assert!(close(&box_.position, &[2.0, 0.0, 0.0], POSITION_EPS));
+    let (sin, cos) = 30_f32.to_radians().sin_cos();
+    assert_rotation(box_, [[cos, 0.0, sin], [0.0, 1.0, 0.0], [-sin, 0.0, cos]]);
+    assert!((box_.margin - 0.25).abs() < 1e-6);
+    assert_eq!(box_.layer, "");
+    assert!(box_.material.ends_with("material/metal.gamemat"));
+
+    // radius 0.5 at Blender (0, 3, 0), layer preset and margin set in the meta file
+    let sphere = collider("USP_sphere");
+    assert_eq!(sphere.shape, XobColliderShape::Sphere { radius: 0.5 });
+    assert!(close(&sphere.position, &[0.0, 0.0, 3.0], POSITION_EPS));
+    assert_eq!(sphere.layer, "Prop");
+    assert!((sphere.margin - 0.04).abs() < 1e-6);
+
+    // radius 0.3, length 1.2 along Blender z, which is the local y axis
+    let cylinder = collider("UCL_cylinder");
+    let XobColliderShape::Cylinder {
+        radius,
+        half_length,
+    } = cylinder.shape
+    else {
+        panic!("{:?}", cylinder.shape);
+    };
+    assert!(close(&[radius, half_length], &[0.3, 0.6], 1e-6));
+    assert!(close(&cylinder.position, &[-2.0, 0.0, 0.0], POSITION_EPS));
+    assert_rotation(cylinder, identity);
+
+    // radius 0.25 with a 1.0 long straight part, laid along Blender x
+    let capsule = collider("UCS_capsule");
+    let XobColliderShape::Capsule {
+        radius,
+        half_length,
+    } = capsule.shape
+    else {
+        panic!("{:?}", capsule.shape);
+    };
+    assert!(close(&[radius, half_length], &[0.25, 0.5], 1e-6));
+    assert!(close(&capsule.position, &[0.0, 0.0, -3.0], POSITION_EPS));
+    assert!(close(
+        &capsule.rotation[1].map(f32::abs),
+        &[1.0, 0.0, 0.0],
+        1e-4
+    ));
+
+    // square pyramid, base at Blender z = 2, apex at z = 3; vertices are relative to the centroid
+    let pyramid = collider("UCX_pyramid");
+    let XobColliderShape::Convex(hull) = &pyramid.shape else {
+        panic!("{:?}", pyramid.shape);
+    };
+    assert_rotation(pyramid, identity);
+    assert_eq!(
+        (hull.vertices.len(), hull.edges.len(), hull.faces.len()),
+        (5, 8, 5)
+    );
+    let mut edge_counts: Vec<_> = hull.faces.iter().map(|f| f.edge_count).collect();
+    edge_counts.sort_unstable();
+    assert_eq!(edge_counts, [3, 3, 3, 3, 4]);
+    let heights: Vec<f32> = hull
+        .vertices
+        .iter()
+        .map(|v| v[1] + pyramid.position[1])
+        .collect();
+    assert_eq!(
+        heights
+            .iter()
+            .filter(|&&y| (y - 2.0).abs() < POSITION_EPS)
+            .count(),
+        4
+    );
+    assert_eq!(
+        heights
+            .iter()
+            .filter(|&&y| (y - 3.0).abs() < POSITION_EPS)
+            .count(),
+        1
+    );
+
+    // both UTM_ objects are merged into one mesh: the quad (2 triangles, metal) and the
+    // strip with ColA on one face and ColB on two (2 + 4 triangles)
+    let tri_mesh = collider("UTM_quad");
+    let XobColliderShape::TriMesh(mesh) = &tri_mesh.shape else {
+        panic!("{:?}", tri_mesh.shape);
+    };
+    assert_eq!(mesh.triangles.len(), 8);
+    let ranges: Vec<_> = mesh
+        .material_ranges
+        .iter()
+        .map(|r| (r.material.rsplit('}').next().unwrap(), r.last_triangle))
+        .collect();
+    assert_eq!(
+        ranges,
+        [
+            ("material/metal.gamemat", 1),
+            ("ColA.gamemat", 3),
+            ("ColB.gamemat", 7)
+        ]
+    );
+    for triangle in &mesh.triangles[..2] {
+        assert!(
+            triangle
+                .iter()
+                .all(|&v| (mesh.vertices[usize::from(v)][1] + 2.0).abs() < POSITION_EPS)
+        );
+    }
 }
 
 #[test]

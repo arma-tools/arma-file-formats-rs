@@ -5,7 +5,9 @@ use lzzzz::lz4;
 
 use crate::{
     core::read::ReadExtTrait,
-    enfusion::xob::{XobHead, XobLodHeader, XobMesh, XobOccupancyGrid, XobSectionHeader},
+    enfusion::xob::{
+        XobCollider, XobHead, XobLodHeader, XobMesh, XobOccupancyGrid, XobSectionHeader,
+    },
     errors::{AffError, XobError},
 };
 
@@ -19,8 +21,8 @@ pub struct Xob {
     pub head: XobHead,
     /// Decoded LODs, in the order of [`XobHead::lods`] (most detailed first).
     pub lods: Vec<XobLod>,
-    /// Raw `COLL` chunk (colliders), not decoded yet.
-    pub colliders: Option<Vec<u8>>,
+    /// Contents of the `COLL` chunk.
+    pub colliders: Vec<XobCollider>,
     /// `VOLM` chunk, absent for flat models.
     pub occupancy: Option<XobOccupancyGrid>,
 }
@@ -63,11 +65,16 @@ impl Xob {
             .map(|c| XobOccupancyGrid::read(&mut Cursor::new(&c.data)))
             .transpose()?;
 
+        let colliders = match find(b"COLL") {
+            Some(chunk) => XobCollider::read_all(&chunk.data, &head.strings)?,
+            None => Vec::new(),
+        };
+
         Ok(Self {
-            lods,
-            colliders: find(b"COLL").map(|c| c.data.clone()),
-            occupancy,
             head,
+            lods,
+            colliders,
+            occupancy,
         })
     }
 }

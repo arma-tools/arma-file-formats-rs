@@ -73,6 +73,9 @@ pub enum XobError {
 
     #[error("LZ4 decompression of LOD {0} failed")]
     Decompression(usize),
+
+    #[error("Unknown collider shape: `{0}`")]
+    UnknownColliderShape(u8),
 }
 
 #[derive(Debug, Error)]

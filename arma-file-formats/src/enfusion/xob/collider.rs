@@ -16,17 +16,23 @@ pub struct XobCollider {
     /// Index into [`super::XobHead::bones`] the collider is attached to.
     #[br(map = |bone: u8| (bone != COLLIDER_NO_BONE).then_some(bone))]
     pub bone: Option<u8>,
+    /// Index into [`super::XobHead::strings`].
+    pub layer_index: u16,
     /// Layer preset, empty if none is set.
-    #[br(map = |index: u16| string_at(strings, index))]
+    #[br(calc = string_at(strings, layer_index))]
     pub layer: String,
     /// Local x, y and z axis of the collider, one per row.
     pub rotation: [[f32; 3]; 3],
     pub position: [f32; 3],
     pub unknown_52: u32,
-    #[br(map = |index: u16| string_at(strings, index))]
+    /// Index into [`super::XobHead::strings`].
+    pub name_index: u16,
+    #[br(calc = string_at(strings, name_index))]
     pub name: String,
+    /// Index into [`super::XobHead::strings`].
+    pub material_index: u16,
     /// Surface material, usually a `.gamemat` resource; may be empty or a `.physmat`.
-    #[br(map = |index: u16| string_at(strings, index))]
+    #[br(calc = string_at(strings, material_index))]
     pub material: String,
     pub margin: f32,
     #[br(args(shape_type, strings))]
@@ -116,7 +122,9 @@ pub struct XobTriMesh {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[br(little, import(strings: &[String]))]
 pub struct XobMaterialRange {
-    #[br(map = |index: u16| string_at(strings, index))]
+    /// Index into [`super::XobHead::strings`].
+    pub material_index: u16,
+    #[br(calc = string_at(strings, material_index))]
     pub material: String,
     pub last_triangle: u16,
 }

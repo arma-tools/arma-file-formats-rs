@@ -35,17 +35,10 @@ pub struct XobHead {
     #[br(count = string_table_size, map = |bytes: Vec<u8>| split_strings(&bytes))]
     pub strings: Vec<String>,
 
-    #[br(temp, count = material_count)]
-    material_refs: Vec<[u16; 2]>,
-    #[br(calc = material_refs.iter().map(|[name, path]| XobMaterial {
-        name: string_at(&strings, u32::from(*name)),
-        path: string_at(&strings, u32::from(*path)),
-    }).collect())]
+    #[br(args { count: usize::from(material_count), inner: (&strings,) })]
     pub materials: Vec<XobMaterial>,
 
-    #[br(temp, count = bone_count)]
-    raw_bones: Vec<RawBone>,
-    #[br(calc = raw_bones.iter().map(|b| b.resolve(&strings)).collect())]
+    #[br(args { count: usize::from(bone_count), inner: (&strings,) })]
     pub bones: Vec<XobBone>,
 
     #[br(count = point_count)]
@@ -59,44 +52,36 @@ pub struct XobHead {
     pub volumes: Vec<XobVolume>,
 }
 
+#[binread]
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[br(little, import(strings: &[String]))]
 pub struct XobMaterial {
+    /// Index into [`XobHead::strings`].
+    pub name_index: u16,
+    #[br(calc = string_at(strings, u32::from(name_index)))]
     pub name: String,
+    /// Index into [`XobHead::strings`].
+    pub path_index: u16,
     /// Resource path of the `.emat`, prefixed with its GUID, e.g. `{3C10D749A4E84B38}Common/Materials/Default.emat`.
+    #[br(calc = string_at(strings, u32::from(path_index)))]
     pub path: String,
 }
 
 #[binread]
-#[derive(Debug, Clone)]
-#[br(little)]
-struct RawBone {
-    name: u32,
-    translation: [f32; 3],
-    rotation: [f32; 4],
-    next_sibling: u16,
-    first_child: u16,
-}
-
-impl RawBone {
-    fn resolve(&self, strings: &[String]) -> XobBone {
-        XobBone {
-            name: string_at(strings, self.name),
-            translation: self.translation,
-            rotation: self.rotation,
-            next_sibling: bone_link(self.next_sibling),
-            first_child: bone_link(self.first_child),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
+#[br(little, import(strings: &[String]))]
 pub struct XobBone {
+    /// Index into [`XobHead::strings`].
+    pub name_index: u32,
+    #[br(calc = string_at(strings, name_index))]
     pub name: String,
     pub translation: [f32; 3],
     /// Quaternion as `[x, y, z, w]`.
     pub rotation: [f32; 4],
     /// Index of the next bone with the same parent.
+    #[br(map = bone_link)]
     pub next_sibling: Option<u16>,
+    #[br(map = bone_link)]
     pub first_child: Option<u16>,
 }
 

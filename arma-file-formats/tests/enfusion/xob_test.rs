@@ -276,7 +276,27 @@ fn assert_consistent(xob: &Xob) {
         assert_eq!(grid.cells.len(), cells.div_ceil(8));
     }
 
+    let string = |index: usize| xob.head.strings[index].as_str();
+    for material in &xob.head.materials {
+        assert_eq!(string(usize::from(material.name_index)), material.name);
+        assert_eq!(string(usize::from(material.path_index)), material.path);
+    }
+    for bone in &xob.head.bones {
+        assert_eq!(string(bone.name_index as usize), bone.name);
+    }
+
     for collider in &xob.colliders {
+        assert_eq!(string(usize::from(collider.name_index)), collider.name);
+        assert_eq!(string(usize::from(collider.layer_index)), collider.layer);
+        assert_eq!(
+            string(usize::from(collider.material_index)),
+            collider.material
+        );
+        if let XobColliderShape::TriMesh(mesh) = &collider.shape {
+            for range in &mesh.material_ranges {
+                assert_eq!(string(usize::from(range.material_index)), range.material);
+            }
+        }
         assert_eq!(collider.unknown_52, 0, "{}", collider.name);
         assert!(
             collider

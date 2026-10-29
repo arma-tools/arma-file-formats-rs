@@ -137,7 +137,7 @@ fn read_lod(lods: &Chunk, index: usize, header: &XobLodHeader) -> Result<XobLod,
     let sections = header
         .sections
         .iter()
-        .map(|section| XobMesh::read(&mut cursor, section))
+        .map(|section| XobMesh::read_args(&mut cursor, (section,)))
         .collect::<Result<_, _>>()?;
 
     Ok(XobLod { sections })

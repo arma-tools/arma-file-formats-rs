@@ -1,7 +1,6 @@
 use std::io::{Read, Seek};
 
 use binrw::BinRead;
-use lzzzz::lz4;
 
 use crate::{
     core::{read::ReadExtTrait, types::PixelType},
@@ -65,8 +64,6 @@ impl Edds {
                     mipmap.data = Edds::decode_data(&buf, mipmap.width, mipmap.height, &header)?;
                 }
                 MipmapType::LZ4 => {
-                    let mut lz4_stream = lz4::Decompressor::new().unwrap();
-
                     let uncompressed_data_size = input.read_u32().unwrap() as usize;
 
                     let mut data_read = 4;
@@ -89,8 +86,14 @@ impl Edds {
                             block_size = uncompressed_data_size - complete_buffer.len();
                         }
 
-                        let decomp = lz4_stream.next(&buf, block_size as usize).unwrap();
-                        complete_buffer.append(&mut decomp.to_owned());
+                        // Each block uses the previous output as its dictionary
+                        let mut decomp = lz4_flex::block::decompress_with_dict(
+                            &buf,
+                            block_size,
+                            &complete_buffer,
+                        )
+                        .unwrap();
+                        complete_buffer.append(&mut decomp);
 
                         if is_last_block {
                             assert_eq!(data_read, mipmap.compressed_data_size as usize);

@@ -1,7 +1,6 @@
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use binrw::BinRead;
-use lzzzz::lz4;
 
 use crate::{
     core::{
@@ -145,7 +144,6 @@ fn read_lod(lods: &Chunk, index: usize, header: &XobLodHeader) -> Result<XobLod,
 /// Each block starts with a `u32` header: the compressed size in the lower 24 bits and a flag
 /// for the last block. Blocks decompress to 64 KiB and use the previous output as dictionary.
 fn decompress_lz4_chain(mut src: &[u8], size: usize) -> Option<Vec<u8>> {
-    let mut decompressor = lz4::Decompressor::new().ok()?;
     let mut out = Vec::with_capacity(size);
 
     loop {
@@ -160,7 +158,9 @@ fn decompress_lz4_chain(mut src: &[u8], size: usize) -> Option<Vec<u8>> {
         } else {
             LZ4_BLOCK_SIZE
         };
-        out.extend_from_slice(decompressor.next(block, original_size).ok()?);
+        let decompressed =
+            lz4_flex::block::decompress_with_dict(block, original_size, &out).ok()?;
+        out.extend_from_slice(&decompressed);
 
         if is_last {
             return Some(out);

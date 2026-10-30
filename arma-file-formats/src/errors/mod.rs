@@ -78,6 +78,43 @@ pub enum XobError {
     UnknownColliderShape(u8),
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum PakError {
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Invalid HEAD chunk")]
+    InvalidHead,
+
+    #[error("Unsupported pak version: `{0:#x}`")]
+    UnsupportedVersion(u32),
+
+    #[error("FILE chunk does not match the checksum in the HEAD chunk")]
+    ChecksumMismatch,
+
+    #[error("Unknown compression: `{0}`")]
+    UnknownCompression(u8),
+
+    #[error("`{path}`: expected {expected} bytes, read {actual}")]
+    SizeMismatch {
+        path: String,
+        expected: u64,
+        actual: u64,
+    },
+
+    #[error("Invalid path: `{0}`")]
+    InvalidPath(String),
+
+    #[error("Duplicate path: `{0}`")]
+    DuplicatePath(String),
+
+    #[error("Pak exceeds 4 GiB")]
+    TooLarge,
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -97,6 +134,9 @@ pub enum AffError {
 
     #[error("XOB Error: {0}")]
     XobError(#[from] XobError),
+
+    #[error("PAK Error: {0}")]
+    PakError(#[from] PakError),
 
     #[error("Invalid file")]
     InvalidFileError,

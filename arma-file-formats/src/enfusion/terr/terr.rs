@@ -1,12 +1,9 @@
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use binrw::{BinRead, BinWrite, binrw};
+use binrw::{BinRead, BinWrite, binrw, helpers::until_eof, io::NoSeek};
 
 use crate::{
-    core::{
-        iff::{ChunkHeader, FormHeader},
-        read::ReadExtTrait,
-    },
+    core::iff::FormHeader,
     errors::{AffError, TerrError},
 };
 
@@ -65,8 +62,6 @@ pub struct TerrHead {
 }
 
 impl TerrHead {
-    pub const SIZE: u32 = 32;
-
     /// Grid cells along one side of a tile.
     #[must_use]
     pub const fn tile_cells(&self) -> u32 {
@@ -123,10 +118,6 @@ pub struct TerrTextureSizes {
     pub layer: u16,
 }
 
-impl TerrTextureSizes {
-    pub const SIZE: u32 = 6;
-}
-
 /// Contents of the `GRAS` chunk.
 #[binrw]
 #[brw(little)]
@@ -139,14 +130,40 @@ pub struct TerrGrass {
     pub clusters_per_block: u16,
 }
 
-impl TerrGrass {
-    pub const SIZE: u32 = 6;
-}
-
+/// A chunk of the `FORM`, with a big endian tag and size.
+#[binrw]
+#[brw(big)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TerrChunk {
     pub tag: [u8; 4],
+    #[br(temp)]
+    #[bw(try_calc = u32::try_from(data.len()))]
+    size: u32,
+    #[br(count = size)]
     pub data: Vec<u8>,
+}
+
+/// Contents of the `MATS` chunk.
+#[binrw]
+#[brw(little, import(version: u32))]
+struct TerrMaterials {
+    #[br(if(version >= TERR_SURFACE_BITS_VERSION, TERR_DEFAULT_SURFACE_BITS))]
+    #[bw(if(version >= TERR_SURFACE_BITS_VERSION))]
+    surface_bits: u16,
+    #[br(parse_with = until_eof)]
+    paths: Vec<MaterialPath>,
+}
+
+/// A `u32` length and a NUL terminated string, the length includes the NUL.
+#[binrw]
+#[brw(little)]
+struct MaterialPath {
+    #[br(temp)]
+    #[bw(try_calc = u32::try_from(path.len() + 1))]
+    len: u32,
+    #[br(count = len, try_map = strip_nul)]
+    #[bw(map = |path: &String| [path.as_bytes(), &[0]].concat())]
+    path: String,
 }
 
 impl Terr {
@@ -155,35 +172,26 @@ impl Terr {
         I: Seek + Read,
     {
         let mut chunks = read_chunks(input)?;
-        let mut take = |tag: &'static [u8; 4]| {
+        let mut take = |tag: &'static str| {
             chunks
                 .iter()
-                .position(|c| &c.tag == tag)
+                .position(|c| c.tag == tag.as_bytes())
                 .map(|i| chunks.remove(i))
         };
+        let mut required = |tag| take(tag).ok_or(TerrError::ChunkMissing(tag));
 
-        let vers = take(b"VERS").ok_or(TerrError::ChunkMissing("VERS"))?;
-        let version = u32::from_le_bytes(
-            vers.data
-                .as_slice()
-                .try_into()
-                .map_err(|_| TerrError::InvalidChunkSize("VERS"))?,
-        );
-
-        let head = read_fixed(take(b"HEAD"), "HEAD", TerrHead::SIZE)?;
-        let texture_sizes = read_fixed(take(b"TEXS"), "TEXS", TerrTextureSizes::SIZE)?;
-        let mats = take(b"MATS").ok_or(TerrError::ChunkMissing("MATS"))?;
-        let (surface_bits, materials) = read_materials(&mats.data, version)?;
-        let grass = take(b"GRAS")
-            .map(|c| read_fixed(Some(c), "GRAS", TerrGrass::SIZE))
-            .transpose()?;
+        let version = parse(&required("VERS")?, "VERS", ())?;
+        let head = parse(&required("HEAD")?, "HEAD", ())?;
+        let texture_sizes = parse(&required("TEXS")?, "TEXS", ())?;
+        let mats: TerrMaterials = parse(&required("MATS")?, "MATS", (version,))?;
+        let grass = take("GRAS").map(|c| parse(&c, "GRAS", ())).transpose()?;
 
         Ok(Self {
             version,
             head,
             texture_sizes,
-            surface_bits,
-            materials,
+            surface_bits: mats.surface_bits,
+            materials: mats.paths.into_iter().map(|m| m.path).collect(),
             grass,
             unknown_chunks: chunks,
         })
@@ -192,36 +200,35 @@ impl Terr {
     /// Writes the terr at the current position of `out`. [`Terr::surface_bits`] is only written
     /// if [`Terr::version`] stores it.
     pub fn write<W: Write>(&self, out: &mut W) -> Result<(), AffError> {
-        let mut body = Cursor::new(Vec::new());
-        body.write_all(TERR_FORM_TYPE)?;
-
-        write_chunk(&mut body, *b"VERS", &self.version.to_le_bytes())?;
-        write_chunk(&mut body, *b"HEAD", &to_bytes(&self.head)?)?;
-        write_chunk(&mut body, *b"TEXS", &to_bytes(&self.texture_sizes)?)?;
-
-        let mut mats = Vec::new();
-        if self.version >= TERR_SURFACE_BITS_VERSION {
-            mats.extend_from_slice(&self.surface_bits.to_le_bytes());
-        }
-        for material in &self.materials {
-            let len = u32::try_from(material.len() + 1).map_err(|_| TerrError::TooLarge)?;
-            mats.extend_from_slice(&len.to_le_bytes());
-            mats.extend_from_slice(material.as_bytes());
-            mats.push(0);
-        }
-        write_chunk(&mut body, *b"MATS", &mats)?;
-
+        let mats = TerrMaterials {
+            surface_bits: self.surface_bits,
+            paths: self
+                .materials
+                .iter()
+                .map(|path| MaterialPath { path: path.clone() })
+                .collect(),
+        };
+        let mut chunks = vec![
+            chunk(*b"VERS", &self.version, ())?,
+            chunk(*b"HEAD", &self.head, ())?,
+            chunk(*b"TEXS", &self.texture_sizes, ())?,
+            chunk(*b"MATS", &mats, (self.version,))?,
+        ];
         if let Some(grass) = &self.grass {
-            write_chunk(&mut body, *b"GRAS", &to_bytes(grass)?)?;
-        }
-        for chunk in &self.unknown_chunks {
-            write_chunk(&mut body, chunk.tag, &chunk.data)?;
+            chunks.push(chunk(*b"GRAS", grass, ())?);
         }
 
+        let mut body = Cursor::new(Vec::new());
+        for chunk in chunks.iter().chain(&self.unknown_chunks) {
+            chunk.write(&mut body)?;
+        }
         let body = body.into_inner();
-        let size = u32::try_from(body.len()).map_err(|_| TerrError::TooLarge)?;
-        out.write_all(b"FORM")?;
-        out.write_all(&size.to_be_bytes())?;
+
+        FormHeader {
+            size: u32::try_from(body.len() + 4).map_err(|_| TerrError::TooLarge)?,
+            form_type: *TERR_FORM_TYPE,
+        }
+        .write(&mut NoSeek::new(&mut *out))?;
         out.write_all(&body)?;
         Ok(())
     }
@@ -237,71 +244,40 @@ fn read_chunks<I: Seek + Read>(input: &mut I) -> Result<Vec<TerrChunk>, AffError
 
     let mut chunks = Vec::new();
     while input.stream_position()? < form_end {
-        let header = ChunkHeader::read(input)?;
-        let data = input.read_bytes(header.size as usize)?;
-        chunks.push(TerrChunk {
-            tag: header.tag,
-            data,
-        });
+        chunks.push(TerrChunk::read(input)?);
     }
     input.seek(SeekFrom::Start(form_end))?;
 
     Ok(chunks)
 }
 
-fn read_fixed<T>(chunk: Option<TerrChunk>, tag: &'static str, size: u32) -> Result<T, AffError>
+/// Parses the contents of a chunk, which have to be used up exactly.
+fn parse<T, A>(chunk: &TerrChunk, tag: &'static str, args: A) -> Result<T, TerrError>
 where
-    T: for<'a> BinRead<Args<'a> = ()>,
+    T: for<'a> BinRead<Args<'a> = A>,
 {
-    let chunk = chunk.ok_or(TerrError::ChunkMissing(tag))?;
-    if chunk.data.len() != size as usize {
-        return Err(TerrError::InvalidChunkSize(tag).into());
-    }
-    Ok(T::read_le(&mut Cursor::new(&chunk.data))?)
+    let mut cursor = Cursor::new(&chunk.data);
+    T::read_le_args(&mut cursor, args)
+        .ok()
+        .filter(|_| cursor.position() == chunk.data.len() as u64)
+        .ok_or(TerrError::InvalidChunk(tag))
 }
 
-fn read_materials(mut data: &[u8], version: u32) -> Result<(u16, Vec<String>), TerrError> {
-    let mut surface_bits = TERR_DEFAULT_SURFACE_BITS;
-    if version >= TERR_SURFACE_BITS_VERSION {
-        let (bits, rest) = data
-            .split_first_chunk::<2>()
-            .ok_or(TerrError::InvalidChunkSize("MATS"))?;
-        surface_bits = u16::from_le_bytes(*bits);
-        data = rest;
-    }
-
-    let mut materials = Vec::new();
-    while !data.is_empty() {
-        let index = materials.len();
-        let (len, rest) = data
-            .split_first_chunk::<4>()
-            .ok_or(TerrError::InvalidMaterial(index))?;
-        let len = u32::from_le_bytes(*len) as usize;
-        let (path, rest) = rest
-            .split_at_checked(len)
-            .ok_or(TerrError::InvalidMaterial(index))?;
-        let path = path
-            .strip_suffix(&[0])
-            .ok_or(TerrError::InvalidMaterial(index))?;
-        materials.push(String::from_utf8_lossy(path).into_owned());
-        data = rest;
-    }
-
-    Ok((surface_bits, materials))
-}
-
-fn write_chunk<W: Write + Seek>(out: &mut W, tag: [u8; 4], data: &[u8]) -> Result<(), AffError> {
-    let size = u32::try_from(data.len()).map_err(|_| TerrError::TooLarge)?;
-    ChunkHeader { tag, size }.write(out)?;
-    out.write_all(data)?;
-    Ok(())
-}
-
-fn to_bytes<T>(value: &T) -> Result<Vec<u8>, AffError>
+fn chunk<T, A>(tag: [u8; 4], value: &T, args: A) -> Result<TerrChunk, AffError>
 where
-    T: for<'a> BinWrite<Args<'a> = ()>,
+    T: for<'a> BinWrite<Args<'a> = A>,
 {
-    let mut out = Cursor::new(Vec::new());
-    value.write_le(&mut out)?;
-    Ok(out.into_inner())
+    let mut data = Cursor::new(Vec::new());
+    value.write_le_args(&mut data, args)?;
+    Ok(TerrChunk {
+        tag,
+        data: data.into_inner(),
+    })
+}
+
+fn strip_nul(mut bytes: Vec<u8>) -> Result<String, &'static str> {
+    if bytes.pop() != Some(0) {
+        return Err("material path is not NUL terminated");
+    }
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }

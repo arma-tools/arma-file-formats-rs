@@ -123,11 +123,8 @@ pub enum TerrError {
     #[error("Chunk `{0}` missing")]
     ChunkMissing(&'static str),
 
-    #[error("Chunk `{0}` has an invalid size")]
-    InvalidChunkSize(&'static str),
-
-    #[error("Material {0} is truncated or not NUL terminated")]
-    InvalidMaterial(usize),
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
 
     #[error("Terr exceeds 4 GiB")]
     TooLarge,

@@ -230,7 +230,14 @@ fn terr_errors_test() {
             b"TERR",
             &[vers(5), (b"HEAD", vec![0; 28]), texs.clone(), mats.clone()]
         )),
-        TerrError::InvalidChunkSize("HEAD")
+        TerrError::InvalidChunk("HEAD")
+    );
+    assert_eq!(
+        terr_error(&form(
+            b"TERR",
+            &[vers(5), (b"HEAD", vec![0; 36]), texs.clone(), mats.clone()]
+        )),
+        TerrError::InvalidChunk("HEAD")
     );
 
     // Version 9 expects the surface bits first, so the material length is off by two bytes.
@@ -239,7 +246,7 @@ fn terr_errors_test() {
             b"TERR",
             &[vers(9), head.clone(), texs.clone(), mats.clone()]
         )),
-        TerrError::InvalidMaterial(0)
+        TerrError::InvalidChunk("MATS")
     );
 
     let mut unterminated = material(DEFAULT_MATERIAL);
@@ -250,14 +257,14 @@ fn terr_errors_test() {
             b"TERR",
             &[vers(5), head.clone(), texs.clone(), (b"MATS", unterminated)]
         )),
-        TerrError::InvalidMaterial(0)
+        TerrError::InvalidChunk("MATS")
     );
 
     let mut truncated = material(DEFAULT_MATERIAL);
     truncated.extend_from_slice(&[0xFF, 0, 0, 0, b'a']);
     assert_eq!(
         terr_error(&form(b"TERR", &[vers(5), head, texs, (b"MATS", truncated)])),
-        TerrError::InvalidMaterial(1)
+        TerrError::InvalidChunk("MATS")
     );
 }
 

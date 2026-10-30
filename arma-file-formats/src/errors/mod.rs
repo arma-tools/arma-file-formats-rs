@@ -115,6 +115,21 @@ pub enum PakError {
     TooLarge,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum TerrError {
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
+
+    #[error("Terr exceeds 4 GiB")]
+    TooLarge,
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -137,6 +152,9 @@ pub enum AffError {
 
     #[error("PAK Error: {0}")]
     PakError(#[from] PakError),
+
+    #[error("TERR Error: {0}")]
+    TerrError(#[from] TerrError),
 
     #[error("Invalid file")]
     InvalidFileError,

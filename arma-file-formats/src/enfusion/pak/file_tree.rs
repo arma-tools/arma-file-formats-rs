@@ -1,12 +1,15 @@
 use binrw::binrw;
 
+use crate::core::iff::{ChunkHeader, FormHeader};
+
 pub(super) const FORM_TYPE: &[u8; 4] = b"PAC1";
 pub(super) const HEAD_SIZE: usize = 28;
 pub(super) const HEAD_VERSION: u32 = 0x0001_0003;
 const CHECKSUM_KEY: &[u8; 16] = b"BIStudio19092012";
 
 /// Offset of the first file in a pak: `FORM` header, `HEAD` chunk and `DATA` chunk header.
-pub(super) const DATA_OFFSET: u32 = 12 + 8 + HEAD_SIZE as u32 + 8;
+pub(super) const DATA_OFFSET: u32 =
+    FormHeader::SIZE + ChunkHeader::SIZE + HEAD_SIZE as u32 + ChunkHeader::SIZE;
 
 pub(super) const COMPRESSION_STORED: u8 = 0;
 pub(super) const COMPRESSION_ZLIB: u8 = 1;

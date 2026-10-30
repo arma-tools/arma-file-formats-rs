@@ -4,7 +4,10 @@ use binrw::BinRead;
 use lzzzz::lz4;
 
 use crate::{
-    core::read::ReadExtTrait,
+    core::{
+        iff::{ChunkHeader, FormHeader},
+        read::ReadExtTrait,
+    },
     enfusion::xob::{
         XobCollider, XobHead, XobLodHeader, XobMesh, XobOccupancyGrid, XobSectionHeader,
     },
@@ -80,27 +83,23 @@ impl Xob {
 }
 
 fn read_chunks<I: Seek + Read>(input: &mut I) -> Result<Vec<Chunk>, AffError> {
-    if input.read_string_lossy(4)? != "FORM" {
-        return Err(AffError::InvalidFileError);
+    let start = input.stream_position()?;
+    let form = FormHeader::read_form(input)?;
+    if &form.form_type != XOB_FORM_TYPE {
+        return Err(XobError::UnknownFormType(form.form_type_lossy()).into());
     }
-    let form_end = u64::from(input.read_u32_be()?) + 8;
-
-    let mut form_type = [0; 4];
-    input.read_exact(&mut form_type)?;
-    if &form_type != XOB_FORM_TYPE {
-        return Err(
-            XobError::UnknownFormType(String::from_utf8_lossy(&form_type).into_owned()).into(),
-        );
-    }
+    let form_end = form.end(start);
 
     let mut chunks = Vec::new();
     while input.stream_position()? < form_end {
-        let mut tag = [0; 4];
-        input.read_exact(&mut tag)?;
-        let size = input.read_u32_be()? as usize;
+        let header = ChunkHeader::read(input)?;
         let offset = input.stream_position()?;
-        let data = input.read_bytes(size)?;
-        chunks.push(Chunk { tag, offset, data });
+        let data = input.read_bytes(header.size as usize)?;
+        chunks.push(Chunk {
+            tag: header.tag,
+            offset,
+            data,
+        });
     }
     input.seek(SeekFrom::Start(form_end))?;
 

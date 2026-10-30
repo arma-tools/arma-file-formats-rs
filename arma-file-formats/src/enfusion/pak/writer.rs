@@ -11,6 +11,7 @@ use binrw::BinWrite;
 use flate2::{Compression, write::ZlibEncoder};
 
 use crate::{
+    core::iff::{ChunkHeader, FormHeader},
     enfusion::pak::{
         PakCompression, PakEntry, PakTimestamp,
         file_tree::{
@@ -237,14 +238,7 @@ impl<'a> PakWriter<'a> {
         }
 
         let start = out.stream_position()?;
-        out.write_all(b"FORM")?;
-        out.write_all(&0u32.to_be_bytes())?;
-        out.write_all(FORM_TYPE)?;
-        out.write_all(b"HEAD")?;
-        out.write_all(&(HEAD_SIZE as u32).to_be_bytes())?;
-        out.write_all(&[0; HEAD_SIZE])?;
-        out.write_all(b"DATA")?;
-        out.write_all(&0u32.to_be_bytes())?;
+        write_header(out, 0, &[0; HEAD_SIZE], 0)?;
 
         let mut offset = u64::from(DATA_OFFSET);
         let root = root.into_node(Vec::new(), out, &mut offset)?;
@@ -252,24 +246,50 @@ impl<'a> PakWriter<'a> {
         let mut file_chunk = Cursor::new(Vec::new());
         root.write(&mut file_chunk)?;
         let file_chunk = file_chunk.into_inner();
-        out.write_all(b"FILE")?;
-        out.write_all(&(file_chunk.len() as u32).to_be_bytes())?;
+        ChunkHeader {
+            tag: *b"FILE",
+            size: file_chunk.len() as u32,
+        }
+        .write(out)?;
         out.write_all(&file_chunk)?;
 
         let end = out.stream_position()?;
         let form_size = u32::try_from(end - start - 8).map_err(|_| PakError::TooLarge)?;
         let data_size = (offset - u64::from(DATA_OFFSET)) as u32;
 
-        out.seek(SeekFrom::Start(start + 4))?;
-        out.write_all(&form_size.to_be_bytes())?;
-        out.seek(SeekFrom::Start(start + 20))?;
-        out.write_all(&encode_head(crc32(&file_chunk)))?;
-        out.seek(SeekFrom::Start(start + u64::from(DATA_OFFSET) - 4))?;
-        out.write_all(&data_size.to_be_bytes())?;
+        out.seek(SeekFrom::Start(start))?;
+        write_header(out, form_size, &encode_head(crc32(&file_chunk)), data_size)?;
         out.seek(SeekFrom::Start(end))?;
 
         Ok(())
     }
+}
+
+/// Writes everything before the file data: the `FORM` header, the `HEAD` chunk and the `DATA`
+/// chunk header.
+fn write_header<W: Write + Seek>(
+    out: &mut W,
+    form_size: u32,
+    head: &[u8; HEAD_SIZE],
+    data_size: u32,
+) -> Result<(), AffError> {
+    FormHeader {
+        size: form_size,
+        form_type: *FORM_TYPE,
+    }
+    .write(out)?;
+    ChunkHeader {
+        tag: *b"HEAD",
+        size: HEAD_SIZE as u32,
+    }
+    .write(out)?;
+    out.write_all(head)?;
+    ChunkHeader {
+        tag: *b"DATA",
+        size: data_size,
+    }
+    .write(out)?;
+    Ok(())
 }
 
 /// Directory while building the tree. Children are keyed by their ASCII uppercased name, which

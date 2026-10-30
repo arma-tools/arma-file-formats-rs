@@ -1,4 +1,5 @@
 pub(crate) mod binrw_utils;
+pub(crate) mod iff;
 mod lzss;
 pub mod read;
 pub mod types;

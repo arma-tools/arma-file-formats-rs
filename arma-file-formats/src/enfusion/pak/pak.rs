@@ -8,7 +8,10 @@ use std::{
 use binrw::BinRead;
 
 use crate::{
-    core::read::ReadExtTrait,
+    core::{
+        iff::{ChunkHeader, FormHeader},
+        read::ReadExtTrait,
+    },
     enfusion::pak::{
         PakCompression, PakEntry, PakEntryReader, PakTimestamp,
         file_tree::{
@@ -34,31 +37,22 @@ impl Pak {
     /// Reads the `HEAD` and `FILE` chunks. File data is not read, use [`PakEntry::read`] or
     /// [`PakReader`] for that.
     pub fn from_stream<R: Read + Seek>(reader: &mut R) -> Result<Self, AffError> {
-        if reader.read_string_lossy(4)? != "FORM" {
-            return Err(AffError::InvalidFileError);
+        let start = reader.stream_position()?;
+        let form = FormHeader::read_form(reader)?;
+        if &form.form_type != FORM_TYPE {
+            return Err(PakError::UnknownFormType(form.form_type_lossy()).into());
         }
-        let form_end = u64::from(reader.read_u32_be()?) + 8;
-
-        let mut form_type = [0; 4];
-        reader.read_exact(&mut form_type)?;
-        if &form_type != FORM_TYPE {
-            return Err(PakError::UnknownFormType(
-                String::from_utf8_lossy(&form_type).into_owned(),
-            )
-            .into());
-        }
+        let form_end = form.end(start);
 
         let mut head = None;
         let mut file = None;
         while reader.stream_position()? < form_end {
-            let mut tag = [0; 4];
-            reader.read_exact(&mut tag)?;
-            let size = reader.read_u32_be()?;
-            match &tag {
-                b"HEAD" => head = Some(reader.read_bytes(size as usize)?),
-                b"FILE" => file = Some(reader.read_bytes(size as usize)?),
+            let chunk = ChunkHeader::read(reader)?;
+            match &chunk.tag {
+                b"HEAD" => head = Some(reader.read_bytes(chunk.size as usize)?),
+                b"FILE" => file = Some(reader.read_bytes(chunk.size as usize)?),
                 _ => {
-                    reader.seek(SeekFrom::Current(i64::from(size)))?;
+                    reader.seek(SeekFrom::Current(i64::from(chunk.size)))?;
                 }
             }
         }

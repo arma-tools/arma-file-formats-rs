@@ -1,7 +1,8 @@
 //! Black box tests for the smap reader and writer.
 //!
-//! Game files can't be committed, the inputs are assembled by hand from the layout of the game's
-//! smaps. `smap_scan_dir_test` reads the game's files.
+//! `smap_probes/probe.smap` was exported by Workbench for a probe world, see
+//! `smap_probes/README.md`. Game files can't be committed, the other inputs are assembled by hand
+//! from the layout of the game's smaps. `smap_scan_dir_test` reads the game's files.
 
 use std::{
     fs::File,
@@ -381,6 +382,63 @@ fn smap_layers_errors_test() {
         smap_error(read(&form(&chunks))),
         SmapError::InvalidChunk("layer")
     );
+}
+
+/// Workbench's sound map of the probe island, see `smap_probes/README.md`.
+#[test]
+fn smap_probe_test() {
+    let bytes = std::fs::read("./tests/enfusion/smap_probes/probe.smap").unwrap();
+    let smap = read(&bytes).unwrap();
+    assert_eq!(write(&smap), bytes);
+    let Smap::Grid(grid) = smap else {
+        panic!("not a grid");
+    };
+
+    // The world's bounds in cells of 10 m.
+    assert_eq!([grid.cells_x, grid.cells_z], [90, 90]);
+    assert_eq!(grid.cell_size, 10.0);
+    assert_eq!(grid.min, [200.0, -100.0, 100.0]);
+    assert_eq!(grid.max, [1100.0, 0.0, 1000.0]);
+
+    // Across the west coast at x 300: blurred sea, the coast band on both sides.
+    let row: Vec<_> = (0..8)
+        .map(|i| {
+            let sound = grid.terrain_at([265.0 + 10.0 * i as f32, 305.0]).unwrap();
+            [sound.sea, sound.coast, sound.height]
+        })
+        .collect();
+    assert_eq!(
+        row,
+        [
+            [255, 4, 0],
+            [255, 28, 0],
+            [191, 83, 0],
+            [63, 139, 0],
+            [0, 139, 1],
+            [0, 83, 3],
+            [0, 27, 5],
+            [0, 3, 6]
+        ]
+    );
+
+    // The terrain height in meters along the arm, which rises 0.6 m per m north of z 450.
+    for z in [465.0, 565.0, 665.0, 815.0] {
+        let sound = grid.terrain_at([405.0, z]).unwrap();
+        assert_eq!(
+            f32::from(sound.height),
+            0.6f32.mul_add(z - 450.0, 6.0).round(),
+            "{z}"
+        );
+    }
+    // Nothing counted as forest or city, no fresh water.
+    assert!(
+        grid.terrain
+            .records
+            .iter()
+            .all(|r| r.forest == 0 && r.city == 0 && r.unknown_5 == 0)
+    );
+    assert!(grid.cells.iter().all(|c| c.freshwater == -1));
+    assert!(grid.freshwater.records.is_empty());
 }
 
 /// Reads every `.smap` in the paks below `AFF_SMAP_SCAN_DIR`, e.g. the game's `addons`

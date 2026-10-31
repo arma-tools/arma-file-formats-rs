@@ -1,5 +1,6 @@
 pub mod edds;
 pub mod emat;
+pub mod ent;
 pub mod pak;
 pub mod resource;
 pub mod terr;

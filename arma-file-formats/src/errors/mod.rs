@@ -164,6 +164,30 @@ pub enum TerrError {
     Unwritable(&'static str),
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum EntError {
+    #[error("Not a binary world, magic `{0:02X?}` instead of `EBIN`")]
+    UnknownMagic(Vec<u8>),
+
+    #[error("Unexpected end of data at offset {0}")]
+    Truncated(usize),
+
+    #[error("Unknown token `{tag:#04x}` at offset {offset}")]
+    UnknownToken { tag: u8, offset: usize },
+
+    #[error("Offset {offset}: {message}")]
+    Malformed {
+        offset: usize,
+        message: &'static str,
+    },
+
+    #[error("{0} exceeds the limits of the format")]
+    TooLarge(&'static str),
+
+    #[error("Can't write: {0}")]
+    Unwritable(&'static str),
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -189,6 +213,9 @@ pub enum AffError {
 
     #[error("TERR Error: {0}")]
     TerrError(#[from] TerrError),
+
+    #[error("ENT Error: {0}")]
+    EntError(#[from] EntError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

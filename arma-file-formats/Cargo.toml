@@ -45,10 +45,11 @@ chumsky = "0.9.0"
 lzokay-native = "0.1"
 
 
-texpresso = "2.0.1"
 
 # Edds
-block_compression = "0.8.0"
+# Only the CPU decoders, the default features pull in wgpu for GPU encoding
+block_compression = { version = "0.8.0", default-features = false, features = ["bc15", "bc6h", "bc7"] }
+half = "2"
 four-cc = "0.4.0"
 lz4_flex = "0.14"
 enumflags2 = "0.7.12"

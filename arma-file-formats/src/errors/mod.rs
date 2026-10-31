@@ -188,6 +188,33 @@ pub enum EntError {
     Unwritable(&'static str),
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum TopoError {
+    #[error("Not a topo, magic `{0:02X?}` instead of `TOPO`")]
+    UnknownMagic(Vec<u8>),
+
+    #[error("Unexpected end of data at offset {0}")]
+    Truncated(usize),
+
+    #[error("Invalid chunk header at offset {0}")]
+    InvalidHeader(usize),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Unsupported version {version} of chunk `{chunk}`")]
+    UnsupportedVersion { chunk: &'static str, version: u32 },
+
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
+
+    #[error("Chunk `{0}` can't hold the given data")]
+    Unwritable(&'static str),
+
+    #[error("Topo exceeds 4 GiB")]
+    TooLarge,
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -216,6 +243,9 @@ pub enum AffError {
 
     #[error("ENT Error: {0}")]
     EntError(#[from] EntError),
+
+    #[error("TOPO Error: {0}")]
+    TopoError(#[from] TopoError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

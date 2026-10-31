@@ -215,6 +215,27 @@ pub enum TopoError {
     TooLarge,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum SmdError {
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Unsupported version {0}")]
+    UnsupportedVersion(u32),
+
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
+
+    #[error("Chunk `{0}` can't hold the given data")]
+    Unwritable(&'static str),
+
+    #[error("Smd exceeds 4 GiB")]
+    TooLarge,
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -246,6 +267,9 @@ pub enum AffError {
 
     #[error("TOPO Error: {0}")]
     TopoError(#[from] TopoError),
+
+    #[error("SMD Error: {0}")]
+    SmdError(#[from] SmdError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

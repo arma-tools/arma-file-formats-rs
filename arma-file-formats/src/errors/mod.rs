@@ -159,6 +159,9 @@ pub enum TerrError {
 
     #[error("Terr exceeds 4 GiB")]
     TooLarge,
+
+    #[error("Chunk `{0}` can't hold the given data")]
+    Unwritable(&'static str),
 }
 
 #[derive(Debug, Error)]

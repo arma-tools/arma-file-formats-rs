@@ -6,3 +6,5 @@ Cargo.lock
 
 .env
 lcov.info
+
+/notes

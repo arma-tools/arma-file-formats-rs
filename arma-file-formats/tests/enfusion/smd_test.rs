@@ -1,7 +1,8 @@
 //! Black box tests for the smd reader and writer.
 //!
-//! Game files can't be committed, the inputs are assembled by hand from the layout of the game's
-//! smds. `smd_scan_dir_test` reads the game's files.
+//! `smd_probes/probe.smd` was built by Workbench for a probe world, see `smd_probes/README.md`.
+//! Game files can't be committed, the other inputs are assembled by hand from the layout of the
+//! game's smds. `smd_scan_dir_test` reads the game's files.
 
 use std::{
     fs::File,
@@ -12,6 +13,7 @@ use std::{
 
 use arma_file_formats::{
     enfusion::{
+        edds::RawEdds,
         pak::PakReader,
         smd::{Smd, SmdChunk, SmdHead, SmdTileMap},
     },
@@ -211,6 +213,51 @@ fn smd_errors_test() {
         smd_error(smd.write(&mut Vec::new())),
         SmdError::Unwritable("TMAP")
     );
+}
+
+/// Workbench's shore map of the probe island, see `smd_probes/README.md`.
+#[test]
+fn smd_probe_test() {
+    let bytes = std::fs::read("./tests/enfusion/smd_probes/probe.smd").unwrap();
+    let smd = read(&bytes).unwrap();
+    assert_eq!(write(&smd), bytes);
+
+    // As logged: 5 x 5 tiles of 257.6 m from 4, -92, 23 of them in a 23 x 1 atlas.
+    let head = smd.head;
+    assert_eq!(head.min, [4.0, -92.0]);
+    assert_eq!(head.max, [1292.0, 1196.0]);
+    assert_eq!(head.tile_count, 23);
+    assert_eq!([head.slot_pixels, head.tile_pixels], [132, 130]);
+    assert!((head.tile_size - 257.6).abs() < 1e-3);
+    assert!((head.meters_per_pixel - 1.981_54).abs() < 1e-5);
+    assert_eq!(head.atlas_slots, [23, 1]);
+    assert_eq!([smd.tile_map.width, smd.tile_map.height], [5, 5]);
+
+    // Only the corner far from the island, at high x and z, has no shore.
+    let mut no_shore = Vec::new();
+    for z in 0..5 {
+        for x in 0..5 {
+            let center = [
+                head.min[0] + (x as f32 + 0.5) * head.tile_size,
+                head.min[1] + (z as f32 + 0.5) * head.tile_size,
+            ];
+            if smd.tile_at(center).is_none() {
+                no_shore.push(center.map(f32::round));
+            }
+        }
+    }
+    assert_eq!(no_shore, [[1163.0, 810.0], [1163.0, 1067.0]]);
+    // Numbered in tile map order.
+    assert_eq!(smd.tile_at([400.0, 300.0]), slot(7));
+
+    let atlas = RawEdds::from(&mut BufReader::new(
+        File::open("./tests/enfusion/smd_probes/shoreDFNearAtlas.edds").unwrap(),
+    ))
+    .unwrap();
+    let mipmap = atlas.mipmaps.last().unwrap();
+    assert_eq!([mipmap.width, mipmap.height], [3036, 132]);
+    assert_eq!(head.atlas_size(), [3036, 132]);
+    assert_eq!(head.atlas_slot(slot(23).unwrap()), [22 * 132, 0]);
 }
 
 /// Reads every `.smd` in the paks below `AFF_SMD_SCAN_DIR`, e.g. the game's `addons` directory:

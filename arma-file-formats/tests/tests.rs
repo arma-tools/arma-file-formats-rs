@@ -13,6 +13,7 @@ mod enfusion {
     mod emat_test;
     mod ent_test;
     mod pak_test;
+    mod smap_test;
     mod smd_test;
     mod terr_test;
     mod topo_test;

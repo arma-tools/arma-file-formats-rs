@@ -3,6 +3,7 @@ pub mod emat;
 pub mod ent;
 pub mod pak;
 pub mod resource;
+pub mod smap;
 pub mod smd;
 pub mod terr;
 pub mod text;

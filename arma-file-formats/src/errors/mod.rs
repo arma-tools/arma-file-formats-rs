@@ -236,6 +236,33 @@ pub enum SmdError {
     TooLarge,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum SmapError {
+    #[error("Truncated or malformed sound map grid")]
+    InvalidGrid,
+
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Unsupported version {0}")]
+    UnsupportedVersion(u32),
+
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
+
+    #[error("LZ4 decompression of block {0}, {1} failed")]
+    Decompression(u16, u16),
+
+    #[error("`{0}` can't hold the given data")]
+    Unwritable(&'static str),
+
+    #[error("Smap exceeds 4 GiB")]
+    TooLarge,
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -270,6 +297,9 @@ pub enum AffError {
 
     #[error("SMD Error: {0}")]
     SmdError(#[from] SmdError),
+
+    #[error("SMAP Error: {0}")]
+    SmapError(#[from] SmapError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

@@ -218,23 +218,34 @@ impl Terr {
             chunks.push(chunk(*b"GRAS", grass, ())?);
         }
 
-        let mut body = Cursor::new(Vec::new());
-        for chunk in chunks.iter().chain(&self.unknown_chunks) {
-            chunk.write(&mut body)?;
-        }
-        let body = body.into_inner();
-
-        FormHeader {
-            size: u32::try_from(body.len() + 4).map_err(|_| TerrError::TooLarge)?,
-            form_type: *TERR_FORM_TYPE,
-        }
-        .write(&mut NoSeek::new(&mut *out))?;
-        out.write_all(&body)?;
-        Ok(())
+        write_form(chunks.iter().chain(&self.unknown_chunks), out)
     }
 }
 
-fn read_chunks<I: Seek + Read>(input: &mut I) -> Result<Vec<TerrChunk>, AffError> {
+/// Writes a `TERR` form holding `chunks`.
+pub(in crate::enfusion) fn write_form<'a, W: Write>(
+    chunks: impl IntoIterator<Item = &'a TerrChunk>,
+    out: &mut W,
+) -> Result<(), AffError> {
+    let mut body = Cursor::new(Vec::new());
+    for chunk in chunks {
+        chunk.write(&mut body)?;
+    }
+    let body = body.into_inner();
+
+    FormHeader {
+        size: u32::try_from(body.len() + 4).map_err(|_| TerrError::TooLarge)?,
+        form_type: *TERR_FORM_TYPE,
+    }
+    .write(&mut NoSeek::new(&mut *out))?;
+    out.write_all(&body)?;
+    Ok(())
+}
+
+/// Reads the chunks of a `TERR` form.
+pub(in crate::enfusion) fn read_chunks<I: Seek + Read>(
+    input: &mut I,
+) -> Result<Vec<TerrChunk>, AffError> {
     let start = input.stream_position()?;
     let form = FormHeader::read_form(input)?;
     if &form.form_type != TERR_FORM_TYPE {
@@ -252,7 +263,11 @@ fn read_chunks<I: Seek + Read>(input: &mut I) -> Result<Vec<TerrChunk>, AffError
 }
 
 /// Parses the contents of a chunk, which have to be used up exactly.
-fn parse<T, A>(chunk: &TerrChunk, tag: &'static str, args: A) -> Result<T, TerrError>
+pub(in crate::enfusion) fn parse<T, A>(
+    chunk: &TerrChunk,
+    tag: &'static str,
+    args: A,
+) -> Result<T, TerrError>
 where
     T: for<'a> BinRead<Args<'a> = A>,
 {
@@ -263,7 +278,12 @@ where
         .ok_or(TerrError::InvalidChunk(tag))
 }
 
-fn chunk<T, A>(tag: [u8; 4], value: &T, args: A) -> Result<TerrChunk, AffError>
+/// Serializes `value` into a chunk.
+pub(in crate::enfusion) fn chunk<T, A>(
+    tag: [u8; 4],
+    value: &T,
+    args: A,
+) -> Result<TerrChunk, AffError>
 where
     T: for<'a> BinWrite<Args<'a> = A>,
 {

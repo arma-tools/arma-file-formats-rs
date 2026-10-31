@@ -4,5 +4,6 @@ pub mod pak;
 pub mod resource;
 pub mod terr;
 pub mod text;
+pub mod topo;
 pub mod ttile;
 pub mod xob;

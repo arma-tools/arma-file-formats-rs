@@ -34,9 +34,47 @@ Findings:
   last, as wide as `Width`. The straight roads have 4 vertices in the first level of detail and
   12 in the others.
 - The building point is the entity's origin (within a meter) and its forward vector.
-- Hills: a second export, after writing two hills into the probe's `.ttile`s, was identical. The
-  headless Workbench loads the terrain from `.EditorData`, so hill heights were checked against the
-  game's terrains instead, see `topo::Hill`.
+- No hills: the terrain is flat. Hills written into its `.ttile`s were lost, as its "zero" height
+  of 100 % puts the whole 16 bit range below 0 m. See the hill probe below.
+
+## Hill probe
+
+`hills.topo` and `mesas.topo` were exported the same way, with a minimum hill height of 30, from
+a world holding just the terrain and an `SCR_MapEntity`. The terrain is the 8 tiles of
+`terr_probes` with an 8 m grid instead of 1.5 m (2048 x 1024 m) and the "zero" height at
+-204.75 m, flat at 10 m, with the hills written into the `.ttile`s with `Ttile::write`. Workbench
+samples these heights (`GetSurfaceY`), it ignores `.EditorData`. Heights below are as stored,
+in steps of 0.05 m.
+
+`hills.topo`, peaks in world coordinates on vertices:
+
+| Hill | Peak       | Height | Shape                             | In `hills.topo`       |
+| ---- | ---------- | ------ | --------------------------------- | --------------------- |
+| A    | 296, 248   | 120.35 | cone of radius 200                | 113 at 74, 194        |
+| B    | 800, 704   | 75.6   | Gaussian, sigma 80                | 78 at 200, 80         |
+| C    | 1496, 296  | 90.5   | flat top of radius 60             | 93 at 374, 182        |
+| D    | 1752, 800  | 45.3   | Gaussian, sigma 60                | 43 at 438, 56, left out with a minimum of 50 |
+| E    | 1104, 400  | 100.8  | Gaussian, sigma 50                | 103 at 276, 156       |
+| E2   | 1192, 400  | 96.45  | Gaussian, sigma 50, next to E     | 93 at 298, 156        |
+
+`mesas.topo`: ten flat tops of radius 60, sloping down to 10 m at radius 180, at x 200, 600,
+..., 1800 and z 256 (the first five) and 768, with tops of 100, 100.5, ..., 104.5 m.
+
+Findings:
+
+- Positions are map coordinates (`z` mirrored) in units of half a grid cell: A at 74, 194 is
+  296, 1024 - 4 * 194. A second export with a 4 m grid put A at 148, 132. With the game's 2 m
+  grids the units are meters.
+- Heights are a 5 m contour plus 3 m. A top of 100.0 m gives 98, from 100.5 m it gives 103, so
+  isolated round and flat tops get `5 * floor((top - 0.5) / 5) + 3`, as do B, C, D and E. E2,
+  next to the higher E, gets a level less. Sharp peaks differ: A gets 113 with the 8 m grid and 123 with the 4 m grid, cones of radius 150 with peaks
+  of 100 to 105 m all get 98.
+- With a minimum hill height of 50 D is left out. On a 60 m plateau with small bumps, minimums of
+  40 and 55 keep the bumps (63 and 68), 60 keeps only the 68 and 65 none, so the contour has to
+  be above the minimum. A minimum of 30 left out all of them, for reasons unknown.
+- All hills have whole number heights and zeros in the other fields. None of the probes gave a
+  hill with a fractional height like those of the game's files, nor did small bumps of 0.5 to
+  8 m. Arland's fractional hills have no common entity at their positions.
 
 ## Regenerating
 

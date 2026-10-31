@@ -4,6 +4,8 @@ use binrw::binread;
 pub const XOB_FORMAT_SKINNED: u32 = 0x1000_0000;
 /// Section format flag: an RGBA8 vertex color stream is present.
 pub const XOB_FORMAT_COLORS: u32 = 0x2000_0000;
+/// Size of a [`XobMorphVertex`](crate::enfusion::xob::XobMorphVertex) in the LOD data.
+const MORPH_VERTEX_SIZE: usize = 20;
 
 /// Contents of the `HEAD` chunk: model wide data and the descriptors of every LOD.
 #[binread]
@@ -27,7 +29,9 @@ pub struct XobHead {
     point_count: u8,
     pub unknown_32: u16,
     #[br(temp)]
-    volume_count: u32,
+    volume_count: u16,
+    #[br(temp)]
+    morph_count: u16,
     #[br(temp)]
     string_table_size: u32,
 
@@ -41,8 +45,15 @@ pub struct XobHead {
     #[br(args { count: usize::from(bone_count), inner: (&strings,) })]
     pub bones: Vec<XobBone>,
 
+    /// Land contacts: points on the ground plane the model rests on.
     #[br(count = point_count)]
     pub points: Vec<[f32; 3]>,
+
+    /// Morph targets (shape keys), referenced by index from [`XobSectionHeader::morphs`]. Stored
+    /// after the bones; no file with both morphs and [`XobHead::points`] is known, so the order
+    /// relative to the points is not confirmed.
+    #[br(args { count: usize::from(morph_count), inner: (&strings,) })]
+    pub morphs: Vec<XobMorph>,
 
     #[br(count = lod_count)]
     pub lods: Vec<XobLodHeader>,
@@ -83,6 +94,17 @@ pub struct XobBone {
     pub next_sibling: Option<u16>,
     #[br(map = bone_link)]
     pub first_child: Option<u16>,
+}
+
+/// A morph target of the model, e.g. an FBX blend shape imported with `ExportMorphs 1`.
+#[binread]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[br(little, import(strings: &[String]))]
+pub struct XobMorph {
+    /// Index into [`XobHead::strings`].
+    pub name_index: u32,
+    #[br(calc = string_at(strings, name_index))]
+    pub name: String,
 }
 
 /// Descriptor of one LOD, its mesh data is a LZ4 chain stored in the `LODS` chunk.
@@ -127,7 +149,9 @@ pub struct XobSectionHeader {
     uv_set_count: u8,
     #[br(temp)]
     bone_count: u8,
-    pub max_bone_influences: u16,
+    pub max_bone_influences: u8,
+    #[br(temp)]
+    morph_count: u8,
     #[br(temp)]
     triangle_count_high: u16,
     #[br(calc = u32::from(triangle_count_low) | (u32::from(triangle_count_high) << 16))]
@@ -137,6 +161,21 @@ pub struct XobSectionHeader {
     /// Maps the bone indices of the skin weights to indices into [`XobHead::bones`].
     #[br(count = bone_count)]
     pub bone_palette: Vec<u8>,
+    /// The morphs that move vertices of this section, not necessarily in the order of
+    /// [`XobHead::morphs`]. Their vertices follow the skin weights in the LOD data, see
+    /// [`XobMesh::morphs`](crate::enfusion::xob::XobMesh::morphs).
+    #[br(count = morph_count)]
+    pub morphs: Vec<XobSectionMorph>,
+}
+
+/// Entry of [`XobSectionHeader::morphs`].
+#[derive(binrw::BinRead, Debug, Clone, Copy, PartialEq, Eq)]
+#[br(little)]
+pub struct XobSectionMorph {
+    /// Index into [`XobHead::morphs`].
+    pub morph: u32,
+    /// Vertices of the section the morph moves.
+    pub vertex_count: u32,
 }
 
 impl XobSectionHeader {
@@ -163,11 +202,17 @@ impl XobSectionHeader {
         } else {
             0
         };
+        let morph_vertices = self
+            .morphs
+            .iter()
+            .map(|m| m.vertex_count as usize)
+            .sum::<usize>();
 
         self.triangle_count as usize * 3 * 2 * 2
             + vertices * (position_size + 4 + color_size + 4 * uv_sets)
             + tangent_vertices * (4 + 8 * tangent_frame_count(uv_sets))
             + skin_weights
+            + morph_vertices * MORPH_VERTEX_SIZE
     }
 }
 

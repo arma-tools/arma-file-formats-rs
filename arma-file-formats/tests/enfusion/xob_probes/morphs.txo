@@ -1,0 +1,104 @@
+$object "" {
+ #version 1.0
+ #tag MergeMeshes "1"
+ #tag Coords "XZY"
+ #tag Scale "1.000000"
+ #tag SrcFile_AppVendor "Blender Foundation"
+ #tag SrcFile_AppName "Blender (stable FBX IO)"
+ #tag SrcFile_AppVersion "5.2.3 LTS"
+ $materials {
+  $material "MorphMat" {
+   #UVset 0
+  }
+ }
+ $lod 0 {
+  #lodFactor 0.5
+  $mesh "morphs" {
+   #texCoords 1
+   $faces {
+     0 3 0 1 2
+     0 3 3 4 5
+     0 3 6 7 8
+     0 3 9 10 11
+     0 3 12 13 14
+     0 3 15 16 17
+     0 3 18 19 20
+     0 3 21 22 23
+   }
+   $faceVerts {
+     4 0 0
+     1 0 1
+     0 0 2
+     3 0 3
+     4 0 0
+     0 0 2
+     5 0 4
+     2 0 5
+     1 0 1
+     4 0 0
+     5 0 4
+     1 0 1
+     7 0 6
+     4 0 0
+     3 0 3
+     6 0 7
+     7 0 6
+     3 0 3
+     8 0 8
+     5 0 4
+     4 0 0
+     7 0 6
+     8 0 8
+     4 0 0
+   }
+   $verts {
+     -1 0 -1 0
+     0 0 -1 0
+     1 0 -1 0
+     -1 0 0 0
+     0 0 0 0
+     1 0 0 0
+     -1 -0 1 0
+     0 -0 1 0
+     1 -0 1 0
+   }
+   $texCoords {
+     0.5 0.5
+     0.5 1
+     0 1
+     0 0.5
+     1 0.5
+     1 1
+     0.5 0
+     0 0
+     1 0
+   }
+   $normals {
+     0 1 0
+   }
+   $morphs {
+    $morph "up" {
+      4 0 0.5 0
+     
+    }
+    $morph "skew" {
+      0 0.25 0 0
+      2 -0.125 0 0
+      4 0 0.5 0
+     
+    }
+    $morph "scale" {
+      0 -0.5 0 -0.5
+      1 0 0 -0.5
+      2 0.5 0 -0.5
+      3 -0.5 0 0
+      5 0.5 0 0
+      6 -0.5 -0 0.5
+      7 0 -0 0.5
+      8 0.5 -0 0.5
+     
+    }
+   }
+  }
+ }
+}

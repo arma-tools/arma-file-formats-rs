@@ -116,6 +116,37 @@ pub enum PakError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum EddsError {
+    #[error("LZ4 decompression of mipmap {0} failed")]
+    Decompression(usize),
+
+    #[error("Mipmap {mipmap} has {actual} bytes, expected at least {expected}")]
+    MipmapTooShort {
+        mipmap: usize,
+        expected: usize,
+        actual: usize,
+    },
+
+    #[error("Mipmap index {0} out of range")]
+    MipmapOutOfRange(usize),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum TextError {
+    #[error("Line {line}: {message}")]
+    Parse { line: usize, message: String },
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum EmatError {
+    #[error("Parent material `{0}` not found")]
+    ParentNotFound(String),
+
+    #[error("Material inheritance loops at `{0}`")]
+    InheritanceCycle(String),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum TerrError {
     #[error("Unknown form type: `{0}`")]
     UnknownFormType(String),
@@ -155,6 +186,15 @@ pub enum AffError {
 
     #[error("TERR Error: {0}")]
     TerrError(#[from] TerrError),
+
+    #[error("EDDS Error: {0}")]
+    EddsError(#[from] EddsError),
+
+    #[error("Text resource Error: {0}")]
+    TextError(#[from] TextError),
+
+    #[error("EMAT Error: {0}")]
+    EmatError(#[from] EmatError),
 
     #[error("Invalid file")]
     InvalidFileError,

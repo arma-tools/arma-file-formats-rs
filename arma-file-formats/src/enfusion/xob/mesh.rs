@@ -56,6 +56,47 @@ pub struct XobMesh {
 
     #[br(if(header.is_skinned()), count = header.skin_weight_count)]
     pub skin_weights: Vec<XobSkinWeight>,
+
+    /// One entry per [`XobSectionHeader::morphs`], in the same order.
+    #[br(parse_with = binrw::helpers::args_iter(header.morphs.iter().map(|m| (m.morph, m.vertex_count))))]
+    pub morphs: Vec<XobMeshMorph>,
+}
+
+/// The vertices a morph moves in one section.
+#[binread]
+#[derive(Debug, Clone, PartialEq)]
+#[br(little, import(morph: u32, vertex_count: u32))]
+pub struct XobMeshMorph {
+    /// Index into [`XobHead::morphs`](crate::enfusion::xob::XobHead::morphs).
+    #[br(calc = morph)]
+    pub morph: u32,
+    /// Sorted by vertex, only the vertices the morph moves.
+    #[br(count = vertex_count)]
+    pub vertices: Vec<XobMorphVertex>,
+}
+
+/// A vertex moved by a morph at full weight.
+#[derive(binrw::BinRead, Debug, Clone, Copy, PartialEq)]
+#[br(little)]
+pub struct XobMorphVertex {
+    /// Index into the section's vertices ([`XobMesh::positions`]).
+    pub vertex: u32,
+    /// Added to the vertex position.
+    pub offset: [f32; 3],
+    /// A vector packed like the normals, see [`XobMorphVertex::normal`], presumably a normal
+    /// delta clamped to `-1..1` per component. In Workbench's imports of Blender shape keys it is
+    /// always twice the negated base normal (clamped), in the morphs of the game's mods about
+    /// half the vertices have that, a few `0` and the others other values with clamped
+    /// components, so the morphed normal can't be recovered from it.
+    pub packed_normal: u32,
+}
+
+impl XobMorphVertex {
+    /// [`XobMorphVertex::packed_normal`] unpacked like [`XobMesh::normals`].
+    #[must_use]
+    pub fn normal(&self) -> [f32; 3] {
+        unpack_vector(self.packed_normal)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

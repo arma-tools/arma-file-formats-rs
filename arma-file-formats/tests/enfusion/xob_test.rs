@@ -36,6 +36,8 @@ mod txo {
         pub tex_coords: Vec<Vec<f32>>,
         pub normals: Vec<Vec<f32>>,
         pub vertex_colors: Vec<Vec<f32>>,
+        /// Name and rows `vertex dx dy dz` of every `$morph`.
+        pub morphs: Vec<(String, Vec<Vec<f32>>)>,
     }
 
     #[derive(Debug, Default)]
@@ -65,6 +67,11 @@ mod txo {
                 if header.starts_with("$mesh ") {
                     lods.last_mut().unwrap().meshes.push(Mesh::default());
                 }
+                if let Some(name) = header.strip_prefix("$morph ") {
+                    let mesh = lods.last_mut().unwrap().meshes.last_mut().unwrap();
+                    mesh.morphs
+                        .push((name.trim_matches('"').to_owned(), Vec::new()));
+                }
                 stack.push(header);
             } else if line == "}" {
                 stack.pop();
@@ -85,6 +92,9 @@ mod txo {
                     Some("$texCoords") => mesh.tex_coords.push(row),
                     Some("$normals") => mesh.normals.push(row),
                     Some("$vertexColors") => mesh.vertex_colors.push(row),
+                    Some(h) if h.starts_with("$morph ") => {
+                        mesh.morphs.last_mut().unwrap().1.push(row);
+                    }
                     _ => {}
                 }
             }
@@ -225,6 +235,27 @@ fn assert_consistent(xob: &Xob) {
                     .iter()
                     .all(|&i| (i as usize) < vertices)
             );
+
+            // Morphs: one block per table entry, known morphs, sorted vertices that move.
+            assert_eq!(mesh.morphs.len(), section.morphs.len());
+            for (morph, entry) in mesh.morphs.iter().zip(&section.morphs) {
+                assert_eq!(morph.morph, entry.morph);
+                assert!((morph.morph as usize) < xob.head.morphs.len());
+                assert_eq!(morph.vertices.len(), entry.vertex_count as usize);
+                assert!(morph.vertices.windows(2).all(|w| w[0].vertex < w[1].vertex));
+                assert!(
+                    morph
+                        .vertices
+                        .iter()
+                        .all(|v| (v.vertex as usize) < vertices)
+                );
+                assert!(
+                    morph
+                        .vertices
+                        .iter()
+                        .all(|v| v.offset.iter().any(|c| *c != 0.0))
+                );
+            }
 
             let size: Vec<f32> = (0..3)
                 .map(|a| section.bbox_max[a] - section.bbox_min[a])
@@ -751,6 +782,96 @@ fn xob_large_mesh_test() {
                 .iter()
                 .all(|p| p[0].abs() <= 5.0 + POSITION_EPS && p[2].abs() <= 5.0 + POSITION_EPS)
         );
+    }
+}
+
+/// Morph targets (`make_morph_probes.py`, imported with `ExportMorphs 1`): every vertex at a
+/// position the TXO morph moves carries its offset, no other vertex does.
+#[test]
+fn xob_morphs_test() {
+    // Probe, morph names and the `(morph, vertex count)` table of each section.
+    type Probe = (
+        &'static str,
+        &'static [&'static str],
+        &'static [&'static [(u32, u32)]],
+    );
+    let probes: [Probe; 3] = [
+        (
+            "morphs",
+            &["up", "skew", "scale"],
+            &[&[(0, 1), (1, 3), (2, 8)]],
+        ),
+        (
+            "morphs_smooth",
+            &["bulge", "squash"],
+            &[&[(1, 16), (0, 5)], &[(1, 16)]],
+        ),
+        ("morphs_skinned", &["wide"], &[&[(0, 24)]]),
+    ];
+    for (name, morph_names, tables) in probes {
+        let xob = read_probe(name);
+        let names: Vec<_> = xob.head.morphs.iter().map(|m| m.name.as_str()).collect();
+        assert_eq!(names, morph_names, "{name}");
+
+        let txo = txo::read(name);
+        let txo_mesh = &txo[0].meshes[0];
+        let header = &xob.head.lods[0];
+        assert_eq!(header.sections.len(), tables.len(), "{name}");
+        for ((section, mesh), table) in header
+            .sections
+            .iter()
+            .zip(&xob.lods[0].sections)
+            .zip(tables.iter())
+        {
+            let pairs: Vec<_> = section
+                .morphs
+                .iter()
+                .map(|m| (m.morph, m.vertex_count))
+                .collect();
+            assert_eq!(pairs, *table, "{name}");
+            assert_eq!(
+                mesh.morphs.iter().map(|m| m.morph).collect::<Vec<_>>(),
+                table.iter().map(|&(m, _)| m).collect::<Vec<_>>()
+            );
+
+            for morph in &mesh.morphs {
+                let morph_name = &xob.head.morphs[morph.morph as usize].name;
+                let (_, rows) = txo_mesh
+                    .morphs
+                    .iter()
+                    .find(|(n, _)| n == morph_name)
+                    .unwrap();
+                // Offset of the TXO vertex at a position, if the morph moves it.
+                let offset_at = |position: &[f32; 3]| {
+                    rows.iter()
+                        .find(|row| {
+                            close(
+                                &txo_mesh.verts[row[0] as usize][..3],
+                                position,
+                                POSITION_EPS,
+                            )
+                        })
+                        .map(|row| &row[1..4])
+                };
+                assert!(morph.vertices.windows(2).all(|w| w[0].vertex < w[1].vertex));
+                for (vertex, position) in mesh.positions.iter().enumerate() {
+                    let stored = morph.vertices.iter().find(|v| v.vertex as usize == vertex);
+                    match (offset_at(position), stored) {
+                        (Some(expected), Some(stored)) => {
+                            assert!(
+                                close(&stored.offset, expected, POSITION_EPS),
+                                "{name} {morph_name} {vertex}: {stored:?} {expected:?}"
+                            );
+                            // What Workbench writes for Blender's shape keys.
+                            let doubled = mesh.normals[vertex].map(|c| (-2.0 * c).clamp(-1.0, 1.0));
+                            assert!(close(&stored.normal(), &doubled, 2.0 * NORMAL_EPS));
+                        }
+                        (None, None) => {}
+                        other => panic!("{name} {morph_name} {vertex} {position:?}: {other:?}"),
+                    }
+                }
+            }
+        }
     }
 }
 

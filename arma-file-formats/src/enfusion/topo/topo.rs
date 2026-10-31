@@ -2,8 +2,18 @@ use std::io::{Read, Write};
 
 use crate::errors::{AffError, TopoError};
 
-/// A point in world coordinates, `x` and `z`.
+/// A point, `x` and `z` in meters. Most points are map coordinates, with `z` mirrored: the
+/// depth of the terrain minus the world `z`, see [`flip_z`]. [`BuildingPoint`]s and some
+/// [`Hill`]s are world coordinates.
 pub type Point = [f32; 2];
+
+/// Converts between map and world coordinates: `z` is mirrored at the middle of the terrain,
+/// `depth` is its extent along `z`, see
+/// [`TerrHead::size_meters`](crate::enfusion::terr::TerrHead::size_meters).
+#[must_use]
+pub fn flip_z([x, z]: Point, depth: f32) -> Point {
+    [x, depth - z]
+}
 
 /// Enfusion 2D map geometry (`.topo`), see the [module docs](super).
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -42,17 +52,21 @@ pub struct Roads {
     /// Eden has one road more of type 2 and one less of type 3.
     pub type_counts: [u32; 8],
     /// The roads of each level of detail, from the most detailed. Every level has the same
-    /// roads in the same order, with fewer vertices.
+    /// roads in the same order, sorted by type from the highest. The other levels have fewer
+    /// vertices on curves, but a straight road of one segment has three in them.
     pub lods: Vec<Vec<Road>>,
 }
 
-/// A road as a strip of quads.
+/// A road as a strip of quads, one per `RoadEntity` whose `Type` is a [`RoadType`]. Entities
+/// of type 255 are left out, connected entities are not merged.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Road {
-    /// [`RoadType`] as stored.
+    /// [`RoadType`], the `Type` of the entity.
     pub road_type: u8,
-    /// Four corners per segment: left and right at the start, right and left at the end. The
-    /// end of a segment is the start of the next one.
+    /// Four corners per segment: left and right at the start, right and left at the end, from
+    /// the first spline point to the last. Left and right as seen in the world, looking along
+    /// the road, the mirrored map coordinates swap them. The end of a segment is the start of
+    /// the next one and the distance between left and right is the `Width` of the entity.
     pub vertices: Vec<Point>,
     /// Vertex offsets into [`Road::vertices`], multiples of 4 that start a segment. A few roads
     /// have one or two, their meaning is unknown: the strip is continuous there.
@@ -118,19 +132,20 @@ pub enum BuildingType {
 pub struct Buildings {
     /// Footprint polygons, usually 4 points.
     pub footprints: Vec<Vec<Point>>,
-    /// Points with a direction, only in the first category, about one per two footprints but
-    /// not at their centers. Their meaning is unknown.
+    /// The buildings themselves, only in the first category: one per `SCR_DestructibleBuildingEntity`,
+    /// about one per two footprints.
     pub points: Vec<BuildingPoint>,
 }
 
-/// A point of a [`Buildings`] category.
+/// A building of a [`Buildings`] category.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct BuildingPoint {
     /// `0` in the game's files.
     pub unknown: u32,
+    /// World coordinates, not mirrored: about the origin of the entity, within a meter.
     pub position: Point,
-    /// A horizontal direction, the cosine and sine of an angle. Nearly all have length 1, a few
-    /// 0.9 to 1.1, likely scaled with their object.
+    /// The forward vector of the entity, `x` and `z`: the sine and cosine of its yaw. Nearly all
+    /// have length 1, a few 0.9 to 1.1, likely scaled with their entity.
     pub direction: [f32; 2],
 }
 
@@ -142,16 +157,16 @@ pub struct Areas {
     pub trees: Vec<Vec<Vec<Point>>>,
     /// The same for `EMapAreaType.AT_OTHER`.
     pub other: Vec<Vec<Vec<Point>>>,
-    /// Points in the forests of the terrain, one every few meters, likely single trees. Arland has
-    /// 65909, Eden 445327.
+    /// Positions of trees, the origins of `Tree` entities. Whether a tree is included depends on
+    /// its prefab: Arland has 65909 of its 118060 trees, of 46 of its 86 tree prefabs.
     pub points: Vec<Point>,
 }
 
 /// A water body as a triangle list.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct WaterBody {
-    /// Kind of water body, `0` to `3`, not named in the game scripts. By their shapes in the
-    /// game's maps: `1` lakes, `3` ponds, `0` and `2` rivers and streams.
+    /// Kind of water body, `0` to `3`, not named in the game scripts. `2` is a `RiverEntity`, `3`
+    /// a `LakeGeneratorEntity`. In Eden `1` are large lakes and `0` narrow streams.
     pub water_type: u32,
     /// `0` in the game's files.
     pub unknown: u8,
@@ -161,13 +176,18 @@ pub struct WaterBody {
     pub indices: Vec<u32>,
 }
 
-/// A hill top.
+/// A hill top. There are two kinds, told apart by their height:
+///
+/// - A whole number: a contour level in meters (5 m apart, `58`, `63`, ...) close to the peak,
+///   at a position in map coordinates.
+/// - A fraction: the exact terrain height at a position in world coordinates.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Hill {
     /// `0` in the game's files.
     pub unknown_0: f32,
     /// Height in meters, at least the minimum hill height of the export (50 by default).
     pub height: f32,
+    /// Map or world coordinates, see [`Hill`].
     pub position: Point,
     /// `0` in the game's files.
     pub unknown_16: [f32; 2],

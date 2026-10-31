@@ -1,8 +1,8 @@
 //! Enfusion 2D map geometry (`.topo`).
 //!
 //! Next to a world, written by `MapDataExporter` (`EMapDataType.Geometry2D`) for the in-game
-//! map: roads, power lines, buildings, areas, water bodies and hill tops. Coordinates are world
-//! `x` and `z` in meters.
+//! map: roads, power lines, buildings, areas, water bodies and hill tops. Coordinates are `x`
+//! and `z` in meters, mostly with `z` mirrored, see [`Point`] and [`flip_z`].
 //!
 //! The file is a tree of chunks, all values little endian. Every chunk has a 20 byte header:
 //!

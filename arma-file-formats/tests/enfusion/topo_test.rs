@@ -1,7 +1,8 @@
 //! Black box tests for the topo reader and writer.
 //!
-//! Game files can't be committed, the inputs are assembled by hand from the layout of the game's
-//! topos. `topo_scan_dir_test` reads the game's files.
+//! `topo_probes/probe.topo` was exported by Workbench from `topo_probes/probe.ent`, see
+//! `topo_probes/README.md`. Game files can't be committed, the other inputs are assembled by
+//! hand from the layout of the game's topos. `topo_scan_dir_test` reads the game's files.
 
 use std::{
     fs::File,
@@ -14,7 +15,7 @@ use arma_file_formats::{
         pak::PakReader,
         topo::{
             Areas, BuildingPoint, Buildings, Hill, PowerLine, Road, RoadType, Roads, Topo,
-            TopoChunk, WaterBody,
+            TopoChunk, WaterBody, flip_z,
         },
     },
     errors::{AffError, TopoError},
@@ -347,6 +348,98 @@ fn errors() {
     );
 }
 
+/// Workbench's export of the probe world, see `topo_probes/README.md`.
+#[test]
+fn probe_test() {
+    const DEPTH: f32 = 192.0;
+    let bytes = std::fs::read("./tests/enfusion/topo_probes/probe.topo").unwrap();
+    let topo = read(&bytes).unwrap();
+    assert_eq!(write(&topo), bytes);
+    let close =
+        |a: [f32; 2], b: [f32; 2], tolerance: f32| (a[0] - b[0]).hypot(a[1] - b[1]) < tolerance;
+
+    // One road per entity of a known type, sorted by type, as wide as the entity.
+    assert_eq!(topo.roads.type_counts, [1, 0, 1, 1, 0, 2, 1, 0]);
+    assert_eq!(topo.roads.lods.len(), 6);
+    let roads = &topo.roads.lods[0];
+    let summary: Vec<_> = roads
+        .iter()
+        .map(|r| {
+            let [a, b] = [r.vertices[0], r.vertices[1]];
+            let width = (a[0] - b[0]).hypot(a[1] - b[1]);
+            (
+                r.road_type,
+                (width * 1000.0).round() / 1000.0,
+                r.unknown.len(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        summary,
+        [
+            (6, 6.0, 0),
+            (5, 2.0, 0),
+            (5, 2.0, 0),
+            (3, 4.0, 0),
+            (2, 8.0, 0),
+            (0, 20.0, 0)
+        ]
+    );
+    // Road_Minor from 20, 20 to 120, 20, 8 m wide: left (north) and right at the start, right
+    // and left at the end, in map coordinates.
+    let minor: Vec<_> = [[20.0, 24.0], [20.0, 16.0], [120.0, 16.0], [120.0, 24.0]]
+        .map(|p| flip_z(p, DEPTH))
+        .to_vec();
+    assert_eq!(roads[4].vertices, minor);
+    for lod in &topo.roads.lods[1..] {
+        assert_eq!(lod.len(), 6);
+        assert_eq!(lod[4].vertices.len(), 12);
+    }
+
+    // Trees in map coordinates.
+    let trees = [[310.0, 175.0], [305.0, 170.0], [300.0, 170.0]].map(|p| flip_z(p, DEPTH));
+    assert_eq!(topo.areas.points, trees);
+
+    // The house at 320, 40 with yaw 30: its point in world coordinates, the footprint in map
+    // coordinates.
+    assert_eq!(topo.buildings.len(), 5);
+    let house = &topo.buildings[0];
+    let [point] = house.points[..] else {
+        panic!("{:?}", house.points)
+    };
+    assert!(close(point.position, [320.0, 40.0], 1.0));
+    let yaw = 30f32.to_radians();
+    assert!(close(point.direction, [yaw.sin(), yaw.cos()], 1e-4));
+    let [footprint] = &house.footprints[..] else {
+        panic!("{:?}", house.footprints)
+    };
+    let center = footprint
+        .iter()
+        .fold([0.0, 0.0], |c, p| [c[0] + p[0] / 4.0, c[1] + p[1] / 4.0]);
+    assert!(close(flip_z(center, DEPTH), [320.0, 40.0], 2.0));
+    assert!(
+        topo.buildings[1..]
+            .iter()
+            .all(|b| *b == Buildings::default())
+    );
+
+    // The river and the lake, the pond (`m_bIsLake 0`) is left out.
+    let water = &topo.water[0];
+    assert_eq!(
+        water.iter().map(|w| w.water_type).collect::<Vec<_>>(),
+        [2, 3]
+    );
+    let lake = &water[1];
+    assert_eq!(lake.indices, [0, 1, 2, 3, 4, 5]);
+    for [x, z] in lake.vertices.iter().map(|&p| flip_z(p, DEPTH)) {
+        assert!((110.0..=140.0).contains(&x) && (100.0..=130.0).contains(&z));
+    }
+
+    // No power line from a cable alone, no hills on flat terrain.
+    assert_eq!(topo.power_lines, vec![Vec::<PowerLine>::new(); 6]);
+    assert_eq!(topo.hills, Some(vec![]));
+}
+
 /// Reads every `.topo` in the paks below `AFF_TOPO_SCAN_DIR`, e.g. the game's `addons`
 /// directory: checks that it writes back identically and the structure the docs describe.
 #[test]
@@ -403,6 +496,10 @@ fn topo_scan_dir_test() {
             for (a, b) in lods[0].iter().zip(&lods[lods.len() - 1]) {
                 assert_eq!(a.road_type, b.road_type, "{path}");
             }
+            assert!(
+                lods[0].windows(2).all(|w| w[0].road_type >= w[1].road_type),
+                "{path}"
+            );
             assert_eq!(topo.buildings.len(), 5, "{path}");
             for body in topo.water.iter().flatten() {
                 assert!(body.water_type < 4, "{path}");

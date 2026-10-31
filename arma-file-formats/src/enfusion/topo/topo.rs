@@ -2,9 +2,11 @@ use std::io::{Read, Write};
 
 use crate::errors::{AffError, TopoError};
 
-/// A point, `x` and `z` in meters. Most points are map coordinates, with `z` mirrored: the
-/// depth of the terrain minus the world `z`, see [`flip_z`]. [`BuildingPoint`]s and some
-/// [`Hill`]s are world coordinates.
+/// A point, `x` and `z` in meters.
+///
+/// Most points are map coordinates, with `z` mirrored: the depth of the terrain minus the world
+/// `z`, see [`flip_z`]. [`BuildingPoint`]s and some [`Hill`]s are world coordinates, the other
+/// hills are scaled map coordinates.
 pub type Point = [f32; 2];
 
 /// Converts between map and world coordinates: `z` is mirrored at the middle of the terrain,
@@ -178,19 +180,45 @@ pub struct WaterBody {
 
 /// A hill top. There are two kinds, told apart by their height:
 ///
-/// - A whole number: a contour level in meters (5 m apart, `58`, `63`, ...) close to the peak,
-///   at a position in map coordinates.
-/// - A fraction: the exact terrain height at a position in world coordinates.
+/// - A whole number: what Workbench's exporter writes. The height is the highest 5 m contour
+///   around the peak plus 3 m (`58`, `63`, ...). For an isolated round or flat top that is
+///   `5 * floor((top - 0.5) / 5) + 3`, a sharp peak or one next to a higher one can get a level
+///   more or less. The position is the peak in map coordinates, in units of half a terrain grid
+///   cell (meters on the game's 2 m grids), see [`Hill::map_position`]. Hills whose contour is
+///   not above the minimum hill height of the export (50 by default) are left out.
+/// - A fraction: the exact terrain height, at a position in world coordinates. Only in the
+///   game's files, Workbench 1.8 did not write any for its probes.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Hill {
-    /// `0` in the game's files.
+    /// `0` in the game's files and Workbench's exports.
     pub unknown_0: f32,
-    /// Height in meters, at least the minimum hill height of the export (50 by default).
+    /// Height in meters, see [`Hill`].
     pub height: f32,
     /// Map or world coordinates, see [`Hill`].
     pub position: Point,
-    /// `0` in the game's files.
+    /// `0` in the game's files and Workbench's exports.
     pub unknown_16: [f32; 2],
+}
+
+impl Hill {
+    /// Whether the height is a contour level, see [`Hill`].
+    #[must_use]
+    pub fn is_contour(&self) -> bool {
+        self.height.fract() == 0.0
+    }
+
+    /// The position in map coordinates (meters, `z` mirrored, see [`flip_z`]): a contour hill's
+    /// position scaled by half the terrain's `grid_cell_size`
+    /// ([`TerrHead`](crate::enfusion::terr::TerrHead)), or a fractional hill's world position
+    /// mirrored at the terrain's `depth`.
+    #[must_use]
+    pub fn map_position(&self, grid_cell_size: f32, depth: f32) -> Point {
+        if self.is_contour() {
+            self.position.map(|v| v * grid_cell_size / 2.0)
+        } else {
+            flip_z(self.position, depth)
+        }
+    }
 }
 
 pub const TOPO_MAGIC: &[u8; 4] = b"TOPO";

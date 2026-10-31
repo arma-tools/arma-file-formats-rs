@@ -440,6 +440,73 @@ fn probe_test() {
     assert_eq!(topo.hills, Some(vec![]));
 }
 
+/// Workbench's exports of the hill probe, see the hill probe in `topo_probes/README.md`.
+#[test]
+fn hill_probe_test() {
+    const GRID: f32 = 8.0;
+    const DEPTH: f32 = 1024.0;
+    let read_probe = |name: &str| {
+        let bytes = std::fs::read(format!("./tests/enfusion/topo_probes/{name}")).unwrap();
+        let topo = read(&bytes).unwrap();
+        assert_eq!(write(&topo), bytes, "{name}");
+        let hills = topo.hills.unwrap();
+        assert!(
+            hills
+                .iter()
+                .all(|h| h.is_contour() && h.unknown_0 == 0.0 && h.unknown_16 == [0.0, 0.0])
+        );
+        hills
+    };
+
+    // Peak in world coordinates, stored height, the exported height and whether the top is round
+    // or flat and isolated.
+    let expected = [
+        ([296.0, 248.0], 120.35, 113.0, false),
+        ([1496.0, 296.0], 90.5, 93.0, true),
+        ([1192.0, 400.0], 96.45, 93.0, false),
+        ([1104.0, 400.0], 100.8, 103.0, true),
+        ([800.0, 704.0], 75.6, 78.0, true),
+        ([1752.0, 800.0], 45.3, 43.0, true),
+    ];
+    let near = |h: &Hill, peak: [f32; 2]| {
+        let [x, z] = flip_z(h.map_position(GRID, DEPTH), DEPTH);
+        (x - peak[0]).hypot(z - peak[1]) < 0.01
+    };
+    let hills = read_probe("hills.topo");
+    assert_eq!(hills.len(), expected.len());
+    for (peak, top, height, isolated) in expected {
+        let hill = hills
+            .iter()
+            .find(|h| near(h, peak))
+            .unwrap_or_else(|| panic!("no hill at {peak:?}: {hills:?}"));
+        assert_eq!(hill.height, height, "{peak:?}");
+        if isolated {
+            let level = 5.0 * ((top - 0.5f32) / 5.0).floor() + 3.0;
+            assert_eq!(hill.height, level, "{peak:?}");
+        }
+    }
+
+    // Flat tops of 100.0, 100.5, ..., 104.5 m.
+    let mesas = read_probe("mesas.topo");
+    assert_eq!(mesas.len(), 10);
+    for i in 0..10 {
+        let peak = [
+            200.0 + 400.0 * (i % 5) as f32,
+            if i < 5 { 256.0 } else { 768.0 },
+        ];
+        let top = 0.5f32.mul_add(i as f32, 100.0);
+        let hill = mesas
+            .iter()
+            .find(|h| near(h, peak))
+            .unwrap_or_else(|| panic!("no mesa at {peak:?}"));
+        assert_eq!(
+            hill.height,
+            5.0 * ((top - 0.5) / 5.0).floor() + 3.0,
+            "{top}"
+        );
+    }
+}
+
 /// Reads every `.topo` in the paks below `AFF_TOPO_SCAN_DIR`, e.g. the game's `addons`
 /// directory: checks that it writes back identically and the structure the docs describe.
 #[test]
@@ -510,6 +577,10 @@ fn topo_scan_dir_test() {
                         .all(|&i| (i as usize) < body.vertices.len()),
                     "{path}"
                 );
+            }
+            // Contour hills are 5 m levels plus 3 m.
+            for hill in topo.hills.iter().flatten().filter(|h| h.is_contour()) {
+                assert_eq!(hill.height.rem_euclid(5.0), 3.0, "{path}: {hill:?}");
             }
             for point in &topo.buildings[0].points {
                 let [cos, sin] = point.direction;

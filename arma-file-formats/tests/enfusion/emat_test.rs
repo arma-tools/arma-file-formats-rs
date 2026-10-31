@@ -44,7 +44,10 @@ fn parses_material_properties() {
 
     let mask = material.texture("MaskMap").unwrap();
     assert_eq!(mask.resource().guid, Some(0xB8F9_ACEC_AB53_5A89));
-    assert_eq!(mask.resource().path, "Assets/Wheel/Data/Tire_GLOBAL_MASK.edds");
+    assert_eq!(
+        mask.resource().path,
+        "Assets/Wheel/Data/Tire_GLOBAL_MASK.edds"
+    );
     assert_eq!(material.color("Color_1"), Some([0.039, 0.039, 0.039, 1.0]));
     assert_eq!(material.float("Wind power"), Some(2.0));
     assert_eq!(
@@ -64,7 +67,10 @@ fn parses_material_properties() {
 
     let slots: Vec<_> = material.textures().map(|(key, _)| key).collect();
     assert_eq!(slots, ["MaskMap", "BCR_1", "CausticMap", "BCRMap"]);
-    assert!(material.texture("UVSrcGlobalMaps").is_none(), "a string, but not a texture");
+    assert!(
+        material.texture("UVSrcGlobalMaps").is_none(),
+        "a string, but not a texture"
+    );
 }
 
 #[test]
@@ -77,7 +83,14 @@ fn keeps_lists_and_matrices() {
 
     let row = &material.object.object("UserUVTexMat").unwrap().entries[0];
     assert_eq!(row.key, "1");
-    assert_eq!(row.values, [Value::Word("0".into()), Value::Word("0".into()), Value::Word("0".into())]);
+    assert_eq!(
+        row.values,
+        [
+            Value::Word("0".into()),
+            Value::Word("0".into()),
+            Value::Word("0".into())
+        ]
+    );
 
     let uv = material.object.object("UVTransform_1").unwrap();
     assert_eq!(uv.class.as_deref(), Some("MatUVTransform"));
@@ -89,20 +102,30 @@ fn tolerates_quirks_of_game_files() {
     // CRLF line endings and no closing brace at the end of the file.
     let unclosed = "MatPBRBasic : \"{5CDDE2709BA9A5EE}Assets/_BaseMaterials/Base.emat\" {\r\n Color 1 1 1 1\r\n BCRMap \"{33F2B8BE5B29983C}Eyes_BCR.edds\" \r\n";
     let material = Emat::parse(unclosed).unwrap();
-    assert_eq!(material.parent.as_ref().unwrap().path, "Assets/_BaseMaterials/Base.emat");
+    assert_eq!(
+        material.parent.as_ref().unwrap().path,
+        "Assets/_BaseMaterials/Base.emat"
+    );
     assert!(material.texture("BCRMap").is_some());
 
     // Id before the parent.
-    let with_id = "MatPBRBasic \"{9D0D26B26B7BC3D8}Helmet.emat\" : \"{5CDDE2709BA9A5EE}Base.emat\" {\n}\n";
+    let with_id =
+        "MatPBRBasic \"{9D0D26B26B7BC3D8}Helmet.emat\" : \"{5CDDE2709BA9A5EE}Base.emat\" {\n}\n";
     let object = Object::parse(with_id).unwrap();
     assert_eq!(object.id.as_deref(), Some("{9D0D26B26B7BC3D8}Helmet.emat"));
-    assert_eq!(object.parent.as_deref(), Some("{5CDDE2709BA9A5EE}Base.emat"));
+    assert_eq!(
+        object.parent.as_deref(),
+        Some("{5CDDE2709BA9A5EE}Base.emat")
+    );
 }
 
 #[test]
 fn reports_the_line_of_errors() {
     let err = Object::parse("MatPBRBasic {\n Color 1 1\n BCRMap anim( 1 \n}\n").unwrap_err();
-    assert!(matches!(err, AffError::TextError(TextError::Parse { line: 3, .. })), "{err}");
+    assert!(
+        matches!(err, AffError::TextError(TextError::Parse { line: 3, .. })),
+        "{err}"
+    );
     assert!(Object::parse("{ }").is_err());
     assert!(Object::parse("MatPBRBasic { }\nMatPBRBasic { }").is_err());
 }
@@ -130,10 +153,16 @@ fn library() -> HashMap<String, Emat> {
  }
 }"#,
         ),
-        ("LoopA.emat", r#"MatPBRBasic : "LoopB.emat" {
-}"#),
-        ("LoopB.emat", r#"MatPBRBasic : "LoopA.emat" {
-}"#),
+        (
+            "LoopA.emat",
+            r#"MatPBRBasic : "LoopB.emat" {
+}"#,
+        ),
+        (
+            "LoopB.emat",
+            r#"MatPBRBasic : "LoopA.emat" {
+}"#,
+        ),
     ];
     files
         .into_iter()
@@ -154,9 +183,19 @@ fn resolves_inheritance() {
         .resolve(|parent| library.get(&parent.lookup_key()).cloned())
         .unwrap();
 
-    assert_eq!(resolved.color("Color"), Some([1.0, 0.0, 0.0, 1.0]), "from Mid");
-    assert_eq!(resolved.texture("BCRMap").unwrap().resource().path, "Base_BCR.edds");
-    assert_eq!(resolved.texture("NMOMap").unwrap().resource().path, "Child_NMO.edds");
+    assert_eq!(
+        resolved.color("Color"),
+        Some([1.0, 0.0, 0.0, 1.0]),
+        "from Mid"
+    );
+    assert_eq!(
+        resolved.texture("BCRMap").unwrap().resource().path,
+        "Base_BCR.edds"
+    );
+    assert_eq!(
+        resolved.texture("NMOMap").unwrap().resource().path,
+        "Child_NMO.edds"
+    );
     assert_eq!(
         resolved.uv_transform("BCRMapUVTransform").unwrap().tiling,
         [8.0, 2.0],
@@ -188,14 +227,23 @@ fn resource_references() {
     let full = ResourceRef::parse("{3C10D749A4E84B38}Common/Materials/Default.emat").unwrap();
     assert_eq!(full.guid, Some(0x3C10_D749_A4E8_4B38));
     assert_eq!(full.path, "Common/Materials/Default.emat");
-    assert_eq!(full.to_string(), "{3C10D749A4E84B38}Common/Materials/Default.emat");
+    assert_eq!(
+        full.to_string(),
+        "{3C10D749A4E84B38}Common/Materials/Default.emat"
+    );
     assert_eq!(full.lookup_key(), "common/materials/default.emat");
 
     let guid_only = ResourceRef::parse("{51823C7CB6F81D33}").unwrap();
-    assert_eq!((guid_only.guid, guid_only.path.as_str()), (Some(0x5182_3C7C_B6F8_1D33), ""));
+    assert_eq!(
+        (guid_only.guid, guid_only.path.as_str()),
+        (Some(0x5182_3C7C_B6F8_1D33), "")
+    );
 
     let path_only = ResourceRef::parse(r"Assets\Props\Box.xob").unwrap();
-    assert_eq!((path_only.guid, path_only.path.as_str()), (None, "Assets/Props/Box.xob"));
+    assert_eq!(
+        (path_only.guid, path_only.path.as_str()),
+        (None, "Assets/Props/Box.xob")
+    );
 
     assert_eq!(ResourceRef::parse(""), None);
     assert_eq!(ResourceRef::parse("{not hex}x.emat").unwrap().guid, None);

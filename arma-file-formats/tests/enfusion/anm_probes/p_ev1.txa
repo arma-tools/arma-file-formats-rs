@@ -1,0 +1,25 @@
+$animation "" {
+ #version 2
+ #fps 30
+ #numFrames 1
+ $node "b" {
+  $keys t q s {
+   $frame 0 {
+    #t 0 0 0
+   }
+   $frame 1 {
+    #t 1 2 3
+   }
+  }
+ }
+ $events {
+  #event 0 "EvA" "AnimSrcEventGeneric \"{64D50818623F4D11}\" {
+ Name \"Ev\"
+ Comment \"cmt\"
+ MainPathOnly 1
+ UserString \"us\"
+ UserInt 7
+}" 0 0 "" 0
+  #event 1 "EvB" "" 3 4 "str" 5
+ }
+}

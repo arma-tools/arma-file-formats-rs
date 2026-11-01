@@ -1,0 +1,15 @@
+$animation "" {
+ #version 2
+ #fps 30
+ #numFrames 1
+ $node "b" {
+  $keys t q s {
+   $frame 0 {
+    #q 0 0.7071068 0 0.7071068
+   }
+   $frame 1 {
+    #q 0 0.7071068 0 0.7071068
+   }
+  }
+ }
+}

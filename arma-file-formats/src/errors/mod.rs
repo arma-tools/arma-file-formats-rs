@@ -263,6 +263,27 @@ pub enum SmapError {
     TooLarge,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum AnmError {
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Unsupported animation set `{0}`, only SET6 and SET7 are known")]
+    UnsupportedSet(String),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
+
+    #[error("Chunk `{0}` can't hold the given data")]
+    Unwritable(&'static str),
+
+    #[error("Anm exceeds 4 GiB")]
+    TooLarge,
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -300,6 +321,9 @@ pub enum AffError {
 
     #[error("SMAP Error: {0}")]
     SmapError(#[from] SmapError),
+
+    #[error("ANM Error: {0}")]
+    AnmError(#[from] AnmError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

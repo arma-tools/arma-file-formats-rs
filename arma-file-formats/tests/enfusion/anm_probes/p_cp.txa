@@ -1,0 +1,19 @@
+$animation "" {
+ #version 2
+ #fps 30
+ #numFrames 1
+ $node "b" {
+  $keys t q s {
+   $frame 0 {
+    #t 0 0 0
+   }
+   $frame 1 {
+    #t 1 2 3
+   }
+  }
+ }
+ $custProps {
+  #custProp "alpha" "one"
+  #custProp "b" ""
+ }
+}

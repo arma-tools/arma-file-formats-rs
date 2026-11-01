@@ -8,6 +8,7 @@ mod real_virtuality {
 }
 
 mod enfusion {
+    mod anm_test;
     mod edds_format_test;
     mod edds_test;
     mod emat_test;

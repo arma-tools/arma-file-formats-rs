@@ -12,7 +12,7 @@ use std::{
 
 use arma_file_formats::{
     enfusion::{
-        ent::{Body, Ent, Entry, Object, ObjectId, Value},
+        ent::{Body, Ent, EntityHeader, Entry, Object, ObjectId, Value},
         pak::PakReader,
     },
     errors::{AffError, EntError},
@@ -281,6 +281,107 @@ fn group_prefab_and_sub_scene() {
     let prefabs: Vec<_> = ent.entities().iter().map(|e| (e.name, e.prefab)).collect();
     assert_eq!(prefabs, [(None, Some(PREFAB)), (Some("Own"), Some(other))]);
     assert_eq!(read(&write(&ent)).unwrap(), ent);
+}
+
+#[test]
+fn filtered_read() {
+    let bytes = docs_example();
+    let full = read(&bytes).unwrap();
+    let names = |ent: &Ent| -> Vec<_> {
+        ent.entities()
+            .iter()
+            .map(|e| (e.class.to_owned(), e.name.map(str::to_owned)))
+            .collect()
+    };
+
+    assert_eq!(Ent::from_filtered(&bytes, |_| true).unwrap(), full);
+    assert!(
+        Ent::from_filtered(&bytes, |_| false)
+            .unwrap()
+            .entries
+            .is_empty()
+    );
+
+    let mut seen = Vec::new();
+    let world = Ent::from_filtered(&bytes, |h: &EntityHeader| {
+        seen.push((h.class.to_owned(), h.name.map(str::to_owned), h.prefab));
+        h.prefab == Some(PREFAB)
+    })
+    .unwrap();
+    // Children are not offered, only top level and group entities.
+    assert_eq!(
+        seen,
+        [
+            ("SCR_AIWorld".to_owned(), None, Some(PREFAB)),
+            ("GenericEntity".to_owned(), Some("First".to_owned()), None),
+            ("GenericEntity".to_owned(), None, None),
+        ]
+    );
+    assert_eq!(world.entries, full.entries[..1]);
+
+    // A group keeps its accepted entities, with their children.
+    let first = Ent::from_filtered(&bytes, |h| h.name == Some("First")).unwrap();
+    assert_eq!(
+        names(&first),
+        [
+            ("GenericEntity".to_owned(), Some("First".to_owned())),
+            ("GenericEntity".to_owned(), Some("Child".to_owned())),
+        ]
+    );
+    assert_eq!(first.entities()[0].object, full.entities()[1].object);
+}
+
+#[test]
+fn filtered_read_keeps_sub_scene_and_group_prefab() {
+    let other = 0x1B76_F75A_3175_E85C;
+    let world = 0xA701_424D_7002_2078;
+    let ent = Ent {
+        version: 1,
+        entries: vec![
+            Entry::Object(object(
+                Some("SubScene"),
+                None,
+                vec![property("Parent", Value::Resource(world))],
+            )),
+            Entry::Object(Object {
+                class: Some("GenericEntity".to_owned()),
+                parent: Some(PREFAB),
+                ..block_object(
+                    Some("$grp"),
+                    vec![
+                        Entry::Object(object(None, None, vec![])),
+                        Entry::Object(Object {
+                            parent: Some(other),
+                            ..named(object(None, None, vec![]), "Own")
+                        }),
+                    ],
+                )
+            }),
+        ],
+    };
+    let bytes = write(&ent);
+    let none = Ent::from_filtered(&bytes, |_| false).unwrap();
+    assert_eq!(none.sub_scene_parent(), Some(world));
+    assert!(none.entities().is_empty());
+
+    let inherited = Ent::from_filtered(&bytes, |h| h.prefab == Some(PREFAB)).unwrap();
+    let prefabs: Vec<_> = inherited
+        .entities()
+        .iter()
+        .map(|e| (e.name, e.prefab))
+        .collect();
+    assert_eq!(prefabs, [(None, Some(PREFAB))]);
+}
+
+#[test]
+fn filtered_read_errors() {
+    let mut bytes = docs_example();
+    bytes.truncate(bytes.len() - 3);
+    assert!(Ent::from_filtered(&bytes, |_| false).is_err());
+    assert!(matches!(
+        Ent::from_filtered(b"NOPE", |_| true),
+        Err(AffError::EntError(EntError::UnknownMagic(_)))
+    ));
 }
 
 /// Every value type, ids and a raw body survive a roundtrip, the tables are in the order of
@@ -658,6 +759,10 @@ fn ent_scan_dir_test() {
             let bytes = reader.read_entry(entry).unwrap();
             let ent = read(&bytes).unwrap_or_else(|e| panic!("{}: {e}", entry.path));
             assert_eq!(write(&ent), bytes, "{}", entry.path);
+            let all = Ent::from_filtered(&bytes, |_| true).unwrap();
+            assert!(all == ent, "{}: filtered read differs", entry.path);
+            let none = Ent::from_filtered(&bytes, |_| false).unwrap();
+            assert!(none.entities().is_empty(), "{}", entry.path);
 
             let entities = ent.entities();
             for (i, entity) in entities.iter().enumerate() {

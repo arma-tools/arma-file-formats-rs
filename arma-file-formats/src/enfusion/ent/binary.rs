@@ -1,6 +1,6 @@
 use indexmap::IndexSet;
 
-use super::ent::{Body, Ent, Entry, Object, ObjectId, Value};
+use super::ent::{Body, Ent, EntityHeader, Entry, GROUP, Object, ObjectId, SUB_SCENE, Value};
 use crate::errors::EntError;
 
 pub const ENT_MAGIC: &[u8; 4] = b"EBIN";
@@ -38,29 +38,17 @@ const fn starts_entries(tag: u8) -> bool {
 }
 
 pub fn read_ent(data: &[u8]) -> Result<Ent, EntError> {
-    if data.get(..4) != Some(ENT_MAGIC) {
-        return Err(EntError::UnknownMagic(
-            data.get(..4).unwrap_or(data).to_vec(),
-        ));
-    }
-    let mut reader = Reader {
-        data,
-        pos: 4,
-        strings: Vec::new(),
-        guids: Vec::new(),
-    };
-    let version = reader.u32()?;
-    let string_count = reader.u16()?;
-    let guid_count = reader.u16()?;
-    for _ in 0..string_count {
-        let string = reader.string()?;
-        reader.strings.push(string);
-    }
-    for _ in 0..guid_count {
-        let guid = reader.u64()?;
-        reader.guids.push(guid);
-    }
+    let (version, mut reader) = Reader::new(data)?;
     let entries = reader.entries(data.len())?;
+    Ok(Ent { version, entries })
+}
+
+pub fn read_ent_filtered(
+    data: &[u8],
+    keep: &mut dyn FnMut(&EntityHeader) -> bool,
+) -> Result<Ent, EntError> {
+    let (version, mut reader) = Reader::new(data)?;
+    let entries = reader.filtered_entries(data.len(), keep)?;
     Ok(Ent { version, entries })
 }
 
@@ -71,7 +59,34 @@ struct Reader<'a> {
     guids: Vec<u64>,
 }
 
-impl Reader<'_> {
+impl<'a> Reader<'a> {
+    /// Reads the magic, the version and both tables.
+    fn new(data: &'a [u8]) -> Result<(u32, Self), EntError> {
+        if data.get(..4) != Some(ENT_MAGIC) {
+            return Err(EntError::UnknownMagic(
+                data.get(..4).unwrap_or(data).to_vec(),
+            ));
+        }
+        let mut reader = Reader {
+            data,
+            pos: 4,
+            strings: Vec::new(),
+            guids: Vec::new(),
+        };
+        let version = reader.u32()?;
+        let string_count = reader.u16()?;
+        let guid_count = reader.u16()?;
+        for _ in 0..string_count {
+            let string = reader.string()?;
+            reader.strings.push(string);
+        }
+        for _ in 0..guid_count {
+            let guid = reader.u64()?;
+            reader.guids.push(guid);
+        }
+        Ok((version, reader))
+    }
+
     const fn error(&self, message: &'static str) -> EntError {
         EntError::Malformed {
             offset: self.pos,
@@ -200,6 +215,13 @@ impl Reader<'_> {
 
     /// The rest of an object after its key: `[class] [name] [id] [: parent] { body }`.
     fn object(&mut self, key: Option<String>) -> Result<Object, EntError> {
+        let mut object = self.object_header(key)?;
+        object.body = self.body()?;
+        Ok(object)
+    }
+
+    /// An object up to and including the tag of its block, with an empty body.
+    fn object_header(&mut self, key: Option<String>) -> Result<Object, EntError> {
         let mut object = Object {
             key,
             ..Object::default()
@@ -233,8 +255,116 @@ impl Reader<'_> {
         if self.u8()? != BLOCK {
             return Err(self.error("expected a block"));
         }
-        object.body = self.body()?;
         Ok(object)
+    }
+
+    /// The end of the block whose size is next, checked against the data.
+    fn block_end(&self) -> Result<usize, EntError> {
+        let size = self
+            .data
+            .get(self.pos..self.pos + 4)
+            .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]) as usize)
+            .ok_or(EntError::Truncated(self.pos))?;
+        self.pos
+            .checked_add(size)
+            .filter(|&end| size >= 4 && end <= self.data.len())
+            .ok_or(EntError::Malformed {
+                offset: self.pos,
+                message: "block size out of range",
+            })
+    }
+
+    /// Top level entries like [`Self::entries`], without the entities `keep` rejects. Their
+    /// bodies are skipped by their size, children included.
+    fn filtered_entries(
+        &mut self,
+        end: usize,
+        keep: &mut dyn FnMut(&EntityHeader) -> bool,
+    ) -> Result<Vec<Entry>, EntError> {
+        let mut entries = Vec::new();
+        while self.pos < end {
+            let start = self.pos;
+            if self.peek() != Some(WORD) {
+                entries.push(self.entry(end)?);
+                continue;
+            }
+            self.pos += 1;
+            let key = self.word()?;
+            let is_object = self.pos < end
+                && matches!(
+                    self.peek(),
+                    Some(WORD | BLOCK | NAME | INLINE_ID | SHARED_ID)
+                );
+            if !is_object || key == SUB_SCENE {
+                self.pos = start;
+                entries.push(self.entry(end)?);
+                continue;
+            }
+            let mut object = self.object_header(Some(key))?;
+            if object.key.as_deref() == Some(GROUP) {
+                if let Some(group) = self.filtered_group(object, keep)? {
+                    entries.push(Entry::Object(group));
+                }
+                continue;
+            }
+            let header = EntityHeader {
+                class: object.key.as_deref().unwrap_or_default(),
+                name: object.name.as_deref(),
+                prefab: object.parent,
+            };
+            if keep(&header) {
+                object.body = self.body()?;
+                entries.push(Entry::Object(object));
+            } else {
+                self.pos = self.block_end()?;
+            }
+        }
+        if self.pos != end {
+            return Err(self.error("token overruns its block"));
+        }
+        Ok(entries)
+    }
+
+    /// The body of a `$grp` object with the entities `keep` accepts, `None` if it accepts none.
+    fn filtered_group(
+        &mut self,
+        mut group: Object,
+        keep: &mut dyn FnMut(&EntityHeader) -> bool,
+    ) -> Result<Option<Object>, EntError> {
+        let end = self.block_end()?;
+        self.pos += 4;
+        let instance = if self.pos < end && self.peek() == Some(INSTANCE) {
+            self.pos += 1;
+            Some(self.u16()?)
+        } else {
+            None
+        };
+        let mut entries = Vec::new();
+        let mut kept = false;
+        while self.pos < end {
+            if !matches!(self.peek(), Some(BLOCK | NAME | INLINE_ID | SHARED_ID)) {
+                entries.push(self.entry(end)?);
+                continue;
+            }
+            let mut object = self.object_header(None)?;
+            let header = EntityHeader {
+                class: group.class.as_deref().unwrap_or_default(),
+                name: object.name.as_deref(),
+                prefab: object.parent.or(group.parent),
+            };
+            if keep(&header) {
+                object.body = self.body()?;
+                entries.push(Entry::Object(object));
+                kept = true;
+            } else {
+                self.pos = self.block_end()?;
+            }
+        }
+        if self.pos != end {
+            return Err(self.error("token overruns its block"));
+        }
+        group.body = Body::Entries { instance, entries };
+        Ok(kept.then_some(group))
     }
 
     /// `u32` size including itself and the contents.

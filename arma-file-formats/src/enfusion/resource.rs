@@ -5,7 +5,9 @@
 //! followed by the path inside the game data. Either part may be missing (`{GUID}` alone, or
 //! a plain path). The GUID is the actual identity of a resource, the path is a hint that may be
 //! outdated after a resource was moved. Game PAKs contain no `.meta` files to map GUIDs to
-//! paths, so in practice resources are looked up by path, case insensitively.
+//! paths, the `resourceDatabase.rdb` next to them does, see
+//! [`Rdb::resolve`](crate::enfusion::rdb::Rdb::resolve). Without it resources are looked up by
+//! path, case insensitively.
 
 use std::fmt;
 

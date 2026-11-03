@@ -13,6 +13,7 @@ mod enfusion {
     mod edds_test;
     mod emat_test;
     mod ent_test;
+    mod fnt_test;
     mod pak_test;
     mod rdb_test;
     mod smap_test;

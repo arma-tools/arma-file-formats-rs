@@ -291,6 +291,36 @@ pub enum RdbError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum FntError {
+    #[error("Unknown form type: `{0}`, only FNT2 to FNT5 are known")]
+    UnknownFormType(String),
+
+    #[error("Truncated font")]
+    Truncated,
+
+    #[error("Unknown chunk `{0}`")]
+    UnknownChunk(String),
+
+    #[error("Chunk `{0}` appears twice")]
+    DuplicateChunk(String),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
+
+    #[error("Unknown font type {0}")]
+    UnknownFontType(u8),
+
+    #[error("`{0}` can't hold the given data")]
+    Unwritable(&'static str),
+
+    #[error("Fnt exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum AnmError {
     #[error("Unknown form type: `{0}`")]
     UnknownFormType(String),
@@ -354,6 +384,9 @@ pub enum AffError {
 
     #[error("ANM Error: {0}")]
     AnmError(#[from] AnmError),
+
+    #[error("FNT Error: {0}")]
+    FntError(#[from] FntError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

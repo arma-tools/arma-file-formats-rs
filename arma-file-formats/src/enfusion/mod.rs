@@ -2,6 +2,7 @@ pub mod anm;
 pub mod edds;
 pub mod emat;
 pub mod ent;
+pub mod fnt;
 pub mod pak;
 pub mod rdb;
 pub mod resource;

@@ -264,6 +264,33 @@ pub enum SmapError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum RdbError {
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Unsupported version {0}")]
+    UnsupportedVersion(u32),
+
+    #[error("Header says the file has {header} bytes, it has {actual}")]
+    SizeMismatch { header: u64, actual: u64 },
+
+    #[error("Truncated or malformed resource database")]
+    Truncated,
+
+    #[error("Data after the last entry")]
+    TrailingData,
+
+    #[error("String is not NUL terminated UTF-8")]
+    InvalidString,
+
+    #[error("Flags and `.meta` of entry `{0}` don't match")]
+    MetaFlagMismatch(String),
+
+    #[error("Rdb exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum AnmError {
     #[error("Unknown form type: `{0}`")]
     UnknownFormType(String),
@@ -321,6 +348,9 @@ pub enum AffError {
 
     #[error("SMAP Error: {0}")]
     SmapError(#[from] SmapError),
+
+    #[error("RDB Error: {0}")]
+    RdbError(#[from] RdbError),
 
     #[error("ANM Error: {0}")]
     AnmError(#[from] AnmError),

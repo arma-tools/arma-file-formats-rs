@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
 
-use super::binary::{read_ent, write_ent};
+use super::binary::{read_ent, read_ent_filtered, write_ent};
 use crate::errors::AffError;
 
 /// Binary Enfusion world (`.ent`), see the [module docs](super).
@@ -125,6 +125,15 @@ pub enum Value {
     StringArray(Vec<String>),
 }
 
+/// What [`Ent::from_filtered`] knows of an entity before reading its body.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EntityHeader<'a> {
+    pub class: &'a str,
+    pub name: Option<&'a str>,
+    /// GUID of the prefab of the entity, its own or that of its `$grp`, as in [`Entity::prefab`].
+    pub prefab: Option<u64>,
+}
+
 /// An entity of the world, see [`Ent::entities`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Entity<'a> {
@@ -144,6 +153,20 @@ impl Ent {
         let mut data = Vec::new();
         input.read_to_end(&mut data)?;
         Ok(read_ent(&data)?)
+    }
+
+    /// Reads a binary world with only the top level entities that `keep` accepts, for picking a
+    /// few entities out of a large world: Everon's 70 MB take about 1 GB as a whole [`Ent`].
+    ///
+    /// `keep` sees each entity of the top level and of `$grp` groups before its body is read.
+    /// Bodies of rejected entities are skipped by their size, with their children; groups
+    /// without accepted entities are left out. The `SubScene` object and top level entries
+    /// that are no entity are always read.
+    pub fn from_filtered(
+        data: &[u8],
+        mut keep: impl FnMut(&EntityHeader) -> bool,
+    ) -> Result<Self, AffError> {
+        Ok(read_ent_filtered(data, &mut keep)?)
     }
 
     /// Writes the world at the current position of `out`. The string and GUID tables are built
@@ -181,8 +204,8 @@ impl Ent {
     }
 }
 
-const GROUP: &str = "$grp";
-const SUB_SCENE: &str = "SubScene";
+pub(super) const GROUP: &str = "$grp";
+pub(super) const SUB_SCENE: &str = "SubScene";
 
 fn collect_entities<'a>(
     entries: &'a [Entry],

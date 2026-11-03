@@ -15,7 +15,8 @@ pub struct Object {
 /// One line of an object: a key with values, or a key with a nested object.
 ///
 /// Lines without a key, like the items of a list (`"Enabled"`) or matrix rows (`1 0 0 0`),
-/// use their first token as key, so nothing is lost.
+/// use their first token as key, so nothing is lost. Blocks without a key, like the child
+/// entities of a prefab (`{ GenericEntity { } }`), have an empty key.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
     pub key: String,
@@ -191,14 +192,11 @@ impl<'a> Parser<'a> {
                 ':' => Token::Colon,
                 '"' => {
                     let mut text = String::new();
-                    for c in self.chars.by_ref() {
-                        if c == '"' {
+                    loop {
+                        self.quoted(&mut text);
+                        if !self.continues_string() {
                             break;
                         }
-                        if c == '\n' {
-                            self.line += 1;
-                        }
-                        text.push(c);
                     }
                     Token::String(text)
                 }
@@ -216,6 +214,58 @@ impl<'a> Parser<'a> {
             });
         }
         None
+    }
+
+    /// The rest of a quoted string after its opening quote. `\"` is a quote, other backslashes
+    /// are kept: the game's string tables have `\\"` for a backslash and a quote.
+    fn quoted(&mut self, text: &mut String) {
+        while let Some(c) = self.chars.next() {
+            match c {
+                '"' => return,
+                '\\' => match self.chars.peek() {
+                    Some('"') => {
+                        self.chars.next();
+                        text.push('"');
+                    }
+                    _ => text.push(c),
+                },
+                '\n' => {
+                    self.line += 1;
+                    text.push(c);
+                }
+                _ => text.push(c),
+            }
+        }
+    }
+
+    /// Whether a `\` at the end of the line continues the string that just ended with the
+    /// string on the next line, as in long texts of string tables:
+    ///
+    /// ```text
+    ///  "First part "\
+    ///  "and the rest."
+    /// ```
+    ///
+    /// Consumes up to and including the opening quote of the next string if so.
+    fn continues_string(&mut self) -> bool {
+        let mut ahead = self.chars.clone();
+        if ahead.next() != Some('\\') {
+            return false;
+        }
+        while ahead
+            .next_if(|&c| c == ' ' || c == '\t' || c == '\r')
+            .is_some()
+        {}
+        if ahead.next() != Some('\n') {
+            return false;
+        }
+        while ahead.next_if(|&c| c.is_whitespace() && c != '\n').is_some() {}
+        if ahead.next() != Some('"') {
+            return false;
+        }
+        self.chars = ahead;
+        self.line += 1;
+        true
     }
 
     fn skip_newlines(&mut self) {
@@ -274,6 +324,17 @@ impl<'a> Parser<'a> {
     fn entry(&mut self) -> Result<Entry, AffError> {
         let key = match self.next() {
             Some(Token::String(key) | Token::Word(key)) => key,
+            // A block without key, like the block of child entities in a prefab.
+            Some(Token::OpenBrace) => {
+                return Ok(Entry {
+                    key: String::new(),
+                    values: Vec::new(),
+                    object: Some(Object {
+                        entries: self.body()?,
+                        ..Object::default()
+                    }),
+                });
+            }
             other => return Err(self.error(format!("expected a key, found {other:?}"))),
         };
         let mut values = Vec::new();

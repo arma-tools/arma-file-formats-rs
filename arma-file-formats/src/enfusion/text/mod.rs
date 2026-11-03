@@ -16,7 +16,8 @@
 //! ```
 //!
 //! - Values are quoted strings, unquoted words (numbers, identifiers) or calls like `anim( 20 )`.
-//!   Keys may be quoted.
+//!   Keys may be quoted. Strings escape quotes as `\"`, and a `\` after a string at the end of a
+//!   line joins it with the string on the next line.
 //! - A line ending in `{` opens a nested object: `Key [Class] ["id"] [: "parent"] {`.
 //! - Lines inside lists or matrices have no key (`"Enabled"`, `1 0 0 0`), see [`Entry`].
 //!

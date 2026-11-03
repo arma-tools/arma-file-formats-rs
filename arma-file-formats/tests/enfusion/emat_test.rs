@@ -119,6 +119,72 @@ fn tolerates_quirks_of_game_files() {
     );
 }
 
+/// String tables (`Language/localization.*.conf`) escape quotes and split long texts over
+/// several lines with a `\` after the string.
+#[test]
+fn string_escapes_and_continuations() {
+    let table = concat!(
+        "StringTableRuntime {\n",
+        " Texts {\n",
+        "  \"<color rgba=\\\"226,168,79,255\\\">Base</color>\"\n",
+        "  \"(\"\n",
+        "  \"First part \"\\\n",
+        "  \"\"\\ \r\n",
+        "  \"and the rest.\"\n",
+        "  \"<ucs codepoints=\\\"\\u1f600\\\\\"/> C:\\Path\"\n",
+        " }\n",
+        " Line 10\n",
+        "}\n",
+    );
+    let object = Object::parse(table).unwrap();
+    let texts: Vec<_> = object
+        .object("Texts")
+        .unwrap()
+        .entries
+        .iter()
+        .map(|e| e.key.as_str())
+        .collect();
+    assert_eq!(
+        texts,
+        [
+            "<color rgba=\"226,168,79,255\">Base</color>",
+            "(",
+            "First part and the rest.",
+            "<ucs codepoints=\"\\u1f600\\\"/> C:\\Path",
+        ]
+    );
+    // Lines are still counted across joined strings.
+    let err = Object::parse(&table.replace(" Line 10", " Line anim( 10")).unwrap_err();
+    assert!(
+        matches!(err, AffError::TextError(TextError::Parse { line: 10, .. })),
+        "{err}"
+    );
+}
+
+/// Prefabs list their child entities in a block without key.
+#[test]
+fn keyless_blocks() {
+    let prefab = concat!(
+        "GenericEntity : \"{95319871CBA28B31}Prefabs/Sign.et\" {\n",
+        " ID \"56E4C49EFA0A1D4D\"\n",
+        " {\n",
+        "  GenericEntity Pole {\n",
+        "   coords 0 1 0\n",
+        "  }\n",
+        " }\n",
+        " coords 1 2 3\n",
+        "}\n",
+    );
+    let object = Object::parse(prefab).unwrap();
+    let keys: Vec<_> = object.entries.iter().map(|e| e.key.as_str()).collect();
+    assert_eq!(keys, ["ID", "", "coords"]);
+    let children = object.object("").unwrap();
+    assert_eq!(children.class, None);
+    let child = children.object("GenericEntity").unwrap();
+    assert_eq!(child.class.as_deref(), Some("Pole"));
+    assert_eq!(child.float("coords"), Some(0.0));
+}
+
 #[test]
 fn reports_the_line_of_errors() {
     let err = Object::parse("MatPBRBasic {\n Color 1 1\n BCRMap anim( 1 \n}\n").unwrap_err();

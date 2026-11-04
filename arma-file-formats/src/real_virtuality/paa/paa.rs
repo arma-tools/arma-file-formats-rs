@@ -69,6 +69,30 @@ impl Paa {
     where
         R: Read + Seek,
     {
+        Self::read_with(reader, indicies_to_load, false)
+    }
+
+    /// Reads like [`Paa::from_reader`], but keeps the data of DXT1 and DXT5 mipmaps as BC1 and
+    /// BC3 blocks instead of decoding it to RGBA, e.g. to upload them to a GPU as they are.
+    /// Mipmaps of other formats are decoded as usual.
+    pub fn from_reader_blocks<R>(
+        reader: &mut R,
+        indicies_to_load: Option<&[u32]>,
+    ) -> Result<Self, PaaError>
+    where
+        R: Read + Seek,
+    {
+        Self::read_with(reader, indicies_to_load, true)
+    }
+
+    fn read_with<R>(
+        reader: &mut R,
+        indicies_to_load: Option<&[u32]>,
+        keep_blocks: bool,
+    ) -> Result<Self, PaaError>
+    where
+        R: Read + Seek,
+    {
         let mut paa = Self::new();
 
         reader.rewind()?;
@@ -104,7 +128,7 @@ impl Paa {
                 || indicies_to_load.unwrap().is_empty()
                 || indicies_to_load.unwrap().contains(&index_counter)
             {
-                mipmap.read(reader, paa.magic_number)?;
+                mipmap.read_with(reader, paa.magic_number, keep_blocks)?;
             }
 
             paa.mipmaps.push(mipmap);

@@ -19,7 +19,7 @@ fn main() {
         println!(".env not found...");
     }
 
-    for i in 1..4 {
+    for i in 1..5 {
         let file = format!("arma-file-formats/tests/test-data/rv-test-data-part-{i}.7z");
 
         println!("Extracting test data: {file}");

@@ -48,6 +48,20 @@ impl Mipmap {
     where
         T: Read + Seek,
     {
+        self.read_with(reader, paa_type, false)
+    }
+
+    /// Like [`Mipmap::read`], but DXT1 and DXT5 data stays BC1 and BC3 blocks, see
+    /// [`super::Paa::from_reader_blocks`].
+    pub(crate) fn read_with<T>(
+        &mut self,
+        reader: &mut T,
+        paa_type: PaaType,
+        keep_blocks: bool,
+    ) -> Result<(), PaaError>
+    where
+        T: Read + Seek,
+    {
         if self.data_pos.is_none() {
             self.read_header(reader)?;
         }
@@ -55,7 +69,13 @@ impl Mipmap {
         if let Some(data_pos) = self.data_pos {
             reader.seek(SeekFrom::Start(data_pos))?;
             self.data = reader.read_bytes(self.data_size as usize)?;
-            self.decompress_data(paa_type)?;
+            if keep_blocks && matches!(paa_type, PaaType::DXT1 | PaaType::DXT5) {
+                if self.is_lzo_compressed {
+                    self.data = decompress_all(&self.data, None)?;
+                }
+            } else {
+                self.decompress_data(paa_type)?;
+            }
             Ok(())
         } else {
             Err(PaaError::InvalidState)

@@ -5,6 +5,8 @@ use crate::real_virtuality::{
     },
     types::{D3DColorValue, STPair, TransformMatrix, XYZTriplet},
 };
+use std::{collections::HashMap, ops::Range};
+
 use binrw::{BinRead, BinResult, NullString};
 
 use super::ODOLArgs;
@@ -133,6 +135,38 @@ pub struct Lod {
 
     #[br(if(args.version >= 68))]
     unk_end_2: Option<u8>,
+}
+
+impl Lod {
+    /// The faces of each of [`Lod::sections`], as ranges of [`Lod::faces`]. `None` for a section
+    /// whose offsets don't fall between faces.
+    ///
+    /// Sections follow each other without gaps. Checked against the test models (versions 40 to
+    /// 75) and all models of Arma 3.
+    #[must_use]
+    pub fn section_faces(&self) -> Vec<Option<Range<usize>>> {
+        let index_size = match self.sections.first() {
+            Some(section) if section.short_indices => 2,
+            _ => 4,
+        };
+        // Face index by offset, including the end of the last face.
+        let mut offsets = HashMap::with_capacity(self.faces.len() + 1);
+        let mut offset = 0;
+        for (index, face) in self.faces.iter().enumerate() {
+            offsets.insert(offset, index);
+            offset += index_size * (1 + face.vertex_indices.len());
+        }
+        offsets.insert(offset, self.faces.len());
+
+        self.sections
+            .iter()
+            .map(|section| {
+                let start = *offsets.get(&(section.face_lower_index as usize))?;
+                let end = *offsets.get(&(section.face_upper_index as usize))?;
+                (start <= end).then_some(start..end)
+            })
+            .collect()
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Clone, BinRead)]
@@ -287,6 +321,9 @@ pub struct LodSection {
     #[br(calc = args.version < 69)]
     pub short_indices: bool,
 
+    /// Start and end of the section's faces in [`Lod::faces`] as byte offsets, with the vertex
+    /// count and each vertex index of a face taking the size of an index: 4 bytes from version
+    /// 69 (a triangle takes 16 bytes), 2 before. See [`Lod::section_faces`] for face indices.
     pub face_lower_index: u32,
     pub face_upper_index: u32,
 
@@ -309,10 +346,12 @@ pub struct LodSection {
 
     #[br(if(args.version >= 67))]
     #[br(map = |x: i32| x >= 1)]
-    pub unk_matrix_exists: bool,
+    pub has_unk_floats: bool,
 
-    #[br(if(args.version >= 67 && unk_matrix_exists))]
-    pub unk_matrix: TransformMatrix,
+    /// 11 floats, not a 4x3 matrix. Only seen on sections of collimator sights (ACO, ARCO, ...)
+    /// in Arma 3, the flag before them was always 0 or 1.
+    #[br(if(args.version >= 67 && has_unk_floats))]
+    pub unk_floats: Option<[f32; 11]>,
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
@@ -388,6 +427,47 @@ pub struct UVSet {
     #[br(args(!default_fill, value_size as usize, vertices_count as usize, args))]
     #[br(parse_with = read_compressed_size_cond)]
     pub uv_data: Option<Vec<u8>>,
+}
+
+impl UVSet {
+    /// The coordinates, one `[u, v]` per vertex.
+    ///
+    /// Discretized sets (version 45 and up) store each coordinate as an `i16` spread over the
+    /// set's `min..=max` range, older ones store `f32`s.
+    #[must_use]
+    pub fn uvs(&self) -> Vec<[f32; 2]> {
+        let count = self.vertices_count as usize;
+        let data = match (&self.uv_data, &self.default_value) {
+            (Some(data), _) => data.as_slice(),
+            (None, Some(value)) => value.as_slice(),
+            (None, None) => return vec![[0.0; 2]; count],
+        };
+        let size = self.value_size as usize;
+        let decode = |value: &[u8]| -> [f32; 2] {
+            if self.is_discretized {
+                // In f64: ranges can be thousands wide, f32 put values off by 1e-4.
+                let range = |raw: [u8; 2], min: Option<f32>, max: Option<f32>| {
+                    let (min, max) = (f64::from(min.unwrap_or(0.0)), f64::from(max.unwrap_or(0.0)));
+                    let step = (f64::from(i16::from_le_bytes(raw)) + 32767.0) / 65534.0;
+                    step.mul_add(max - min, min) as f32
+                };
+                [
+                    range([value[0], value[1]], self.min_u, self.max_u),
+                    range([value[2], value[3]], self.min_v, self.max_v),
+                ]
+            } else {
+                let float = |raw: &[u8]| f32::from_le_bytes([raw[0], raw[1], raw[2], raw[3]]);
+                [float(&value[0..4]), float(&value[4..8])]
+            }
+        };
+
+        if self.uv_data.is_none() {
+            return data
+                .get(..size)
+                .map_or_else(|| vec![[0.0; 2]; count], |v| vec![decode(v); count]);
+        }
+        data.chunks_exact(size).take(count).map(decode).collect()
+    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]

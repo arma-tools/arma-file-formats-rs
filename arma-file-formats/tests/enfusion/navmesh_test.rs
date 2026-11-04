@@ -11,9 +11,9 @@ use std::io::Cursor;
 use arma_file_formats::{
     enfusion::navmesh::{
         DETOUR_TILE_VERSION, DetourPolyDetail, NAV_TILE_VERSION, NAV_TILE_VERSION_10,
-        NMN_IFF_VERSION, NMN_IFF_VERSION_2, NavBvNode, NavCoverEdge, NavCustomLink, NavMeshParams,
-        NavOffMeshConnection, NavPoly, NavPolyEdge, NavTile, NavTileMeta, Nmn, NmnTile, Ntile,
-        NtileV2,
+        NMN_IFF_VERSION, NMN_IFF_VERSION_2, NavBvNode, NavCoverPoint, NavCustomLink,
+        NavCustomLinkKind, NavMeshParams, NavOffMeshConnection, NavPoly, NavPolyEdge, NavTile,
+        NavTileMeta, Nmn, NmnTile, Ntile, NtileV2,
     },
     errors::{AffError, NavmeshError},
 };
@@ -342,13 +342,15 @@ fn ntile_layout_test() {
             data: vec![1, 2, 3, 4, 5, 6, 7, 8],
         }]
     );
+    assert_eq!(meta.custom_links[0].kind(), Some(NavCustomLinkKind::Door));
+    assert_eq!(meta.custom_links[0].id(), Some(0x0807_0605_0403_0201));
     assert_eq!(
-        meta.cover_edges,
-        [NavCoverEdge {
-            start: [50.0, 11.0, 80.0],
-            end: [51.0, 11.0, 80.0],
+        meta.cover_points,
+        [NavCoverPoint {
+            position: [50.0, 11.0, 80.0],
+            top: [51.0, 11.0, 80.0],
             poly: 1,
-            unknown: [-1; 5],
+            reserved: [-1; 5],
         }]
     );
 
@@ -409,7 +411,7 @@ fn ntile_build_test() {
             x: 0,
             y: 0,
             custom_links: vec![],
-            cover_edges: vec![],
+            cover_points: vec![],
         }),
         entry_padding: 0,
     };
@@ -658,7 +660,12 @@ fn navmesh_game_sf_tutorial_test() {
         }
         if let Some(meta) = &tile.meta {
             assert_eq!((meta.version, meta.x, meta.y), (2, tile.x, tile.y));
-            assert!(meta.cover_edges.iter().all(|e| (e.poly as usize) < polys));
+            for point in &meta.cover_points {
+                assert!((point.poly as usize) < polys);
+                // The obstacle top is above the point the character stands on.
+                assert!(point.top[1] > point.position[1]);
+                assert_eq!(point.reserved, [-1; 5]);
+            }
         }
     }
     assert_eq!(nmn.tile(-1, 0).map(|t| t.index), Some(0));
@@ -675,9 +682,11 @@ fn navmesh_game_sf_tutorial_test() {
     assert_eq!(tile.bmax, [23.98, 1001.8, 24.0]);
     let meta = tile.meta.as_ref().unwrap();
     assert!(meta.custom_links.is_empty());
-    assert_eq!(meta.cover_edges.len(), 3);
-    assert_eq!(meta.cover_edges[0].poly, 10);
-    assert_eq!(meta.cover_edges[0].unknown, [-1; 5]);
+    assert_eq!(meta.cover_points.len(), 3);
+    let point = meta.cover_points[0];
+    assert_eq!(point.poly, 10);
+    assert_eq!(point.position, [16.01493, 2.5, 22.575]);
+    assert_eq!(point.top, [15.955001, 3.4, 24.075]);
 }
 
 #[test]
@@ -699,8 +708,16 @@ fn navmesh_game_off_mesh_test() {
     assert!((0..3).all(|i| (start[i] - con.start[i]).abs() < 0.02));
     let meta = tile.meta.as_ref().unwrap();
     assert_eq!(meta.custom_links.len(), 1);
-    assert_eq!(meta.custom_links[0].link_type, 0x1223_EC00);
-    assert_eq!(meta.custom_links[0].data.len(), 8);
+    assert_eq!(meta.custom_links[0].link_type, NavCustomLink::LADDER);
+    assert_eq!(meta.custom_links[0].kind(), Some(NavCustomLinkKind::Ladder));
+    assert_eq!(meta.custom_links[0].id(), Some(0xAB22_61C0_D7AD_9ECB));
+    let ntile = game_ntile("GM_Cain_vehicles/navData_988");
+    let kinds: Vec<_> = ntile
+        .iter()
+        .filter_map(|t| t.meta.as_ref())
+        .flat_map(|m| m.custom_links.iter().map(NavCustomLink::kind))
+        .collect();
+    assert_eq!(kinds, [Some(NavCustomLinkKind::Door); 4]);
 
     let ntile = game_ntile("GM_Cain_vehicles/navData_988");
     let unused: Vec<_> = ntile.iter().flat_map(|t| &t.unused_edges).collect();

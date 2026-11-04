@@ -39,7 +39,8 @@
 //! - The meters per vertex quantization step ([`NavTile::vertex_scale`]) and `DNAV` again.
 //!
 //! The meta data ([`NavTileMeta`]) is Enfusion's own: version, `x`, `y`, the custom links
-//! (doors, ladders, ...) and the cover edges, each a count and a size.
+//! (doors, jumps and ladders, [`NavCustomLink`]) and the AI cover points ([`NavCoverPoint`]),
+//! each a count and a size.
 //!
 //! Older versions the engine no longer loads are still in the game's files and supported too:
 //! tiles of version [`NAV_TILE_VERSION_10`] (without the final `DNAV`), and navmeshes of IFF

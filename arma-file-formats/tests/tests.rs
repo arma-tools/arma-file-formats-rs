@@ -14,6 +14,7 @@ mod enfusion {
     mod emat_test;
     mod ent_test;
     mod fnt_test;
+    mod navmesh_test;
     mod pak_test;
     mod rdb_test;
     mod smap_test;

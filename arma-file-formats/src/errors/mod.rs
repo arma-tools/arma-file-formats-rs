@@ -341,6 +341,60 @@ pub enum AnmError {
     TooLarge,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum NavmeshError {
+    #[error("Unknown navmesh magic {0:#010x}")]
+    UnknownMagic(u32),
+
+    #[error("Unsupported IFF version {0}")]
+    UnsupportedVersion(u32),
+
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Truncated or malformed navmesh")]
+    Truncated,
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Expected chunk `{expected}`, found `{found}`")]
+    UnexpectedChunk {
+        expected: &'static str,
+        found: String,
+    },
+
+    #[error("Chunk `{0}` is truncated, too long or malformed")]
+    InvalidChunk(&'static str),
+
+    #[error("Data after the last chunk or tile")]
+    TrailingData,
+
+    #[error("Path of {0} bytes is too long")]
+    PathTooLong(usize),
+
+    #[error("Path is not UTF-8")]
+    InvalidPath,
+
+    #[error("Unsupported tile version {0}")]
+    UnsupportedTileVersion(i32),
+
+    #[error("The file has stock Detour tiles of an IFF version 2 navmesh, read it as `NtileV2`")]
+    DetourTiles,
+
+    #[error("Unsupported tile meta data version {0}")]
+    UnsupportedMetaVersion(u32),
+
+    #[error("Malformed tile: {0}")]
+    InvalidTile(&'static str),
+
+    #[error("`{0}` can't hold the given data")]
+    Unwritable(&'static str),
+
+    #[error("Navmesh file exceeds the size limits")]
+    TooLarge,
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -387,6 +441,9 @@ pub enum AffError {
 
     #[error("FNT Error: {0}")]
     FntError(#[from] FntError),
+
+    #[error("Navmesh Error: {0}")]
+    NavmeshError(#[from] NavmeshError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

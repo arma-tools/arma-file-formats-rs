@@ -117,7 +117,6 @@ pub fn read_lods(
 
     #[allow(clippy::needless_range_loop)]
     for i in 0..count {
-        println!("Lod Index: {i}");
         reader.seek(SeekFrom::Start(start_address_of_lods[i].into()))?;
         lods.push(Lod::read_options(reader, endian, (args,))?);
     }

@@ -221,3 +221,42 @@ fn rgba5551_djalka_decoding() {
 
     assert_eq!(paa.pixel_type, PixelType::Rgba);
 }
+
+#[test]
+fn blocks() {
+    for (name, format, block_size) in [
+        ("logo_dxt1_2048.paa", squish::Format::Bc1, 8),
+        ("logo_dxt5_128.paa", squish::Format::Bc3, 16),
+        ("medic_cross_ca_dxt5.paa", squish::Format::Bc3, 16),
+    ] {
+        let data = fs::read(format!("{}{}", INPUT_PATH_PREFIX, name)).unwrap();
+        let blocks = Paa::from_reader_blocks(&mut Cursor::new(&data), None).unwrap();
+        let decoded = Paa::from_reader(&mut Cursor::new(&data), None).unwrap();
+        assert_eq!(blocks.mipmaps.len(), decoded.mipmaps.len());
+        for (raw, rgba) in blocks.mipmaps.iter().zip(&decoded.mipmaps) {
+            let (width, height) = (raw.width as usize, raw.height as usize);
+            let block_count = width.div_ceil(4) * height.div_ceil(4);
+            assert_eq!(
+                raw.data.len(),
+                block_count * block_size,
+                "{name} {width}x{height}"
+            );
+            let mut pixels = vec![0; width * height * 4];
+            format.decompress(&raw.data, width, height, &mut pixels);
+            assert_eq!(pixels, rgba.data, "{name} {width}x{height}");
+        }
+    }
+}
+
+#[test]
+fn blocks_other_formats() {
+    // Formats other than DXT1 and DXT5 are decoded like `from_reader` does.
+    let data = fs::read(format!(
+        "{}argb4444_StaszowWinter_ca.paa",
+        INPUT_PATH_PREFIX
+    ))
+    .unwrap();
+    let blocks = Paa::from_reader_blocks(&mut Cursor::new(&data), Some(&[0])).unwrap();
+    let decoded = Paa::from_reader(&mut Cursor::new(&data), Some(&[0])).unwrap();
+    assert_eq!(blocks.mipmaps[0].data, decoded.mipmaps[0].data);
+}

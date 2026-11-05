@@ -127,7 +127,12 @@ pub struct ModelInfo {
     pub property_frequent: bool,
 
     #[br(if(args.version >= 31))]
-    pub unknown_int: u32,
+    unknown_string_count: u32,
+
+    /// Names after a count, usually none. Only seen in FFAA's `invisibletargetvehicle.p3d`
+    /// (`component01`), every Arma 3 model has a count of 0.
+    #[br(count = unknown_string_count)]
+    pub unknown_strings: Vec<NullString>,
 
     #[br(if(args.version >= 57))]
     #[br(count = lod_count)]

@@ -173,3 +173,30 @@ fn section_unk_floats() {
         assert!(lod.section_faces().iter().all(Option::is_some));
     }
 }
+
+/// The u32 after `property_frequent` counts names that follow it, a model with one used to throw
+/// off everything after it.
+#[test]
+fn model_info_unknown_strings() {
+    let odol = ODOL::from_path(format!(
+        "{}ffaa_invisibletargetvehicle.p3d",
+        INPUT_PATH_PREFIX
+    ))
+    .unwrap();
+    assert_eq!(odol.version, 73);
+    let strings: Vec<String> = odol
+        .model_info
+        .unknown_strings
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    assert_eq!(strings, ["component01"]);
+    assert_eq!(odol.lods.len(), 4);
+    assert_eq!(odol.has_anims, Some(false));
+
+    for (name, odol) in test_models() {
+        if name != "ffaa_invisibletargetvehicle.p3d" {
+            assert!(odol.model_info.unknown_strings.is_empty(), "{name}");
+        }
+    }
+}

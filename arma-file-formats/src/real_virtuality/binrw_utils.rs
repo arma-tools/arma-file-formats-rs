@@ -1,9 +1,11 @@
 use std::io::{Cursor, Read, Seek};
 
 use binrw::{BinRead, BinResult, Endian};
-use lzokay_native::decompress;
 
-use crate::{core::decompress_lzss, real_virtuality::p3d::ODOLArgs};
+use crate::{
+    core::{decompress_lzo, decompress_lzss},
+    real_virtuality::p3d::ODOLArgs,
+};
 
 use super::types::{STPair, XYZTriplet};
 
@@ -66,8 +68,8 @@ where
 {
     let data = decompress_data(reader, endian, elemen_size, count, odol_args)?;
 
-    let mut reader2 = Cursor::new(data);
-    let mut arr = Vec::with_capacity(count);
+    let mut reader2 = Cursor::new(&data);
+    let mut arr = Vec::with_capacity(count.min(data.len() / elemen_size.max(1)));
 
     for _ in 0..count {
         let el = T::read_options(&mut reader2, endian, ())?;
@@ -95,12 +97,16 @@ fn decompress_data(
     count: usize,
     odol_args: ODOLArgs,
 ) -> BinResult<Vec<u8>> {
-    let expected_size = count * elemen_size;
+    let pre_pos = reader.stream_position()?;
+    let expected_size = count
+        .checked_mul(elemen_size)
+        .ok_or_else(|| binrw::Error::AssertFail {
+            pos: pre_pos,
+            message: format!("Array of {count} elements of {elemen_size} bytes is too large"),
+        })?;
     if expected_size == 0 {
         return Ok(Vec::new());
     }
-    let pre_pos = reader.stream_position()?;
-    //dbg!(pre_pos);
     let data = if odol_args.use_lzo {
         let flag = if odol_args.use_compression_flag {
             u8::read_options(reader, endian, ())? != 0
@@ -109,29 +115,15 @@ fn decompress_data(
         };
 
         if flag {
-            decompress(reader, Some(count * elemen_size)).map_err(|e| binrw::Error::Custom {
+            decompress_lzo(reader, expected_size).map_err(|e| binrw::Error::Custom {
                 err: Box::new(e),
                 pos: pre_pos,
             })?
         } else {
-            let mut data = vec![0; expected_size];
-            reader
-                .read_exact(&mut data)
-                .map_err(|e| binrw::Error::Custom {
-                    err: Box::new(e),
-                    pos: pre_pos,
-                })?;
-            data
+            read_bytes(reader, expected_size, pre_pos)?
         }
     } else if expected_size < 1024 {
-        let mut data = vec![0; expected_size];
-        reader
-            .read_exact(&mut data)
-            .map_err(|e| binrw::Error::Custom {
-                err: Box::new(e),
-                pos: pre_pos,
-            })?;
-        data
+        read_bytes(reader, expected_size, pre_pos)?
     } else {
         decompress_lzss(reader, expected_size, false)
             .map_err(|e| binrw::Error::Custom {
@@ -142,6 +134,27 @@ fn decompress_data(
     };
     Ok(data)
 }
+
+/// Reads `size` bytes, growing the buffer with the data actually there: `size` can be garbage.
+fn read_bytes(reader: &mut impl Read, size: usize, pos: u64) -> BinResult<Vec<u8>> {
+    let mut data = Vec::with_capacity(size.min(1 << 20));
+    let read = reader
+        .take(size as u64)
+        .read_to_end(&mut data)
+        .map_err(|e| binrw::Error::Custom {
+            err: Box::new(e),
+            pos,
+        })?;
+    if read != size {
+        return Err(binrw::Error::Io(std::io::ErrorKind::UnexpectedEof.into()));
+    }
+    Ok(data)
+}
+
+/// Most elements a default-filled condensed array may have. These arrays hold one value per
+/// vertex, the largest LOD of Arma 3 and ~28,000 mod models has 669,004 (BWMod's NH90).
+/// Garbage counts would otherwise allocate up to 48 GB from a single value.
+const MAX_DEFAULT_FILL: usize = 1 << 24;
 
 #[binrw::parser(reader, endian)]
 pub fn read_condensed_array_cond<T, 'a>(
@@ -173,7 +186,14 @@ where
     let default_fill = u8::read_options(reader, endian, ())? != 0;
 
     let res: Vec<T> = if default_fill {
+        let pos = reader.stream_position()?;
         let val = T::read_options(reader, endian, ())?;
+        if count > MAX_DEFAULT_FILL {
+            return Err(binrw::Error::AssertFail {
+                pos,
+                message: format!("Default-filled array of {count} elements"),
+            });
+        }
         vec![val; count]
     } else {
         decompress_array(reader, endian, elemen_size, count, args)?
@@ -184,7 +204,7 @@ where
 
 #[binrw::parser(reader, endian)]
 pub fn read_vertex_index_array(args: ODOLArgs, count: usize) -> BinResult<Vec<u32>> {
-    let mut res = Vec::with_capacity(count);
+    let mut res = Vec::with_capacity(count.min(1 << 16));
 
     for _ in 0..count {
         res.push(read_vertex_index(reader, endian, args)?);

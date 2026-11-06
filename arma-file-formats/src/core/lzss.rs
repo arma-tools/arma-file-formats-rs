@@ -18,7 +18,8 @@ where
     R: Read + Seek,
 {
     let mut array = vec![0_u8; 4113];
-    let mut dst = vec![0_u8; expected_size];
+    // Grows with the input, `expected_size` can be garbage.
+    let mut dst = Vec::with_capacity(expected_size.min(1 << 20));
 
     if expected_size == 0 {
         return Ok((0, Vec::new()));
@@ -27,7 +28,6 @@ where
     let pos = reader.stream_position()?;
 
     let mut remaining_size = expected_size;
-    let mut num2: i32 = 0;
     let mut calculated_hash: i32 = 0;
 
     array.iter_mut().take(4078).for_each(|el| *el = 0x20);
@@ -59,8 +59,7 @@ where
                 } else {
                     calculated_hash = calculated_hash.overflowing_add(i32::from(num6)).0;
                 }
-                dst[num2 as usize] = num6;
-                num2 += 1;
+                dst.push(num6);
                 remaining_size -= 1;
                 array[num4 as usize] = num6;
                 num4 += 1;
@@ -74,8 +73,7 @@ where
             } else {
                 calculated_hash = calculated_hash.overflowing_add(i32::from(val)).0;
             }
-            dst[num2 as usize] = val;
-            num2 += 1;
+            dst.push(val);
             remaining_size -= 1;
             array[num4 as usize] = val;
             num4 += 1;

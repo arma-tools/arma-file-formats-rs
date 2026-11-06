@@ -2,7 +2,7 @@ use std::io::{self, Cursor, Read, Seek, SeekFrom, Write};
 
 use crate::core::{decompress_lzss, read::ReadExtTrait, write::WriteExtTrait};
 use anyhow::Result;
-use lzokay_native::{Dict, compress_with_dict, decompress_all};
+use lzokay_native::{Dict, compress_with_dict, decompress_all_bounded};
 use squish::{Format, Params};
 
 use crate::{errors::PaaError, real_virtuality::types::PaaType};
@@ -71,7 +71,7 @@ impl Mipmap {
             self.data = reader.read_bytes(self.data_size as usize)?;
             if keep_blocks && matches!(paa_type, PaaType::DXT1 | PaaType::DXT5) {
                 if self.is_lzo_compressed {
-                    self.data = decompress_all(&self.data, None)?;
+                    self.data = self.decompress_lzo(paa_type)?;
                 }
             } else {
                 self.decompress_data(paa_type)?;
@@ -82,6 +82,19 @@ impl Mipmap {
         }
     }
 
+    /// The LZO compressed BC1 or BC3 blocks, at most the size of the mipmap's blocks of 4x4 pixels:
+    /// 8 bytes each for DXT1, 16 for DXT5.
+    fn decompress_lzo(&self, paa_type: PaaType) -> Result<Vec<u8>, PaaError> {
+        let block_size = if matches!(paa_type, PaaType::DXT1) {
+            8
+        } else {
+            16
+        };
+        let size =
+            usize::from(self.width).div_ceil(4) * usize::from(self.height).div_ceil(4) * block_size;
+        Ok(decompress_all_bounded(&self.data, size)?)
+    }
+
     fn decompress_data(&mut self, paa_type: PaaType) -> Result<(), PaaError> {
         let expected_size = self.width as usize * self.height as usize;
 
@@ -89,7 +102,7 @@ impl Mipmap {
             PaaType::UNKNOWN => todo!(),
             PaaType::DXT1 => {
                 if self.is_lzo_compressed {
-                    self.data = decompress_all(&self.data, None)?;
+                    self.data = self.decompress_lzo(paa_type)?;
                 }
 
                 let format = Format::Bc1;
@@ -109,7 +122,7 @@ impl Mipmap {
             PaaType::DXT4 => todo!(),
             PaaType::DXT5 => {
                 if self.is_lzo_compressed {
-                    self.data = decompress_all(&self.data, None)?;
+                    self.data = self.decompress_lzo(paa_type)?;
                 }
 
                 let format = Format::Bc3;

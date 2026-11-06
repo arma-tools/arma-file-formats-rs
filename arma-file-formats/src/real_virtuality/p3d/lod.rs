@@ -472,6 +472,8 @@ impl UVSet {
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, BinRead)]
 pub struct AnimationRTWeight {
+    /// Up to 4 bone weights fit in the 8 bytes after it.
+    #[br(assert((0..=4).contains(&small_count), "{} vertex bone weights", small_count))]
     pub small_count: i32,
 
     #[br(count = 8)]

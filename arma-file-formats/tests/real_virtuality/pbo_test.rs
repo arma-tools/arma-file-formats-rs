@@ -116,3 +116,41 @@ fn lingor_compression_test() {
     let pbo = Pbo::from_path(format!("{}lingor_objects.pbo", INPUT_PATH_PREFIX)).unwrap();
     assert_eq!(pbo.entries.get("skala3_3.p3d").unwrap().data.len(), 118923);
 }
+
+/// Compressed entries of obfuscated PBOs: data after the LZSS stream and garbage original sizes
+/// give the stored bytes back instead of panicking or allocating the garbage size.
+#[test]
+fn garbage_compressed_entries() {
+    // LZSS: a flag byte for 8 literals, 3 of them, the checksum (sum of the bytes).
+    let lzss = [0xff, b'a', b'b', b'c', 0x26, 0x01, 0, 0];
+    let mut trailing = lzss.to_vec();
+    trailing.extend_from_slice(b"junk");
+
+    let mut pbo = vec![0];
+    pbo.extend_from_slice(b"sreV");
+    pbo.extend_from_slice(&[0; 16]);
+    pbo.extend_from_slice(b"prefix\0garbage\0\0");
+    for (name, original_size, data) in [
+        ("ok.txt", 3, &lzss[..]),
+        ("trailing.txt", 3, &trailing[..]),
+        ("huge.txt", u32::MAX, &lzss[..]),
+    ] {
+        pbo.extend_from_slice(name.as_bytes());
+        pbo.push(0);
+        pbo.extend_from_slice(b"srpC");
+        for value in [original_size, 0, 0, data.len() as u32] {
+            pbo.extend_from_slice(&value.to_le_bytes());
+        }
+    }
+    pbo.extend_from_slice(&[0; 21]);
+    pbo.extend_from_slice(&lzss);
+    pbo.extend_from_slice(&trailing);
+    pbo.extend_from_slice(&lzss);
+    pbo.extend_from_slice(&[0; 21]);
+
+    let mut reader = PboReader::from_stream(std::io::Cursor::new(pbo)).unwrap();
+    let data = |reader: &mut PboReader<_>, name| reader.get_entry(name).unwrap().unwrap().data;
+    assert_eq!(data(&mut reader, "ok.txt"), b"abc");
+    assert_eq!(data(&mut reader, "trailing.txt"), trailing);
+    assert_eq!(data(&mut reader, "huge.txt"), lzss);
+}

@@ -200,3 +200,46 @@ fn model_info_unknown_strings() {
         }
     }
 }
+
+/// Garbage after a valid header, as in the decoy files of obfuscated PBOs: errors, no panics and
+/// no allocations sized by garbage counts (those abort the process).
+#[test]
+fn garbage_input() {
+    let mut seed = 0x9e37_79b9_7f4a_7c15_u64;
+    let mut next = || {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        seed
+    };
+    for name in [
+        "acco_aco_f.p3d",
+        "Crash_barrier_F.p3d",
+        "fbbear.p3d",
+        "invisibleRoadway_square_F.p3d",
+    ] {
+        let data = fs::read(format!("{INPUT_PATH_PREFIX}{name}")).unwrap();
+        for i in 0..200 {
+            let mut garbage = data.clone();
+            // Half of them in the header, where most counts are.
+            let range = if i % 2 == 0 {
+                data.len().min(1024)
+            } else {
+                data.len()
+            };
+            let pos = 8 + (next() as usize) % (range - 12);
+            let bytes = if i % 3 == 0 {
+                [0xff; 4]
+            } else {
+                (next() as u32).to_le_bytes()
+            };
+            garbage[pos..pos + 4].copy_from_slice(&bytes);
+            let _ = ODOL::from_stream(&mut std::io::Cursor::new(garbage));
+        }
+        // Cut off at random points.
+        for _ in 0..50 {
+            let len = 8 + (next() as usize) % (data.len() - 8);
+            let _ = ODOL::from_stream(&mut std::io::Cursor::new(&data[..len]));
+        }
+    }
+}

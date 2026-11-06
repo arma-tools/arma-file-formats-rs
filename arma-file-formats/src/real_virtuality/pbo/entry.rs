@@ -54,10 +54,9 @@ impl Entry {
                 self.original_size as usize,
                 false,
             ) {
-                Ok((read_size, data)) => {
-                    assert_eq!(read_size, self.data_size.into());
-                    data
-                }
+                Ok((read_size, data)) if read_size == u64::from(self.data_size) => data,
+                // Decompressed without using all the data: obfuscation garbage as well
+                Ok(_) => data,
                 // High chance this is just obfuscation garbage
                 #[cfg(debug_assertions)]
                 Err(err) => {

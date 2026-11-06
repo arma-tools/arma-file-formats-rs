@@ -109,6 +109,26 @@ pub fn read_lods(
     start_address_of_lods: &[u32],
     args: ODOLArgs,
 ) -> BinResult<Vec<Lod>> {
+    // A file that ends before its LODs fails as that, also when they're read later. Only the
+    // start: end addresses of small models that load fine can be past the end of the file.
+    let pos = reader.stream_position()?;
+    let len = reader.seek(SeekFrom::End(0))?;
+    reader.seek(SeekFrom::Start(pos))?;
+    if let Some((index, &start)) = start_address_of_lods
+        .iter()
+        .enumerate()
+        .find(|(_, start)| u64::from(**start) >= len)
+    {
+        return Err(binrw::Error::Custom {
+            pos,
+            err: Box::new(OdolError::LodPastEnd {
+                index,
+                start: start.into(),
+                len,
+            }),
+        });
+    }
+
     if args.skip_lods {
         return Ok(Vec::new());
     }

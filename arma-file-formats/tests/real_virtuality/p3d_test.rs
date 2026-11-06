@@ -243,3 +243,19 @@ fn garbage_input() {
         }
     }
 }
+
+/// A model that ends before its LODs, like the decoys of obfuscated PBOs, fails as that.
+#[test]
+fn truncated() {
+    let data = fs::read(format!("{INPUT_PATH_PREFIX}Crash_barrier_F.p3d")).unwrap();
+    let odol = ODOL::from_stream(&mut std::io::Cursor::new(&data)).unwrap();
+    let start = *odol.start_address_of_lods.iter().max().unwrap() as usize;
+    let err = ODOL::from_stream(&mut std::io::Cursor::new(&data[..start])).unwrap_err();
+    let message = err.to_string();
+    assert!(
+        message.contains(&format!(
+            "starts at byte {start}, past the end of the file ({start} bytes)"
+        )),
+        "{message}"
+    );
+}

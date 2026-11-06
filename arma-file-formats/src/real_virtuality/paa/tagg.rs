@@ -21,8 +21,12 @@ impl Tagg {
         T: Read + Seek,
     {
         self.signature = stream.read_string(Self::TAGG_SIG_SIZE)?;
-        let size = stream.read_u32()? as usize;
-        self.data = stream.read_bytes(size)?;
+        let size = stream.read_u32()?;
+        // Grows with the data, a garbage size doesn't allocate up to 4 GB.
+        self.data.clear();
+        if stream.take(size.into()).read_to_end(&mut self.data)? != size as usize {
+            return Err(io::ErrorKind::UnexpectedEof.into());
+        }
 
         Ok(())
     }

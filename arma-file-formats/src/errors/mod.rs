@@ -24,6 +24,17 @@ pub enum PaaError {
 
     #[error("unknown decoding error")]
     Unknown,
+
+    #[error("PNG image, not a PAA")]
+    Png,
+
+    #[error("Unknown PAA type `{0:#06x}`")]
+    UnknownType(u16),
+
+    /// The file is cut off, like the decoys of obfuscated PBOs: copies of real textures that
+    /// end before their mipmaps.
+    #[error("Mipmap {index} ends at byte {end}, past the end of the file ({len} bytes)")]
+    MipmapPastEnd { index: usize, end: u64, len: u64 },
 }
 
 #[derive(Debug, Error)]
@@ -51,6 +62,11 @@ pub enum OdolError {
 
     #[error("Lod not found")]
     LodNotFound,
+
+    /// The file is cut off, like the decoys of obfuscated PBOs: copies of real models that end
+    /// before their LODs.
+    #[error("LOD {index} starts at byte {start}, past the end of the file ({len} bytes)")]
+    LodPastEnd { index: usize, start: u64, len: u64 },
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]

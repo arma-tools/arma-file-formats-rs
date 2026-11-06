@@ -260,3 +260,23 @@ fn blocks_other_formats() {
     let decoded = Paa::from_reader(&mut Cursor::new(&data), Some(&[0])).unwrap();
     assert_eq!(blocks.mipmaps[0].data, decoded.mipmaps[0].data);
 }
+
+#[test]
+fn uncompressed_4096_dxt5() {
+    // An uncompressed 4096x4096 DXT5 mipmap has 2^24 bytes, its 24-bit size is 0.
+    let big: Vec<u8> = (0..1u32 << 24).map(|i| (i % 251) as u8 + 1).collect();
+    let small: Vec<u8> = (1..=16).collect();
+    let mut data = vec![0x05, 0xff, 0, 0];
+    for (size, blocks) in [(4096u16, &big), (4, &small)] {
+        data.extend(size.to_le_bytes());
+        data.extend(size.to_le_bytes());
+        data.extend(&(blocks.len() as u32).to_le_bytes()[..3]);
+        data.extend(blocks.iter());
+    }
+    data.extend([0; 6]);
+
+    let paa = Paa::from_reader_blocks(&mut Cursor::new(&data), None).unwrap();
+    assert_eq!(paa.mipmaps.len(), 2);
+    assert_eq!(paa.mipmaps[0].data, big);
+    assert_eq!(paa.mipmaps[1].data, small);
+}

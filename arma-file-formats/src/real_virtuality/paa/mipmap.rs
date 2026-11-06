@@ -23,7 +23,11 @@ impl Mipmap {
         Self::default()
     }
 
-    pub(crate) fn read_header<R>(&mut self, reader: &mut R) -> Result<(), PaaError>
+    pub(crate) fn read_header<R>(
+        &mut self,
+        reader: &mut R,
+        paa_type: PaaType,
+    ) -> Result<(), PaaError>
     where
         R: Read + Seek,
     {
@@ -36,6 +40,15 @@ impl Mipmap {
 
         self.height = reader.read_u16()?;
         self.data_size = i64::from(reader.read_u24()?);
+
+        // The size has 24 bits, an uncompressed 4096x4096 DXT5 mipmap (2^24 bytes) stores 0.
+        // Uncompressed blocks always fill the mipmap, so their size follows from it.
+        if !self.is_lzo_compressed
+            && let Some(size) = self.block_data_size(paa_type)
+            && size & 0xFF_FFFF == self.data_size as usize
+        {
+            self.data_size = size as i64;
+        }
 
         self.data_pos = Some(reader.stream_position()?);
 
@@ -63,7 +76,7 @@ impl Mipmap {
         T: Read + Seek,
     {
         if self.data_pos.is_none() {
-            self.read_header(reader)?;
+            self.read_header(reader, paa_type)?;
         }
 
         if let Some(data_pos) = self.data_pos {
@@ -82,16 +95,22 @@ impl Mipmap {
         }
     }
 
-    /// The LZO compressed BC1 or BC3 blocks, at most the size of the mipmap's blocks of 4x4 pixels:
-    /// 8 bytes each for DXT1, 16 for DXT5.
-    fn decompress_lzo(&self, paa_type: PaaType) -> Result<Vec<u8>, PaaError> {
-        let block_size = if matches!(paa_type, PaaType::DXT1) {
-            8
-        } else {
-            16
+    /// Size of the mipmap's BC1 or BC3 blocks of 4x4 pixels: 8 bytes each for DXT1, 16 for DXT5.
+    /// `None` for other types.
+    fn block_data_size(&self, paa_type: PaaType) -> Option<usize> {
+        let block_size = match paa_type {
+            PaaType::DXT1 => 8,
+            PaaType::DXT5 => 16,
+            _ => return None,
         };
-        let size =
-            usize::from(self.width).div_ceil(4) * usize::from(self.height).div_ceil(4) * block_size;
+        Some(
+            usize::from(self.width).div_ceil(4) * usize::from(self.height).div_ceil(4) * block_size,
+        )
+    }
+
+    /// The LZO compressed BC1 or BC3 blocks, at most the size of the mipmap's blocks.
+    fn decompress_lzo(&self, paa_type: PaaType) -> Result<Vec<u8>, PaaError> {
+        let size = self.block_data_size(paa_type).unwrap_or(0);
         Ok(decompress_all_bounded(&self.data, size)?)
     }
 

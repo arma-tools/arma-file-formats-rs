@@ -121,7 +121,7 @@ impl Paa {
         while reader.peek_u16()? != 0 {
             let mut mipmap = Mipmap::new();
 
-            mipmap.read_header(reader)?;
+            mipmap.read_header(reader, paa.magic_number)?;
 
             // TODO: refactor
             if indicies_to_load.is_none()

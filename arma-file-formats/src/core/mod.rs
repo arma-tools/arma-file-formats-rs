@@ -1,12 +1,10 @@
 pub(crate) mod binrw_utils;
 pub(crate) mod iff;
-mod lzo;
 mod lzss;
 pub mod read;
 pub mod types;
 pub mod write;
 
-pub(crate) use self::lzo::decompress_lzo;
 pub(crate) use self::lzss::decompress_lzss;
 pub use self::lzss::{
     check_for_magic_and_decompress_lzss, check_for_magic_and_decompress_lzss_file,

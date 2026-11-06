@@ -27,21 +27,6 @@ pub enum PaaError {
 }
 
 #[derive(Debug, Error)]
-pub enum LzoError {
-    #[error("IO failed")]
-    Io(#[from] io::Error),
-
-    #[error("LZO match reaches before the start of the output")]
-    LookBehindOverrun,
-
-    #[error("LZO output larger than expected")]
-    OutputOverrun,
-
-    #[error("LZO end marker with a match length other than 3")]
-    InvalidEndMarker,
-}
-
-#[derive(Debug, Error)]
 pub enum LzssError {
     #[error("IO failed")]
     IOError(#[from] io::Error),

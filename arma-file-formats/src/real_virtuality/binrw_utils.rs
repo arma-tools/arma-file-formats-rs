@@ -2,10 +2,7 @@ use std::io::{Cursor, Read, Seek};
 
 use binrw::{BinRead, BinResult, Endian};
 
-use crate::{
-    core::{decompress_lzo, decompress_lzss},
-    real_virtuality::p3d::ODOLArgs,
-};
+use crate::{core::decompress_lzss, real_virtuality::p3d::ODOLArgs};
 
 use super::types::{STPair, XYZTriplet};
 
@@ -115,9 +112,11 @@ fn decompress_data(
         };
 
         if flag {
-            decompress_lzo(reader, expected_size).map_err(|e| binrw::Error::Custom {
-                err: Box::new(e),
-                pos: pre_pos,
+            lzokay_native::decompress_bounded(reader, expected_size).map_err(|e| {
+                binrw::Error::Custom {
+                    err: Box::new(e),
+                    pos: pre_pos,
+                }
             })?
         } else {
             read_bytes(reader, expected_size, pre_pos)?
@@ -152,7 +151,7 @@ fn read_bytes(reader: &mut impl Read, size: usize, pos: u64) -> BinResult<Vec<u8
 }
 
 /// Most elements a default-filled condensed array may have. These arrays hold one value per
-/// vertex, the largest LOD of Arma 3 and ~28,000 mod models has 669,004 (BWMod's NH90).
+/// vertex, the largest LOD of Arma 3 and ~28,000 mod models has 669,004 (an NH90 helicopter).
 /// Garbage counts would otherwise allocate up to 48 GB from a single value.
 const MAX_DEFAULT_FILL: usize = 1 << 24;
 

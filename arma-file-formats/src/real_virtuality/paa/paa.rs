@@ -17,6 +17,9 @@ use crate::{
 
 use super::{Mipmap, Tagg};
 
+/// Some mods ship PNG images with a .paa name.
+const PNG_SIGNATURE: [u8; 8] = *b"\x89PNG\r\n\x1a\n";
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Paa {
     pub pixel_type: PixelType,
@@ -95,8 +98,23 @@ impl Paa {
     {
         let mut paa = Self::new();
 
+        let len = reader.seek(SeekFrom::End(0))?;
         reader.rewind()?;
-        paa.magic_number = PaaType::try_from(reader.read_u16()?).unwrap_or(PaaType::UNKNOWN);
+        let magic = reader.read_u16()?;
+        paa.magic_number = match PaaType::try_from(magic) {
+            Ok(PaaType::UNKNOWN) | Err(_) => {
+                let mut signature = [0; 8];
+                reader.rewind()?;
+                return Err(
+                    if reader.read_exact(&mut signature).is_ok() && signature == PNG_SIGNATURE {
+                        PaaError::Png
+                    } else {
+                        PaaError::UnknownType(magic)
+                    },
+                );
+            }
+            Ok(paa_type) => paa_type,
+        };
 
         paa.pixel_type = match paa.magic_number {
             PaaType::DXT1 | PaaType::DXT5 | PaaType::RGBA4444 | PaaType::ARGB1555 => {
@@ -117,22 +135,26 @@ impl Paa {
             paa.palette = reader.read_bytes(palette_length)?;
         }
 
-        let mut index_counter: u32 = 0;
+        // All headers first: a file that ends before its mipmaps fails as that, not on the
+        // garbage in the mipmaps it does have.
         while reader.peek_u16()? != 0 {
             let mut mipmap = Mipmap::new();
-
             mipmap.read_header(reader, paa.magic_number)?;
+            let end = reader.stream_position()?;
+            if end > len {
+                return Err(PaaError::MipmapPastEnd {
+                    index: paa.mipmaps.len(),
+                    end,
+                    len,
+                });
+            }
+            paa.mipmaps.push(mipmap);
+        }
 
-            // TODO: refactor
-            if indicies_to_load.is_none()
-                || indicies_to_load.unwrap().is_empty()
-                || indicies_to_load.unwrap().contains(&index_counter)
-            {
+        for (index, mipmap) in (0u32..).zip(&mut paa.mipmaps) {
+            if indicies_to_load.is_none_or(|i| i.is_empty() || i.contains(&index)) {
                 mipmap.read_with(reader, paa.magic_number, keep_blocks)?;
             }
-
-            paa.mipmaps.push(mipmap);
-            index_counter += 1;
         }
 
         Ok(paa)

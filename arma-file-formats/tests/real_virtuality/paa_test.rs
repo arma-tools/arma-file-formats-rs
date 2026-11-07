@@ -6,6 +6,7 @@ use std::{
 use arma_file_formats::{
     self,
     core::types::PixelType,
+    errors::PaaError,
     real_virtuality::paa::{Paa, Tagg},
 };
 use image::ImageBuffer;
@@ -279,4 +280,31 @@ fn uncompressed_4096_dxt5() {
     assert_eq!(paa.mipmaps.len(), 2);
     assert_eq!(paa.mipmaps[0].data, big);
     assert_eq!(paa.mipmaps[1].data, small);
+}
+
+#[test]
+fn not_paa() {
+    let png = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR";
+    assert!(matches!(
+        Paa::from_reader(&mut Cursor::new(png), None),
+        Err(PaaError::Png)
+    ));
+    assert!(matches!(
+        Paa::from_reader(&mut Cursor::new([0x34, 0x12, 0, 0]), None),
+        Err(PaaError::UnknownType(0x1234))
+    ));
+}
+
+/// A texture that ends before its mipmaps, like the decoys of obfuscated PBOs, fails as that.
+#[test]
+fn truncated() {
+    let data = fs::read(format!("{}logo_dxt5_128.paa", INPUT_PATH_PREFIX)).unwrap();
+    let paa = Paa::from_reader(&mut Cursor::new(&data), None).unwrap();
+    // Cut into the last mipmap, without its end marker.
+    let len = data.len() - 7;
+    let err = Paa::from_reader_blocks(&mut Cursor::new(&data[..len]), None).unwrap_err();
+    assert!(
+        matches!(err, PaaError::MipmapPastEnd { index, len: l, .. } if index == paa.mipmaps.len() - 1 && l == len as u64),
+        "{err:?}"
+    );
 }

@@ -15,27 +15,46 @@ const OUTPUT_PATH_PREFIX: &str = "./tests/real_virtuality/test-data/rap_out/";
 fn rvmat_define() {
     let file = File::open(format!("{}define.rvmat", INPUT_PATH_PREFIX)).unwrap();
     let mut reader = BufReader::new(file);
-    if let Err(err) = Cfg::read(&mut reader) {
-        println!("{}", err);
-    }
+    let cfg = Cfg::read(&mut reader).unwrap();
+    assert_eq!(
+        cfg.get_entry(&["ambient"])
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .len(),
+        4
+    );
 }
 
 #[test]
 fn weird_roadlib() {
     let file = File::open(format!("{}roadslib_weird.cfg", INPUT_PATH_PREFIX)).unwrap();
     let mut reader = BufReader::new(file);
-    if let Err(err) = Cfg::read(&mut reader) {
-        println!("{}", err);
-    }
+    let cfg = Cfg::read(&mut reader).unwrap();
+    let width = cfg.get_entry(&["RoadTypesLibrary", "Road0001", "width"]);
+    assert_eq!(width.unwrap().as_long(), Some(10));
 }
 
 #[test]
 fn lzss_roadlib() {
     let file = File::open(format!("{}roadslib_lzss.cfg", INPUT_PATH_PREFIX)).unwrap();
     let mut reader = BufReader::new(file);
-    if let Err(err) = Cfg::read(&mut reader) {
-        println!("{}", err);
-    }
+    let cfg = Cfg::read(&mut reader).unwrap();
+    assert!(!cfg.entries.is_empty());
+}
+
+#[test]
+fn read_config_needs_a_header() {
+    let mut reader = std::io::Cursor::new(b"class A {};".to_vec());
+    assert!(matches!(
+        Cfg::read_config(&mut reader),
+        Err(arma_file_formats::errors::AffError::InvalidFileError)
+    ));
+    // Without an enum table
+    let mut data = b"\0raP".to_vec();
+    data.extend([0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    let cfg = Cfg::read_data(&data).unwrap();
+    assert!(cfg.entries.is_empty() && cfg.enums.is_empty());
 }
 
 #[test]
@@ -320,4 +339,107 @@ fn text_values_like_binarized() {
         panic!();
     };
     assert!(items.append);
+}
+
+#[test]
+fn entry_accessors() {
+    let cfg = Cfg::parse_config(
+        "class Ext; delete Del; f = 1.5; l = 2; s = \"x\"; a[] = {1};\n\
+         class C: Ext { class Ext2; delete Del2; inner = 3; i64 = 4294967296; class D {}; };",
+    )
+    .unwrap();
+    let entry = |path: &[&str]| cfg.get_entry(path).unwrap();
+
+    // Top level properties are values, the others entries
+    assert_eq!(entry(&["f"]).as_float(), Some(1.5));
+    assert_eq!(entry(&["l"]).as_long(), Some(2));
+    assert_eq!(entry(&["s"]).as_string().as_deref(), Some("x"));
+    assert_eq!(entry(&["a"]).as_array(), Some(vec![CfgValue::Long(1)]));
+    assert!(entry(&["f"]).as_entry().is_none());
+    assert_eq!(entry(&["C", "inner"]).as_long(), Some(3));
+    assert!(entry(&["C", "inner"]).as_value().is_none());
+    assert_eq!(
+        entry(&["C", "inner"]).as_property().map(|p| p.name),
+        Some("inner".to_owned())
+    );
+    assert_eq!(
+        entry(&["C", "i64"])
+            .as_value()
+            .or_else(|| entry(&["C", "i64"]).as_property().map(|p| p.value)),
+        Some(CfgValue::Int64(4_294_967_296))
+    );
+    assert_eq!(
+        entry(&["C", "i64"]).as_property().unwrap().value.as_int64(),
+        Some(4_294_967_296)
+    );
+    assert_eq!(entry(&["l"]).as_value().unwrap().as_int64(), Some(2));
+    assert_eq!(entry(&["Ext"]).as_extern().as_deref(), Some("Ext"));
+    assert_eq!(entry(&["Del"]).as_delete().as_deref(), Some("Del"));
+    assert_eq!(entry(&["C", "Ext2"]).as_extern().as_deref(), Some("Ext2"));
+    assert_eq!(entry(&["C", "Del2"]).as_delete().as_deref(), Some("Del2"));
+    assert_eq!(
+        entry(&["C", "D"]).as_class().map(|c| c.name),
+        Some("D".to_owned())
+    );
+    assert_eq!(
+        entry(&["C"]).as_class().unwrap().parent.as_deref(),
+        Some("Ext")
+    );
+
+    // Wrong kinds
+    let ext = entry(&["Ext"]);
+    assert!(ext.as_class().is_none() && ext.as_property().is_none() && ext.as_delete().is_none());
+    assert!(ext.as_float().is_none() && ext.as_long().is_none());
+    assert!(ext.as_string().is_none() && ext.as_array().is_none());
+    assert!(entry(&["Del"]).as_extern().is_none());
+    let value = entry(&["s"]).as_value().unwrap();
+    assert!(value.as_float().is_none() && value.as_long().is_none() && value.as_int64().is_none());
+    assert!(value.as_array().is_none());
+    assert!(CfgValue::Long(1).as_string().is_none());
+
+    // Missing
+    for path in [
+        &["nope"][..],
+        &["C", "nope"],
+        &["Ext", "x"],
+        &["f", "x"],
+        &[],
+    ] {
+        assert!(cfg.get_entry(path).is_none(), "{path:?}");
+    }
+}
+
+#[test]
+fn binary_class_loops_fail() {
+    // class A { class A ... } pointing at its own body
+    let mut data = b"\0raP".to_vec();
+    data.extend([0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0]);
+    data.extend([0, 1, 0, b'A', 0]);
+    let body = u32::try_from(data.len() + 4).unwrap();
+    data.extend(body.to_le_bytes());
+    data.extend([0, 1, 0, b'A', 0]);
+    data.extend(body.to_le_bytes());
+    let err = Cfg::read_data(&data).unwrap_err();
+    assert!(err.to_string().contains("nested deeper"), "{err}");
+}
+
+#[test]
+fn test_data_round_trips() {
+    let mission_bin = fs::read(format!("{INPUT_PATH_PREFIX}mission.sqm.bin")).unwrap();
+    let texts = [
+        "mission.sqm.cpp",
+        "test.rvmat",
+        "mission_grad_base.sqm",
+        "roadslib_weird.cfg",
+    ];
+    let mut configs = vec![Cfg::read_data(&mission_bin).unwrap()];
+    for name in texts {
+        let text = fs::read_to_string(format!("{INPUT_PATH_PREFIX}{name}")).unwrap();
+        configs.push(Cfg::parse_config(&text).unwrap());
+    }
+    for cfg in configs {
+        let again = Cfg::parse_config(&cfg.to_string()).unwrap();
+        assert_eq!(again.entries, cfg.entries);
+        assert_eq!(again.enums, cfg.enums);
+    }
 }

@@ -83,8 +83,8 @@ impl Parser<'_> {
         }
     }
 
-    /// Skips whitespace, comments and `\` at the end of lines. Returns whether it skipped a
-    /// line break.
+    /// Skips whitespace and `\` at the end of lines (comments are gone after preprocessing).
+    /// Returns whether it skipped a line break.
     fn ws(&mut self) -> bool {
         let mut newline = false;
         loop {
@@ -93,15 +93,7 @@ impl Parser<'_> {
                 self.i += 1;
             }
             let rest = &self.bytes[self.i..];
-            if rest.starts_with(b"//") {
-                while self.peek().is_some_and(|b| b != b'\n') {
-                    self.i += 1;
-                }
-            } else if rest.starts_with(b"/*") {
-                self.i = self.src[self.i + 2..]
-                    .find("*/")
-                    .map_or(self.bytes.len(), |p| self.i + 2 + p + 2);
-            } else if rest.starts_with(b"\\\n") || rest.starts_with(b"\\\r\n") {
+            if rest.starts_with(b"\\\n") || rest.starts_with(b"\\\r\n") {
                 self.i += 1;
             } else {
                 return newline;
@@ -614,6 +606,13 @@ mod tests {
         assert!(msg("x 1;").contains("expected `=`"));
         assert!(msg("class A: {};").contains("expected a parent class name"));
         assert!(msg("enum { A = x };").contains("expected a number"));
+        assert!(msg("enum { A B };").contains("expected `,` or `}`, found `B`"));
+        assert!(msg("class A: B x").contains("expected `{`, found `x`"));
+        assert!(msg("delete A B;").contains("expected `;`, found `B`"));
+        assert!(msg("= 1;").contains("expected a class or property, found `=`"));
+        assert!(msg("x[] = {1, ,};").contains("expected a value, found `,`"));
+        assert_eq!(value("+5"), CfgValue::Long(5));
+        assert_eq!(value("f(a; b)"), s("f(a; b)"));
     }
 
     #[test]
@@ -622,7 +621,7 @@ mod tests {
         // a stray `}` at the end
         let (cfg, _) = parse(
             "class A { x = 1 } class B {} x = \"a\"\ny = 2\nz = ;\n\
-             class C {\n w = 1 \\\n};\n};",
+             class C {\n w = 1;\n};\\\n};",
         )
         .unwrap();
         assert_eq!(cfg.len(), 6);

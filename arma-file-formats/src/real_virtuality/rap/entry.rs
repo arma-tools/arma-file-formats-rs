@@ -5,7 +5,7 @@ use crate::{
     errors::{AffError, RapError},
 };
 
-use super::{EntryReturn, class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty};
+use super::{EntryReturn, class::CfgClass, property::CfgProperty};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CfgEntry {
@@ -106,23 +106,6 @@ impl CfgEntry {
             Some(val.clone())
         } else {
             None
-        }
-    }
-}
-
-impl PrettyPrint for CfgEntry {
-    fn pretty_print(&self, indentation_count: u32) {
-        match self {
-            Self::Property(pair) => pair.pretty_print(indentation_count),
-            Self::Class(class) => class.pretty_print(indentation_count),
-            Self::Extern(extern_name) => {
-                let indent = (0..indentation_count).map(|_| " ").collect::<String>();
-                println!("{indent}class {extern_name};");
-            }
-            Self::Delete(deleted_name) => {
-                let indent = (0..indentation_count).map(|_| " ").collect::<String>();
-                println!("{indent}delete {deleted_name};");
-            }
         }
     }
 }

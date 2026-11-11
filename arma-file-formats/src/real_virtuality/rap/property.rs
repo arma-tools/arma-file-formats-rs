@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use super::{pretty_print::PrettyPrint, value::CfgValue};
+use super::value::CfgValue;
 use crate::{
     core::read::ReadExtTrait,
     errors::{AffError, RapError},
@@ -52,17 +52,5 @@ impl CfgProperty {
             value: CfgValue::read_array(reader)?,
             append: true,
         })
-    }
-}
-
-impl PrettyPrint for CfgProperty {
-    fn pretty_print(&self, indentation_count: u32) {
-        let indent = (0..indentation_count).map(|_| " ").collect::<String>();
-        if let CfgValue::Array(_) = self.value {
-            let op = if self.append { "+=" } else { "=" };
-            println!("{indent}{}[] {op} {};", self.name, self.value.to_strr());
-        } else {
-            println!("{indent}{} = {};", self.name, self.value.to_strr());
-        }
     }
 }

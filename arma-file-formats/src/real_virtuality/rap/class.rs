@@ -5,7 +5,7 @@ use crate::{
     errors::{AffError, RapError},
 };
 
-use super::{EntryReturn, entry::CfgEntry, pretty_print::PrettyPrint};
+use super::{EntryReturn, entry::CfgEntry};
 
 /// Deeper nesting is an error, offsets of damaged files can loop.
 pub const MAX_CLASS_DEPTH: usize = 256;
@@ -97,22 +97,5 @@ impl CfgClass {
         }
 
         None
-    }
-}
-
-impl PrettyPrint for CfgClass {
-    fn pretty_print(&self, indentation_count: u32) {
-        let indent = (0..indentation_count).map(|_| " ").collect::<String>();
-        let parent = self
-            .parent
-            .as_ref()
-            .map(|f| format!(": {f}"))
-            .unwrap_or_default();
-        println!("{indent}class {} {parent}", self.name);
-        println!("{indent}{{");
-        for entry in &self.entries {
-            entry.pretty_print(indentation_count + 4);
-        }
-        println!("{indent}}};");
     }
 }

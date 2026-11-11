@@ -1,9 +1,6 @@
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use super::{
-    EntryReturn, entry::CfgEntry, parser::parse, preprocessor::Preprocessor,
-    pretty_print::PrettyPrint,
-};
+use super::{EntryReturn, entry::CfgEntry, parser::parse, preprocessor::Preprocessor};
 use crate::{
     core::{decompress_lzss_unk_size, read::ReadExtTrait},
     errors::AffError,
@@ -182,13 +179,5 @@ impl Cfg {
             }
         }
         None
-    }
-}
-
-impl PrettyPrint for Cfg {
-    fn pretty_print(&self, indentation_count: u32) {
-        for e in &self.entries {
-            e.pretty_print(indentation_count);
-        }
     }
 }

@@ -103,19 +103,9 @@ impl CfgValue {
 }
 
 impl CfgValue {
+    /// The value as config text, the same as `to_string()`.
+    #[must_use]
     pub fn to_strr(&self) -> String {
-        match self {
-            Self::Float(num) => num.to_string(),
-            Self::Long(num) => num.to_string(),
-            Self::Int64(num) => num.to_string(),
-            Self::String(str) => format!("\"{}\"", str.trim_matches('"')),
-            Self::Array(arr) => format!(
-                "{{ {} }}",
-                arr.iter()
-                    .map(Self::to_strr)
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            ),
-        }
+        self.to_string()
     }
 }

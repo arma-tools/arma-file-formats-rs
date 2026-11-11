@@ -6,6 +6,7 @@ mod preprocessor;
 mod pretty_print;
 mod property;
 mod value;
+mod writer;
 
 use thiserror::Error;
 

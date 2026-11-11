@@ -170,16 +170,10 @@ where
     R: Read + Seek,
 {
     reader.rewind()?;
-    dbg!(&reader.stream_position()?);
     reader.read_u8()?;
-    dbg!(&reader.stream_position()?);
     let mut magic_buffer = vec![0_u8; magic.len()];
     reader.read_exact(&mut magic_buffer)?;
-    dbg!(&reader.stream_position()?);
     reader.rewind()?;
-    dbg!(&reader.stream_position()?);
-    dbg!(&magic);
-    dbg!(&magic_buffer);
     if magic == magic_buffer {
         let data = decompress_lzss_unk_size(reader)?;
         Ok(Some(data))

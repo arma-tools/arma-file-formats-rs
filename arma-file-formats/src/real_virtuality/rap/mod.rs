@@ -11,7 +11,7 @@ use thiserror::Error;
 
 pub use self::{
     class::CfgClass,
-    config::Cfg,
+    config::{Cfg, CfgEnumValue},
     entry::CfgEntry,
     preprocessor::{
         FsIncludeResolver, IncludeFile, IncludeResolver, MAX_INCLUDE_DEPTH, Preprocessor,

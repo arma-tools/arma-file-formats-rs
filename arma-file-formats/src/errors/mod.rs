@@ -411,6 +411,21 @@ pub enum NavmeshError {
     TooLarge,
 }
 
+#[derive(Debug, Error)]
+pub enum RapError {
+    #[error("unknown config entry type {0}")]
+    UnknownEntryType(u8),
+
+    #[error("unknown config value type {0}")]
+    UnknownValueType(u8),
+
+    #[error("unknown flags {0} of an array extension (`+=`)")]
+    UnknownArrayFlags(u32),
+
+    #[error("classes nested deeper than {0} levels")]
+    TooDeep(usize),
+}
+
 /// A config preprocessor error with the file and line it happened at.
 #[derive(Debug, Error)]
 #[error("{}:{line}: {kind}", file.as_deref().unwrap_or("<input>"))]
@@ -555,6 +570,9 @@ pub enum AffError {
 
     #[error("Preprocessing failed: {0}")]
     PreprocessError(#[from] PreprocessError),
+
+    #[error("Config error: {0}")]
+    RapError(#[from] RapError),
 
     #[error(
         "Unknown image data format: `{0}`!\nPlease report this error at https://github.com/arma-tools/arma-file-formats-rs/issues"

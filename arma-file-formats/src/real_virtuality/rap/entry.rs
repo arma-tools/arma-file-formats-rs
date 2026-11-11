@@ -1,6 +1,9 @@
 use std::io::{Read, Seek};
 
-use crate::{core::read::ReadExtTrait, errors::AffError};
+use crate::{
+    core::read::ReadExtTrait,
+    errors::{AffError, RapError},
+};
 
 use super::{EntryReturn, class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty};
 
@@ -17,14 +20,22 @@ impl CfgEntry {
     where
         I: Read + Seek,
     {
+        Self::parse_entry_at(reader, 0)
+    }
+
+    pub(crate) fn parse_entry_at<I>(reader: &mut I, depth: usize) -> Result<Self, AffError>
+    where
+        I: Read + Seek,
+    {
         let typ_id = reader.read_u8()?;
         Ok(match typ_id {
-            0 => Self::Class(CfgClass::read_class(reader)?),
+            0 => Self::Class(CfgClass::read_class_at(reader, depth)?),
             1 => Self::Property(CfgProperty::read_property(reader, false)?),
             2 => Self::Property(CfgProperty::read_property(reader, true)?),
             3 => Self::Extern(reader.read_string_zt()?),
             4 => Self::Delete(reader.read_string_zt()?),
-            _ => panic!("Unknown typ id: {typ_id}"),
+            5 => Self::Property(CfgProperty::read_array_extension(reader)?),
+            _ => return Err(RapError::UnknownEntryType(typ_id).into()),
         })
     }
     #[must_use]

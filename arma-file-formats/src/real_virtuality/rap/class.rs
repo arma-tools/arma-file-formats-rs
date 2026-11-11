@@ -1,8 +1,14 @@
 use std::io::{Read, Seek};
 
-use crate::{core::read::ReadExtTrait, errors::AffError};
+use crate::{
+    core::read::ReadExtTrait,
+    errors::{AffError, RapError},
+};
 
 use super::{EntryReturn, entry::CfgEntry, pretty_print::PrettyPrint};
+
+/// Deeper nesting is an error, offsets of damaged files can loop.
+pub const MAX_CLASS_DEPTH: usize = 256;
 
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct CfgClass {
@@ -16,6 +22,16 @@ impl CfgClass {
     where
         I: Read + Seek,
     {
+        Self::read_class_at(reader, 0)
+    }
+
+    pub(crate) fn read_class_at<I>(reader: &mut I, depth: usize) -> Result<Self, AffError>
+    where
+        I: Read + Seek,
+    {
+        if depth >= MAX_CLASS_DEPTH {
+            return Err(RapError::TooDeep(MAX_CLASS_DEPTH).into());
+        }
         let name = reader.read_string_zt()?;
         let offset = u64::from(reader.read_u32()?);
 
@@ -26,9 +42,9 @@ impl CfgClass {
 
         let entry_count = reader.read_compressed_int()?;
 
-        let mut entries = Vec::with_capacity(entry_count as usize);
+        let mut entries = Vec::with_capacity((entry_count as usize).min(1024));
         for _ in 0..entry_count {
-            entries.push(CfgEntry::parse_entry(reader)?);
+            entries.push(CfgEntry::parse_entry_at(reader, depth + 1)?);
         }
         reader.seek(std::io::SeekFrom::Start(pos))?;
 

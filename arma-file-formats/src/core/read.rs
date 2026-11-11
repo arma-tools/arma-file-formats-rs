@@ -39,17 +39,20 @@ impl<T> ReadExtTrait for T
 where
     T: Read + Seek,
 {
+    /// 7 bits per byte, low bits first, the high bit marks a following byte.
     fn read_compressed_int(&mut self) -> io::Result<u32> {
-        let val = ReadExtTrait::read_u8(self)?;
-        let mut val = val;
-        let mut ret = u32::from(val);
-        while (val & 0x80) != 0 {
-            val = ReadExtTrait::read_u8(self)?;
-            dbg!(val);
-            ret += u32::from((val.overflowing_sub(1).0).overflowing_mul(0x80).0);
+        let mut ret = 0_u32;
+        for shift in (0..35).step_by(7) {
+            let val = ReadExtTrait::read_u8(self)?;
+            ret |= u32::from(val & 0x7f).checked_shl(shift).unwrap_or(0);
+            if val & 0x80 == 0 {
+                return Ok(ret);
+            }
         }
-
-        Ok(ret)
+        Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "compressed integer longer than 5 bytes",
+        ))
     }
 
     fn read_bool(&mut self) -> io::Result<bool> {

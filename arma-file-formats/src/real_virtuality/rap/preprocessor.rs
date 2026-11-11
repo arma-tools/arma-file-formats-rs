@@ -88,12 +88,16 @@ impl FsIncludeResolver {
     }
 
     fn candidates(&self, path: &str, from: Option<&str>) -> Vec<PathBuf> {
+        let mut candidates = Vec::new();
+        // A path of this system, `/tmp/config.cpp` on Linux, before the game's `\a3\...`
+        if Path::new(path).is_absolute() {
+            candidates.push(PathBuf::from(path));
+        }
         let path = path.replace('\\', "/");
         if is_drive_path(&path) {
             return vec![PathBuf::from(path)];
         }
         let rel = path.trim_start_matches('/');
-        let mut candidates = Vec::new();
         if !path.starts_with('/') {
             match from {
                 Some(from) => {

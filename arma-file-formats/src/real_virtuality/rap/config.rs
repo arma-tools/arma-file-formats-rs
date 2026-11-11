@@ -1,6 +1,9 @@
 use std::io::{Cursor, Read, Seek};
 
-use super::{EntryReturn, entry::CfgEntry, parser::parse, pretty_print::PrettyPrint};
+use super::{
+    EntryReturn, entry::CfgEntry, parser::parse, preprocessor::Preprocessor,
+    pretty_print::PrettyPrint,
+};
 use crate::{
     core::{decompress_lzss_unk_size, read::ReadExtTrait},
     errors::AffError,
@@ -83,13 +86,9 @@ impl Cfg {
             reader.rewind()?;
             if let Ok(uncomp_data) = decompress_lzss_unk_size(reader)
                 && let Ok(cfg) = String::from_utf8(uncomp_data)
-                && let Ok(entries) = parse(&cfg)
+                && let Ok(config) = Self::parse_config(&cfg)
             {
-                return Ok(Self {
-                    enum_offset: 0,
-                    inherited_classname: String::new(),
-                    entries,
-                });
+                return Ok(config);
             }
             return Err(err.into());
         }
@@ -97,8 +96,31 @@ impl Cfg {
         Self::parse_config(&cfg_text)
     }
 
+    /// Parses a text config. Runs the preprocessor first, without an include resolver,
+    /// so `#include` fails, use [`Self::parse_config_with`] for configs with includes.
     pub fn parse_config(cfg: &str) -> Result<Self, AffError> {
-        let entries = parse(cfg)?;
+        Self::parse_config_with(cfg, None, &mut Preprocessor::new())
+    }
+
+    /// Parses a text config after running it through `preprocessor`. `file` is the path
+    /// of the config, used to resolve relative includes.
+    pub fn parse_config_with(
+        cfg: &str,
+        file: Option<&str>,
+        preprocessor: &mut Preprocessor<'_>,
+    ) -> Result<Self, AffError> {
+        let source = preprocessor.preprocess(cfg, file)?;
+        Self::parse_preprocessed(&source)
+    }
+
+    /// Loads `path` through the include resolver of `preprocessor`, preprocesses and parses it.
+    pub fn parse_path(path: &str, preprocessor: &mut Preprocessor<'_>) -> Result<Self, AffError> {
+        let source = preprocessor.preprocess_path(path)?;
+        Self::parse_preprocessed(&source)
+    }
+
+    fn parse_preprocessed(source: &str) -> Result<Self, AffError> {
+        let entries = parse(source)?;
         Ok(Self {
             enum_offset: 0,
             inherited_classname: String::new(),

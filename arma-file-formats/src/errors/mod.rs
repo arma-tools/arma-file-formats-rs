@@ -411,6 +411,77 @@ pub enum NavmeshError {
     TooLarge,
 }
 
+/// A config preprocessor error with the file and line it happened at.
+#[derive(Debug, Error)]
+#[error("{}:{line}: {kind}", file.as_deref().unwrap_or("<input>"))]
+pub struct PreprocessError {
+    /// Path of the file, `None` for a source passed in without a path
+    pub file: Option<String>,
+    /// 1-based, 0 for errors outside of a source (`Preprocessor::define`)
+    pub line: usize,
+    pub kind: PreprocessErrorKind,
+}
+
+#[derive(Debug, Error)]
+pub enum PreprocessErrorKind {
+    #[error("unknown directive `#{0}`")]
+    UnknownDirective(String),
+
+    #[error("`#{0}` needs a macro name")]
+    MissingMacroName(String),
+
+    #[error("invalid macro parameter list")]
+    InvalidParams,
+
+    #[error("`{name}` takes {}{expected} argument(s), {found} given", if *variadic { "at least " } else { "" })]
+    ArgCount {
+        name: String,
+        expected: usize,
+        variadic: bool,
+        found: usize,
+    },
+
+    #[error("missing `)` in the arguments of `{0}`")]
+    UnterminatedCall(String),
+
+    #[error("`#{0}` without a matching #if")]
+    Unmatched(String),
+
+    #[error("`#{0}` after #else")]
+    AfterElse(String),
+
+    #[error("#if without a matching #endif")]
+    UnterminatedIf,
+
+    #[error("invalid #if condition `{0}`")]
+    InvalidCondition(String),
+
+    #[error("invalid include path `{0}`, it must be in \"\" or <>")]
+    InvalidInclude(String),
+
+    #[error("include file `{0}` not found")]
+    IncludeNotFound(String),
+
+    #[error("can't include `{0}` without an include resolver")]
+    NoIncludeResolver(String),
+
+    #[error("reading include file `{path}` failed: {source}")]
+    IncludeIo {
+        path: String,
+        #[source]
+        source: io::Error,
+    },
+
+    #[error("includes nested deeper than {0} levels")]
+    IncludeDepth(usize),
+
+    #[error("invalid __VA_SELECT__ index `{0}`")]
+    InvalidVaSelect(String),
+
+    #[error("__VA_APPLY__ needs a macro name, got `{0}`")]
+    InvalidVaApply(String),
+}
+
 #[derive(Debug, Error)]
 pub enum AffError {
     #[error("IO failed {0}")]
@@ -481,6 +552,9 @@ pub enum AffError {
 
     #[error("Parsing failed: {0}")]
     ParseError(String),
+
+    #[error("Preprocessing failed: {0}")]
+    PreprocessError(#[from] PreprocessError),
 
     #[error(
         "Unknown image data format: `{0}`!\nPlease report this error at https://github.com/arma-tools/arma-file-formats-rs/issues"

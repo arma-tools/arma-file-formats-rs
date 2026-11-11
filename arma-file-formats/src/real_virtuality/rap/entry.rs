@@ -1,8 +1,11 @@
 use std::io::{Read, Seek};
 
-use crate::{core::read::ReadExtTrait, errors::AffError};
+use crate::{
+    core::read::ReadExtTrait,
+    errors::{AffError, RapError},
+};
 
-use super::{EntryReturn, class::CfgClass, pretty_print::PrettyPrint, property::CfgProperty};
+use super::{EntryReturn, class::CfgClass, property::CfgProperty};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CfgEntry {
@@ -17,14 +20,22 @@ impl CfgEntry {
     where
         I: Read + Seek,
     {
+        Self::parse_entry_at(reader, 0)
+    }
+
+    pub(crate) fn parse_entry_at<I>(reader: &mut I, depth: usize) -> Result<Self, AffError>
+    where
+        I: Read + Seek,
+    {
         let typ_id = reader.read_u8()?;
         Ok(match typ_id {
-            0 => Self::Class(CfgClass::read_class(reader)?),
+            0 => Self::Class(CfgClass::read_class_at(reader, depth)?),
             1 => Self::Property(CfgProperty::read_property(reader, false)?),
             2 => Self::Property(CfgProperty::read_property(reader, true)?),
             3 => Self::Extern(reader.read_string_zt()?),
             4 => Self::Delete(reader.read_string_zt()?),
-            _ => panic!("Unknown typ id: {typ_id}"),
+            5 => Self::Property(CfgProperty::read_array_extension(reader)?),
+            _ => return Err(RapError::UnknownEntryType(typ_id).into()),
         })
     }
     #[must_use]
@@ -95,23 +106,6 @@ impl CfgEntry {
             Some(val.clone())
         } else {
             None
-        }
-    }
-}
-
-impl PrettyPrint for CfgEntry {
-    fn pretty_print(&self, indentation_count: u32) {
-        match self {
-            Self::Property(pair) => pair.pretty_print(indentation_count),
-            Self::Class(class) => class.pretty_print(indentation_count),
-            Self::Extern(extern_name) => {
-                let indent = (0..indentation_count).map(|_| " ").collect::<String>();
-                println!("{indent}class {extern_name};");
-            }
-            Self::Delete(deleted_name) => {
-                let indent = (0..indentation_count).map(|_| " ").collect::<String>();
-                println!("{indent}delete {deleted_name};");
-            }
         }
     }
 }

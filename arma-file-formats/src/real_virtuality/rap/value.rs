@@ -1,11 +1,16 @@
 use std::io::{Read, Seek};
 
-use crate::{core::read::ReadExtTrait, errors::AffError};
+use crate::{
+    core::read::ReadExtTrait,
+    errors::{AffError, RapError},
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum CfgValue {
     Float(f32),
     Long(i32),
+    /// Integers that don't fit an `i32`
+    Int64(i64),
     String(String),
     Array(Vec<Self>),
 }
@@ -22,11 +27,17 @@ impl CfgValue {
         };
 
         Ok(match typ_id {
+            // 4 is an expression, `__EVAL` for example
             0 | 4 => Self::String(reader.read_string_zt()?),
             1 => Self::Float(reader.read_f32()?),
             2 => Self::Long(reader.read_i32()?),
             3 => Self::read_array(reader)?,
-            _ => panic!("Unknown typ id: {typ_id}"),
+            6 => {
+                let low = u64::from(reader.read_u32()?);
+                let high = u64::from(reader.read_u32()?);
+                Self::Int64((high << 32 | low) as i64)
+            }
+            _ => return Err(RapError::UnknownValueType(typ_id).into()),
         })
     }
 
@@ -35,12 +46,12 @@ impl CfgValue {
         I: Read + Seek,
     {
         let entry_count = reader.read_compressed_int()?;
-        let mut entries = Vec::with_capacity(entry_count as usize);
+        // The count of a damaged file can be anything, don't allocate it up front
+        let mut entries = Vec::with_capacity((entry_count as usize).min(1024));
         for _ in 0..entry_count {
             let entry = Self::read_value(reader, None)?;
             entries.push(entry);
         }
-
         Ok(Self::Array(entries))
     }
 
@@ -59,6 +70,16 @@ impl CfgValue {
             Some(*val)
         } else {
             None
+        }
+    }
+
+    /// `Long` and `Int64` values
+    #[must_use]
+    pub const fn as_int64(&self) -> Option<i64> {
+        match self {
+            Self::Long(val) => Some(*val as i64),
+            Self::Int64(val) => Some(*val),
+            _ => None,
         }
     }
 
@@ -82,18 +103,9 @@ impl CfgValue {
 }
 
 impl CfgValue {
+    /// The value as config text, the same as `to_string()`.
+    #[must_use]
     pub fn to_strr(&self) -> String {
-        match self {
-            Self::Float(num) => num.to_string(),
-            Self::Long(num) => num.to_string(),
-            Self::String(str) => format!("\"{}\"", str.trim_matches('"')),
-            Self::Array(arr) => format!(
-                "{{ {} }}",
-                arr.iter()
-                    .map(Self::to_strr)
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            ),
-        }
+        self.to_string()
     }
 }

@@ -262,12 +262,6 @@ impl Pbo {
 
         let (sign_hash1, sign_hash2, sign_hash3) = signature.get_hashes();
 
-        dbg!(&sign_hash1);
-        dbg!(&pbo_hash1);
-        dbg!(&sign_hash2);
-        dbg!(&pbo_hash2);
-        dbg!(&sign_hash3);
-        dbg!(&pbo_hash3);
 
         assert!(sign_hash1 == pbo_hash1, "hash1 not same");
 

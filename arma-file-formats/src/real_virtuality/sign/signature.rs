@@ -134,9 +134,6 @@ impl Signature {
     pub(crate) fn get_hashes(&self) -> (BigUint, BigUint, BigUint) {
         //} -> (Modulo, Modulo, Modulo) {
         let exponent = BigUint::from(self.exponent);
-        dbg!(self.sig1.clone());
-        dbg!(&exponent);
-        dbg!(&self.n);
         let hash1 = self.sig1.modpow(&exponent, &self.n);
         let hash2 = self.sig2.modpow(&exponent, &self.n);
         let hash3 = self.sig3.modpow(&exponent, &self.n);

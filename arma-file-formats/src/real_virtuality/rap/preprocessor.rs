@@ -1729,4 +1729,172 @@ mod tests {
         let src = "#define A 1\n/* x\ny */\na = A;\nb = __LINE__;";
         assert_eq!(pp(src), "\n\n\na = 1;\nb = 5;");
     }
+
+    #[test]
+    fn directive_errors() {
+        use PreprocessErrorKind as K;
+        assert!(matches!(pp_err("#ifdef\n#endif"), K::MissingMacroName(d) if d == "ifdef"));
+        assert!(matches!(pp_err("#undef"), K::MissingMacroName(d) if d == "undef"));
+        assert!(matches!(pp_err("#define"), K::MissingMacroName(d) if d == "define"));
+        assert!(matches!(pp_err("#define 1A x"), K::MissingMacroName(_)));
+        assert!(matches!(pp_err("#define M(1) x"), K::InvalidParams));
+        assert!(matches!(pp_err("#define M(a, ..., b) x"), K::InvalidParams));
+        assert!(matches!(pp_err("#define M(a x"), K::InvalidParams));
+        assert!(matches!(pp_err("#if 1\n#else\n#else\n#endif"), K::AfterElse(d) if d == "else"));
+        assert!(matches!(pp_err("#if 1\n#else\n#elif 1\n#endif"), K::AfterElse(d) if d == "elif"));
+        assert!(matches!(pp_err("#elif 1"), K::Unmatched(d) if d == "elif"));
+        assert!(matches!(pp_err("#else"), K::Unmatched(d) if d == "else"));
+        assert!(matches!(
+            pp_err("#define V(...) __VA_APPLY__(1)\nV(a)"),
+            K::InvalidVaApply(_)
+        ));
+        assert!(
+            matches!(pp_err("#define V(...) __VA_APPLY__(NOPE)\nV(a)"), K::InvalidVaApply(n) if n == "NOPE")
+        );
+        assert!(
+            matches!(pp_err("#define V(...) __VA_SELECT__(5)\nV(a)"), K::InvalidVaSelect(i) if i == "5")
+        );
+        assert!(matches!(
+            pp_err("#if defined(\n#endif"),
+            K::InvalidCondition(_)
+        ));
+        assert!(matches!(
+            pp_err("#if defined\n#endif"),
+            K::InvalidCondition(_)
+        ));
+        assert!(matches!(
+            pp_err("#if __has_include(x)\n#endif"),
+            K::InvalidInclude(_)
+        ));
+        assert!(matches!(pp_err("#if (1\n#endif"), K::InvalidCondition(_)));
+        assert!(matches!(
+            pp_err("#if \"a\"\n#endif"),
+            K::InvalidCondition(_)
+        ));
+
+        // Kinds format with their arguments
+        let err = Preprocessor::new().preprocess("#define M(a,b,...) a\nM(1)", None);
+        assert_eq!(
+            err.unwrap_err().to_string(),
+            "<input>:2: `M` takes at least 2 argument(s), 1 given"
+        );
+    }
+
+    #[test]
+    fn conditions() {
+        let yes = |cond: &str| pp(&format!("#if {cond}\ny\n#endif")).contains('y');
+        assert!(yes("1 || 0"));
+        assert!(!yes("0 || 0"));
+        assert!(yes("2 == 2 && 3 != 4"));
+        assert!(yes("1 <= 1 && 2 >= 2 && 1 < 2 && 2 > 1"));
+        assert!(yes("(5 - 3) * 2 / 4 % 2 == 1"));
+        assert!(yes("-1 < 0 && +1 > 0 && !0"));
+        assert!(yes("0x10 == 16"));
+        assert!(yes("0.5 * 2 == 1"));
+        assert!(yes("defined __ARMA3__"));
+        assert!(yes("defined(__LINE__)"));
+        assert!(!yes("UNDEFINED"));
+        // `__has_include` only finds absolute paths
+        let files = |path: &str, _: Option<&str>| {
+            Ok((path == "\\a.hpp" || path == "a.hpp").then(|| IncludeFile {
+                path: path.to_owned(),
+                content: String::new(),
+            }))
+        };
+        let mut p = Preprocessor::new().with_resolver(files);
+        let src = "#if __has_include(\"\\a.hpp\") && !__has_include(\"a.hpp\") && __has_include(<\\a.hpp>)\ny\n#endif";
+        assert_eq!(p.preprocess(src, None).unwrap(), "\ny\n");
+    }
+
+    #[test]
+    fn variadic_extras() {
+        assert_eq!(pp("#define Q(...) #__VA_ARGS__\nQ(a, b)"), "\n\"a, b\"");
+        // `__VA_*` without parentheses stays as it is
+        assert_eq!(
+            pp("#define V(...) __VA_OPT__ __VA_OTHER__\nV()"),
+            "\n__VA_OPT__ __VA_OTHER__"
+        );
+        // Nested parentheses in `__VA_OPT__`
+        assert_eq!(
+            pp("#define V(...) __VA_OPT__(f((1), 2))\nV(a)"),
+            "\nf((1), 2)"
+        );
+        assert_eq!(pp("#define V(...) __VA_OPT__(f(\nV(a)"), "\n__VA_OPT__(f(");
+    }
+
+    #[test]
+    fn api() {
+        let mut p = Preprocessor::default();
+        p.define("ADD(a,b)", "a+b").unwrap();
+        assert!(p.is_defined("ADD") && p.is_defined("__COUNTER__"));
+        assert!(format!("{p:?}").contains("has_resolver: false"));
+        assert_eq!(p.preprocess("ADD(1,2)", None).unwrap(), "1+2");
+        p.undefine("ADD");
+        assert!(!p.is_defined("ADD"));
+        let err = p.define("M(1)", "x").unwrap_err();
+        assert!(matches!(err.kind, PreprocessErrorKind::InvalidParams));
+        assert_eq!(err.line, 0);
+
+        assert!(matches!(
+            p.preprocess_path("x.hpp").unwrap_err().kind,
+            PreprocessErrorKind::NoIncludeResolver(_)
+        ));
+        p.set_resolver(|_: &str, _: Option<&str>| {
+            Err(io::Error::new(io::ErrorKind::PermissionDenied, "denied"))
+        });
+        let err = p.preprocess_path("x.hpp").unwrap_err();
+        assert!(matches!(err.kind, PreprocessErrorKind::IncludeIo { .. }));
+        assert!(err.to_string().contains("denied"));
+        let err = p.preprocess("#include \"x.hpp\"", None).unwrap_err();
+        assert!(matches!(err.kind, PreprocessErrorKind::IncludeIo { .. }));
+        p.set_resolver(|_: &str, _: Option<&str>| Ok(None));
+        assert!(matches!(
+            p.preprocess_path("x.hpp").unwrap_err().kind,
+            PreprocessErrorKind::IncludeNotFound(_)
+        ));
+        assert_eq!(
+            p.preprocess("#if __has_include(\"\\x.hpp\")\ny\n#endif", None)
+                .unwrap(),
+            "\n\n"
+        );
+    }
+
+    #[test]
+    fn unterminated_strings_end_at_the_line() {
+        assert_eq!(pp("#define A x\na = \"A\nb = A;"), "\na = \"A\nb = x;");
+    }
+
+    #[test]
+    fn fs_resolver() {
+        let root = std::env::temp_dir().join(format!("aff-pp-fs-{}", std::process::id()));
+        fs::create_dir_all(root.join("inc/a3")).unwrap();
+        fs::create_dir_all(root.join("mod")).unwrap();
+        fs::write(root.join("inc/a3/common.hpp"), "#define COMMON 1").unwrap();
+        fs::write(root.join("mod/local.hpp"), "#define LOCAL 2").unwrap();
+        fs::write(root.join("mod/latin1.hpp"), b"\xE9").unwrap();
+        let config = root.join("mod/config.cpp");
+        fs::write(
+            &config,
+            "#include \"local.hpp\"\n#include \"\\a3\\common.hpp\"\nCOMMON LOCAL",
+        )
+        .unwrap();
+
+        let mut resolver = FsIncludeResolver::new();
+        resolver.add_include_dir(root.join("inc"));
+        let config = config.to_string_lossy().into_owned();
+        // Relative to the including file, absolute ones in the include dirs, system paths as they are
+        let out = Preprocessor::new()
+            .with_resolver(resolver.clone())
+            .preprocess_path(&config);
+        // Relative paths without an including file are relative to the working directory
+        let missing = resolver.resolve("mod/local.hpp", None).unwrap();
+        let drive = resolver.resolve("Q:\\nope.hpp", None).unwrap();
+        let latin1 = resolver.resolve("latin1.hpp", Some(&config));
+        fs::remove_dir_all(&root).unwrap();
+
+        assert_eq!(out.unwrap(), "\n\n1 2");
+        assert!(missing.is_none());
+        assert!(drive.is_none());
+        assert_eq!(latin1.unwrap_err().kind(), io::ErrorKind::InvalidData);
+    }
 }

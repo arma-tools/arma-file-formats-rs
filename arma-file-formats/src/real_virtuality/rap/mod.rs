@@ -2,6 +2,7 @@ mod class;
 mod config;
 mod entry;
 mod parser;
+mod preprocessor;
 mod pretty_print;
 mod property;
 mod value;
@@ -9,9 +10,18 @@ mod value;
 use thiserror::Error;
 
 pub use self::{
-    class::CfgClass, config::Cfg, entry::CfgEntry, pretty_print::PrettyPrint,
-    property::CfgProperty, value::CfgValue,
+    class::CfgClass,
+    config::Cfg,
+    entry::CfgEntry,
+    preprocessor::{
+        FsIncludeResolver, IncludeFile, IncludeResolver, MAX_INCLUDE_DEPTH, Preprocessor,
+        join_include_path,
+    },
+    pretty_print::PrettyPrint,
+    property::CfgProperty,
+    value::CfgValue,
 };
+pub use crate::errors::{PreprocessError, PreprocessErrorKind};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum EntryReturn {

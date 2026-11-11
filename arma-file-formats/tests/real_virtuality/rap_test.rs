@@ -3,7 +3,9 @@ use std::{
     io::BufReader,
 };
 
-use arma_file_formats::real_virtuality::rap::{Cfg, CfgEntry, CfgValue, EntryReturn};
+use arma_file_formats::real_virtuality::rap::{
+    Cfg, CfgEntry, CfgValue, EntryReturn, FsIncludeResolver, Preprocessor,
+};
 
 const INPUT_PATH_PREFIX: &str = "./tests/real_virtuality/test-data/rap_in/";
 #[allow(dead_code)]
@@ -178,4 +180,55 @@ fn entry_return_test() {
     let entry = cfg.get_entry(&["TexGen3", "uvTransform", "pos"]).unwrap();
     let n = entry.as_array().unwrap();
     dbg!(n);
+}
+
+#[test]
+fn preprocessed_config() {
+    let src = "#define QUOTE(x) #x\n#define VAL(x) value_##x = x;\n\
+               class Cfg {\n    VAL(1)\n    name = QUOTE(abc);\n#ifdef MISSING\n    bad = 1;\n#endif\n};";
+    let cfg = Cfg::parse_config(src).unwrap();
+    assert_eq!(
+        cfg.get_entry(&["Cfg", "value_1"]).unwrap().as_long(),
+        Some(1)
+    );
+    assert_eq!(
+        cfg.get_entry(&["Cfg", "name"])
+            .unwrap()
+            .as_string()
+            .as_deref(),
+        Some("abc")
+    );
+    assert!(cfg.get_entry(&["Cfg", "bad"]).is_none());
+
+    assert!(Cfg::parse_config("#include \"x.hpp\"").is_err());
+}
+
+#[test]
+fn preprocessed_config_includes() {
+    let root = std::env::temp_dir().join(format!("aff-rap-include-{}", std::process::id()));
+    let addon = root.join("x/mod/addons/main");
+    fs::create_dir_all(&addon).unwrap();
+    fs::write(
+        addon.join("config.cpp"),
+        "#include \"script_component.hpp\"\nclass CfgPatches { class ADDON { units[] = {}; }; };",
+    )
+    .unwrap();
+    fs::write(
+        addon.join("script_component.hpp"),
+        "#include \"\\x\\mod\\addons\\main\\macros.hpp\"\n#define ADDON DOUBLES(mod,main)",
+    )
+    .unwrap();
+    fs::write(addon.join("macros.hpp"), "#define DOUBLES(a,b) a##_##b").unwrap();
+
+    let mut pp =
+        Preprocessor::new().with_resolver(FsIncludeResolver::new().with_include_dir(&root));
+    let path = addon.join("config.cpp");
+    let cfg = Cfg::parse_path(path.to_str().unwrap(), &mut pp);
+    fs::remove_dir_all(&root).unwrap();
+
+    let cfg = cfg.unwrap();
+    assert!(
+        cfg.get_entry(&["CfgPatches", "mod_main", "units"])
+            .is_some()
+    );
 }

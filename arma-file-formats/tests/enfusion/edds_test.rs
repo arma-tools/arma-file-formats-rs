@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader};
 
 use arma_file_formats::{
     core::types::PixelType,
-    enfusion::edds::{Edds, EddsFormat, Mipmap},
+    enfusion::edds::{Edds, EddsFormat, Mipmap, RawEdds},
 };
 use serial_test::serial;
 
@@ -195,4 +195,83 @@ fn edds_bc4_shore_atlas_test() {
         assert_eq!(mipmap.data.len(), 2244 * 924, "{name}");
         assert_eq!(byte_sum(&mipmap.data), sum, "{name}");
     }
+}
+
+fn u16_sum(data: &[u8]) -> u64 {
+    data.as_chunks::<2>()
+        .0
+        .iter()
+        .map(|&c| u64::from(u16::from_le_bytes(c)))
+        .sum()
+}
+
+#[test]
+fn edds_numeric_four_cc_rg16f_curl_noise_test() {
+    // `system/textures/CurlNoise_F16.edds`: `D3DFMT_G16R16F` (112) in the FourCC field.
+    let file = File::open(format!("{}CurlNoise_F16.edds", INPUT_PATH_PREFIX)).unwrap();
+    let raw = RawEdds::from(&mut BufReader::new(file)).unwrap();
+
+    assert_eq!(raw.format, EddsFormat::Rg16Float);
+    assert_eq!(raw.mipmaps.len(), 8);
+    let mipmap = raw.mipmaps.last().unwrap();
+    assert_eq!((mipmap.width, mipmap.height, mipmap.depth), (128, 128, 1));
+    assert_eq!(mipmap.data.len(), 128 * 128 * 4);
+    let halves: Vec<u16> = mipmap.data[..8]
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|&c| u16::from_le_bytes(c))
+        .collect();
+    assert_eq!(halves, [4780, 10624, 8317, 10607]);
+    assert_eq!(u16_sum(&mipmap.data), 815_541_051);
+
+    let decoded = raw.decode_mipmap(7).unwrap();
+    assert_eq!(decoded[..8], [0, 11, 0, 255, 2, 11, 0, 255]);
+    assert_eq!(byte_sum(&decoded), 4_247_423);
+}
+
+#[test]
+fn edds_volume_rgba16_lut_test() {
+    // `system/textures/PP/base16_32x32_LUT.edds`: 32x32x32 identity color grading LUT,
+    // `D3DFMT_A16B16G16R16` (36) in the FourCC field, x is red, y green and z (the slice) blue.
+    let file = File::open(format!("{}base16_32x32_LUT.edds", INPUT_PATH_PREFIX)).unwrap();
+    let raw = RawEdds::from(&mut BufReader::new(file)).unwrap();
+
+    assert_eq!(raw.format, EddsFormat::Rgba16);
+    assert_eq!(raw.mipmaps.len(), 1);
+    let mipmap = &raw.mipmaps[0];
+    assert_eq!((mipmap.width, mipmap.height, mipmap.depth), (32, 32, 32));
+    assert_eq!(mipmap.data.len(), 32 * 32 * 32 * 8);
+
+    let texel = |x: usize, y: usize, z: usize| -> Vec<u16> {
+        let start = ((z * 32 + y) * 32 + x) * 8;
+        mipmap.data[start..start + 8]
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|&c| u16::from_le_bytes(c))
+            .collect()
+    };
+    assert_eq!(texel(0, 0, 0), [0, 0, 0, 65535]);
+    assert_eq!(texel(31, 0, 0), [65535, 0, 0, 65535]);
+    assert_eq!(texel(0, 31, 0), [0, 65535, 0, 65535]);
+    assert_eq!(texel(0, 0, 31), [0, 0, 65535, 65535]);
+    assert_eq!(texel(16, 8, 4), [33667, 16706, 8224, 65535]);
+    assert_eq!(u16_sum(&mipmap.data), 5_356_775_424);
+
+    let edds = raw.decode().unwrap();
+    let decoded = &edds.mipmaps[0].data;
+    assert_eq!(decoded.len(), 32 * 32 * 32 * 4);
+    assert_eq!(decoded[..8], [0, 0, 0, 255, 8, 0, 0, 255]);
+    assert_eq!(byte_sum(decoded), 20_843_520);
+
+    // The slices stacked: a 32x1024 image.
+    image::save_buffer(
+        format!("{}base16_32x32_LUT.out.0.png", OUTPUT_PATH_PREFIX),
+        decoded,
+        32,
+        32 * 32,
+        image::ColorType::Rgba8,
+    )
+    .unwrap();
 }

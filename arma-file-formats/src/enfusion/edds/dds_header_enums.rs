@@ -43,6 +43,9 @@ pub enum DdsCaps2Flags {
     DDSCAPS2_VOLUME = 0x20_0000,
 }
 
+/// The `FourCC` of a DDS pixel format. Besides the four character codes, some DDS writers store a
+/// numeric `D3DFORMAT` here for formats that have no code (the `D3DFMT_*` variants).
+#[allow(non_camel_case_types)]
 #[derive(BinRead, Debug, Clone, PartialEq, Eq)]
 #[repr(u32)]
 #[br(repr(u32))]
@@ -62,6 +65,16 @@ pub enum FourCCEnum {
     BC5S = four_cc_to_u32(FourCC(*b"BC5S")),
     RGBG = four_cc_to_u32(FourCC(*b"RGBG")),
     GRGB = four_cc_to_u32(FourCC(*b"GRGB")),
+    /// 16 bit unsigned normalized RGBA, stored R first.
+    D3DFMT_A16B16G16R16 = 36,
+    D3DFMT_Q16W16V16U16 = 110,
+    D3DFMT_R16F = 111,
+    /// 16 bit float RG, stored R first.
+    D3DFMT_G16R16F = 112,
+    D3DFMT_A16B16G16R16F = 113,
+    D3DFMT_R32F = 114,
+    D3DFMT_G32R32F = 115,
+    D3DFMT_A32B32G32R32F = 116,
 }
 
 const fn four_cc_to_u32(four_cc: FourCC) -> u32 {

@@ -32,6 +32,10 @@ pub enum EddsFormat {
     Bgrx8 { srgb: bool },
     /// 8 bit luminance.
     L8,
+    /// 16 bit float RG (`D3DFMT_G16R16F`, `DXGI_FORMAT_R16G16_FLOAT`).
+    Rg16Float,
+    /// 16 bit unsigned normalized RGBA (`D3DFMT_A16B16G16R16`, `DXGI_FORMAT_R16G16B16A16_UNORM`).
+    Rgba16,
 }
 
 impl EddsFormat {
@@ -58,6 +62,8 @@ impl EddsFormat {
                 DxgiFormat::DXGI_FORMAT_B8G8R8X8_UNORM => Self::Bgrx8 { srgb: false },
                 DxgiFormat::DXGI_FORMAT_B8G8R8X8_UNORM_SRGB => Self::Bgrx8 { srgb: true },
                 DxgiFormat::DXGI_FORMAT_R8_UNORM => Self::L8,
+                DxgiFormat::DXGI_FORMAT_R16G16_FLOAT => Self::Rg16Float,
+                DxgiFormat::DXGI_FORMAT_R16G16B16A16_UNORM => Self::Rgba16,
                 _ => return Err(unsupported()),
             });
         }
@@ -68,6 +74,8 @@ impl EddsFormat {
             FourCCEnum::DXT4 | FourCCEnum::DXT5 => Self::Bc3 { srgb: false },
             FourCCEnum::BC4U => Self::Bc4,
             FourCCEnum::BC5U => Self::Bc5,
+            FourCCEnum::D3DFMT_G16R16F => Self::Rg16Float,
+            FourCCEnum::D3DFMT_A16B16G16R16 => Self::Rgba16,
             FourCCEnum::None => match header.get_pixel_format() {
                 DdsPixelFormatEnum::D3DFMT_A8R8G8B8 => Self::Bgra8 { srgb: false },
                 DdsPixelFormatEnum::D3DFMT_X8R8G8B8 => Self::Bgrx8 { srgb: false },
@@ -90,7 +98,9 @@ impl EddsFormat {
             | Self::Rgba8 { srgb }
             | Self::Bgra8 { srgb }
             | Self::Bgrx8 { srgb } => srgb,
-            Self::Bc4 | Self::Bc5 | Self::Bc6hUf16 | Self::L8 => false,
+            Self::Bc4 | Self::Bc5 | Self::Bc6hUf16 | Self::L8 | Self::Rg16Float | Self::Rgba16 => {
+                false
+            }
         }
     }
 
@@ -102,7 +112,12 @@ impl EddsFormat {
             Self::Bc2 { .. } | Self::Bc3 { .. } | Self::Bc5 | Self::Bc6hUf16 | Self::Bc7 { .. } => {
                 Some(16)
             }
-            Self::Rgba8 { .. } | Self::Bgra8 { .. } | Self::Bgrx8 { .. } | Self::L8 => None,
+            Self::Rgba8 { .. }
+            | Self::Bgra8 { .. }
+            | Self::Bgrx8 { .. }
+            | Self::L8
+            | Self::Rg16Float
+            | Self::Rgba16 => None,
         }
     }
 
@@ -114,6 +129,7 @@ impl EddsFormat {
         }
         let bytes_per_pixel = match self {
             Self::L8 => 1,
+            Self::Rgba16 => 8,
             _ => 4,
         };
         width * height * bytes_per_pixel
@@ -132,8 +148,10 @@ impl EddsFormat {
     /// Decodes `data` (at least [`EddsFormat::data_size`] bytes) to 8 bit pixels, see
     /// [`EddsFormat::decoded_pixel_type`].
     ///
-    /// BC5 is expanded to RGBA with blue `0` and alpha `255`. BC6H is clamped to `0..=1`
-    /// without tone mapping, it's only meant for previews.
+    /// BC5 and RG16F are expanded to RGBA with blue `0` and alpha `255`. BC6H and RG16F are
+    /// clamped to `0..=1` without tone mapping, they're only meant for previews (negative values
+    /// become `0`, [`RawEdds`](super::RawEdds) has the stored values). RGBA16 is rounded to
+    /// 8 bits.
     pub fn decode(self, data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, AffError> {
         let size = self.data_size(width, height);
         let data = data.get(..size).ok_or_else(|| {
@@ -156,6 +174,24 @@ impl EddsFormat {
                 .0
                 .iter()
                 .flat_map(|&[b, g, r, _]| [r, g, b, 255])
+                .collect(),
+            Self::Rg16Float => data
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .flat_map(|&[r0, r1, g0, g1]| {
+                    let channel = |bytes| unit_to_u8(half::f16::from_le_bytes(bytes).to_f32());
+                    [channel([r0, r1]), channel([g0, g1]), 0, 255]
+                })
+                .collect(),
+            Self::Rgba16 => data
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|&value| {
+                    let value = u32::from(u16::from_le_bytes(value));
+                    ((value * 255 + 32_767) / 65_535) as u8
+                })
                 .collect(),
             Self::Bc4 => decode_blocks::<1>(data, width, height, 8, |block, out| {
                 block_compression::decode::decode_block_bc4(block, out, 4);
@@ -188,11 +224,16 @@ impl EddsFormat {
                 let mut rgba = [half::f16::ZERO; 64];
                 block_compression::decode::decode_block_bc6h(block, &mut rgba, 16, false);
                 for (byte, value) in out.iter_mut().zip(rgba) {
-                    *byte = (value.to_f32().clamp(0.0, 1.0) * 255.0).round() as u8;
+                    *byte = unit_to_u8(value.to_f32());
                 }
             }),
         })
     }
+}
+
+/// Clamps to `0..=1` and scales to a byte.
+fn unit_to_u8(value: f32) -> u8 {
+    (value.clamp(0.0, 1.0) * 255.0).round() as u8
 }
 
 /// Decodes every block into a 4x4 tile with `CHANNELS` bytes per pixel, then copies the part

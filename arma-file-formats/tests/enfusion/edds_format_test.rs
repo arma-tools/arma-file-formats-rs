@@ -9,6 +9,8 @@ use arma_file_formats::{
 };
 
 const DXGI_R16G16B16A16_FLOAT: u32 = 10;
+const DXGI_R16G16B16A16_UNORM: u32 = 11;
+const DXGI_R16G16_FLOAT: u32 = 34;
 const DXGI_B8G8R8A8_UNORM_SRGB: u32 = 91;
 const DXGI_BC4_UNORM: u32 = 80;
 const DXGI_BC5_UNORM: u32 = 83;
@@ -242,6 +244,111 @@ fn legacy_abgr_masks_are_rgba() {
     assert_eq!(edds.format, EddsFormat::Rgba8 { srgb: false });
     assert_eq!(edds.pixel_type, PixelType::Rgba);
     assert_eq!(edds.mipmaps[0].data, [255, 255, 241, 184, 1, 2, 3, 4]);
+}
+
+#[test]
+fn numeric_d3dfmt_four_cc_rg16f() {
+    // Like `CurlNoise_F16.edds`: `D3DFMT_G16R16F` (112) in the FourCC field.
+    // R 0.5 and G 1.5 (clamped), then R -1 (clamped) and G 0.25.
+    let halves: [u16; 4] = [0x3800, 0x3E00, 0xBC00, 0x3400];
+    let pixels: Vec<u8> = halves.iter().flat_map(|h| h.to_le_bytes()).collect();
+    for pixel_format in [
+        Pixels::FourCc(&[112, 0, 0, 0]),
+        Pixels::Dxgi(DXGI_R16G16_FLOAT),
+    ] {
+        let edds = decode(&edds(2, 1, &pixel_format, std::slice::from_ref(&pixels))).unwrap();
+        assert_eq!(edds.format, EddsFormat::Rg16Float);
+        assert_eq!(edds.pixel_type, PixelType::Rgba);
+        assert_eq!(edds.mipmaps[0].data, [128, 255, 0, 255, 0, 64, 0, 255]);
+    }
+}
+
+#[test]
+fn numeric_d3dfmt_four_cc_rgba16() {
+    // Like `base16_32x32_LUT.edds`: `D3DFMT_A16B16G16R16` (36), R stored first.
+    let channels: [u16; 4] = [0xFFFF, 0x8080, 0x0101, 0];
+    let pixels: Vec<u8> = channels.iter().flat_map(|c| c.to_le_bytes()).collect();
+    for pixel_format in [
+        Pixels::FourCc(&[36, 0, 0, 0]),
+        Pixels::Dxgi(DXGI_R16G16B16A16_UNORM),
+    ] {
+        let raw = RawEdds::from(&mut Cursor::new(edds(
+            1,
+            1,
+            &pixel_format,
+            std::slice::from_ref(&pixels),
+        )))
+        .unwrap();
+        assert_eq!(raw.format, EddsFormat::Rgba16);
+        assert_eq!(raw.mipmaps[0].data, pixels, "raw mipmaps keep 16 bits");
+        assert_eq!(raw.decode_mipmap(0).unwrap(), [255, 128, 1, 0]);
+    }
+}
+
+/// Turns `file` into a volume texture with `depth` slices (`DDSD_DEPTH`, `DDSCAPS2_VOLUME`).
+fn make_volume(mut file: Vec<u8>, depth: u32) -> Vec<u8> {
+    let flags = u32::from_le_bytes(file[8..12].try_into().unwrap()) | 0x80_0000;
+    file[8..12].copy_from_slice(&flags.to_le_bytes());
+    file[24..28].copy_from_slice(&depth.to_le_bytes());
+    file[112..116].copy_from_slice(&0x20_0000u32.to_le_bytes());
+    file
+}
+
+#[test]
+fn volume_slices_halve_with_the_mipmaps() {
+    // 2x2x4 L8, then 1x1x2.
+    let mip0: Vec<u8> = (0..16).collect();
+    let mip1 = vec![100, 101];
+    let file = edds(
+        2,
+        2,
+        &Pixels::Masks(8, [0xFF, 0, 0, 0]),
+        &[mip0.clone(), mip1.clone()],
+    );
+    let volume = decode(&make_volume(file.clone(), 4)).unwrap();
+
+    let sizes: Vec<_> = volume
+        .mipmaps
+        .iter()
+        .map(|m| (m.width, m.height, m.depth))
+        .collect();
+    assert_eq!(sizes, [(1, 1, 2), (2, 2, 4)]);
+    assert_eq!(volume.mipmaps[0].data, mip1);
+    assert_eq!(volume.mipmaps[1].data, mip0);
+
+    // The same file without the volume flags is a 2D texture: one slice per mipmap.
+    let flat = RawEdds::from(&mut Cursor::new(&file)).unwrap();
+    assert!(flat.mipmaps.iter().all(|m| m.depth == 1));
+
+    // A volume needs every slice.
+    let short = edds(
+        2,
+        2,
+        &Pixels::Masks(8, [0xFF, 0, 0, 0]),
+        &[mip0[..8].to_vec()],
+    );
+    assert!(decode(&make_volume(short, 4)).is_err());
+}
+
+#[test]
+fn block_compressed_volume_decodes_each_slice() {
+    // 6x4x2 BC4: two blocks per slice, the second one cropped to 2 columns.
+    let slices = [[10, 20], [30, 40]];
+    let blocks: Vec<u8> = slices
+        .iter()
+        .flatten()
+        .flat_map(|&value| bc4_block(value, 0, [0; 16]))
+        .collect();
+    let file = make_volume(edds(6, 4, &Pixels::Dxgi(DXGI_BC4_UNORM), &[blocks]), 2);
+    let edds = decode(&file).unwrap();
+
+    let mipmap = &edds.mipmaps[0];
+    assert_eq!((mipmap.width, mipmap.height, mipmap.depth), (6, 4, 2));
+    let rows: Vec<u8> = slices
+        .iter()
+        .flat_map(|&[left, right]| [[left; 4].as_slice(), &[right; 2]].concat().repeat(4))
+        .collect();
+    assert_eq!(mipmap.data, rows);
 }
 
 #[test]

@@ -4,7 +4,7 @@ use binrw::BinRead;
 
 use crate::{
     core::{read::ReadExtTrait, types::PixelType},
-    enfusion::edds::{DdsHeader, EddsFormat},
+    enfusion::edds::{DdsCaps2Flags, DdsHeader, EddsFormat},
     errors::{AffError, EddsError},
 };
 
@@ -32,6 +32,10 @@ pub enum MipmapType {
 pub struct Mipmap {
     pub width: usize,
     pub height: usize,
+    /// Number of slices, `1` unless the texture is a volume (`DDSCAPS2_VOLUME`). The slices are
+    /// stored one after another, so a decoded volume mipmap reads as a `width` x
+    /// `height * depth` image.
+    pub depth: usize,
     pub data_type: MipmapType,
     pub compressed_data_size: u32,
     pub data: Vec<u8>,
@@ -97,6 +101,7 @@ impl RawEdds {
             mipmaps.push(Mipmap {
                 width: mip_dimension(header.width, level),
                 height: mip_dimension(header.height, level),
+                depth: mip_depth(&header, level),
                 data_type,
                 compressed_data_size: input.read_u32()?,
                 data: Vec::new(),
@@ -111,7 +116,7 @@ impl RawEdds {
                     decompress_lz4_chain(&stored).ok_or(EddsError::Decompression(index))?
                 }
             };
-            let expected = format.data_size(mipmap.width, mipmap.height);
+            let expected = format.data_size(mipmap.width, mipmap.height) * mipmap.depth;
             if mipmap.data.len() < expected {
                 return Err(EddsError::MipmapTooShort {
                     mipmap: index,
@@ -135,16 +140,13 @@ impl RawEdds {
             .mipmaps
             .get(index)
             .ok_or(EddsError::MipmapOutOfRange(index))?;
-        self.format
-            .decode(&mipmap.data, mipmap.width, mipmap.height)
+        decode_slices(self.format, mipmap)
     }
 
     /// Decodes every mipmap.
     pub fn decode(mut self) -> Result<Edds, AffError> {
         for mipmap in &mut self.mipmaps {
-            mipmap.data = self
-                .format
-                .decode(&mipmap.data, mipmap.width, mipmap.height)?;
+            mipmap.data = decode_slices(self.format, mipmap)?;
         }
         Ok(Edds {
             pixel_type: self.format.decoded_pixel_type(),
@@ -166,10 +168,12 @@ fn read_plain_dds<I: Read + Seek>(
         .map(|level| {
             let width = mip_dimension(header.width, level);
             let height = mip_dimension(header.height, level);
-            let data = input.read_bytes(format.data_size(width, height))?;
+            let depth = mip_depth(&header, level);
+            let data = input.read_bytes(format.data_size(width, height) * depth)?;
             Ok(Mipmap {
                 width,
                 height,
+                depth,
                 data_type: MipmapType::COPY,
                 compressed_data_size: data.len() as u32,
                 data,
@@ -187,6 +191,29 @@ fn read_plain_dds<I: Read + Seek>(
 /// Size of the mipmap `level` (`0` is the full size).
 fn mip_dimension(size: u32, level: u32) -> usize {
     size.checked_shr(level).unwrap_or(0).max(1) as usize
+}
+
+/// Slices of the mipmap `level`, the depth halves like the other dimensions.
+fn mip_depth(header: &DdsHeader, level: u32) -> usize {
+    if header.caps2.contains(DdsCaps2Flags::DDSCAPS2_VOLUME) {
+        mip_dimension(header.depth, level)
+    } else {
+        1
+    }
+}
+
+/// Decodes each slice of `mipmap` and puts them one after another.
+fn decode_slices(format: EddsFormat, mipmap: &Mipmap) -> Result<Vec<u8>, AffError> {
+    if mipmap.depth == 1 {
+        return format.decode(&mipmap.data, mipmap.width, mipmap.height);
+    }
+    let size = format.data_size(mipmap.width, mipmap.height);
+    let mut out = Vec::new();
+    for slice in 0..mipmap.depth {
+        let data = mipmap.data.get(slice * size..).unwrap_or_default();
+        out.extend(format.decode(data, mipmap.width, mipmap.height)?);
+    }
+    Ok(out)
 }
 
 fn decompress_lz4_chain(src: &[u8]) -> Option<Vec<u8>> {

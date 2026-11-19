@@ -20,6 +20,7 @@ mod enfusion {
     mod smap_test;
     mod smd_test;
     mod snd_test;
+    mod stars_test;
     mod terr_test;
     mod topo_test;
     mod ttile_test;

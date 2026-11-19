@@ -9,6 +9,7 @@ pub mod rdb;
 pub mod resource;
 pub mod smap;
 pub mod smd;
+pub mod snd;
 pub mod terr;
 pub mod text;
 pub mod topo;

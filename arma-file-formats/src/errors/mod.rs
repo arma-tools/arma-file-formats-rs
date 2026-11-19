@@ -376,6 +376,27 @@ pub enum SndError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum StarsError {
+    #[error("Unknown form type: `{0}`")]
+    UnknownFormType(String),
+
+    #[error("Truncated star catalog")]
+    Truncated,
+
+    #[error("Header says the catalog has {header} stars, it has {items}")]
+    CountMismatch { header: u32, items: usize },
+
+    #[error("Star {0} is truncated, too long or malformed")]
+    InvalidItem(usize),
+
+    #[error("Name of star {0} is not NUL terminated UTF-8 without NULs")]
+    InvalidName(usize),
+
+    #[error("Star catalog exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum AnmError {
     #[error("Unknown form type: `{0}`")]
     UnknownFormType(String),
@@ -588,6 +609,9 @@ pub enum AffError {
 
     #[error("Navmesh Error: {0}")]
     NavmeshError(#[from] NavmeshError),
+
+    #[error("STARS Error: {0}")]
+    StarsError(#[from] StarsError),
 
     #[error("EDDS Error: {0}")]
     EddsError(#[from] EddsError),

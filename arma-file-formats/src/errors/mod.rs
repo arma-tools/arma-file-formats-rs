@@ -337,6 +337,45 @@ pub enum FntError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum SndError {
+    #[error("Not a RIFF file")]
+    NotRiff,
+
+    #[error("Unknown form type: `{0}`, only OPUS is known")]
+    UnknownFormType(String),
+
+    #[error("Truncated sound")]
+    Truncated,
+
+    #[error("Unknown chunk `{0}`")]
+    UnknownChunk(String),
+
+    #[error("Chunk `{0}` appears twice")]
+    DuplicateChunk(&'static str),
+
+    #[error("Chunk `{0}` missing")]
+    ChunkMissing(&'static str),
+
+    #[error("Chunk `{tag}` has the unknown size {size}")]
+    ChunkSize { tag: &'static str, size: u32 },
+
+    #[error("Packet {0} exceeds 65535 bytes")]
+    PacketTooLarge(usize),
+
+    #[error("Packet {0} is empty")]
+    InvalidPacket(usize),
+
+    #[error("Ogg Opus without channel mapping needs 1 or 2 channels, not {0}")]
+    UnsupportedChannels(u16),
+
+    #[error("Pre-skip {0} exceeds 65535 samples")]
+    PreSkipTooLarge(u32),
+
+    #[error("Snd exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum AnmError {
     #[error("Unknown form type: `{0}`")]
     UnknownFormType(String),
@@ -543,6 +582,9 @@ pub enum AffError {
 
     #[error("FNT Error: {0}")]
     FntError(#[from] FntError),
+
+    #[error("SND Error: {0}")]
+    SndError(#[from] SndError),
 
     #[error("Navmesh Error: {0}")]
     NavmeshError(#[from] NavmeshError),

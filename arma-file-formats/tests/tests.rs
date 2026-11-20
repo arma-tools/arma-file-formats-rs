@@ -3,6 +3,7 @@ mod real_virtuality {
     mod paa_test;
     mod pbo_test;
     mod rap_test;
+    mod rtm_test;
     mod util_test;
     mod wrp_test;
 }

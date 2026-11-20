@@ -7,7 +7,10 @@ use arma_file_formats::{
     self,
     core::types::PixelType,
     errors::PaaError,
-    real_virtuality::paa::{Paa, Tagg},
+    real_virtuality::{
+        paa::{Mipmap, Paa, Tagg},
+        types::PaaType,
+    },
 };
 use image::ImageBuffer;
 use serial_test::serial;
@@ -307,4 +310,113 @@ fn truncated() {
         matches!(err, PaaError::MipmapPastEnd { index, len: l, .. } if index == paa.mipmaps.len() - 1 && l == len as u64),
         "{err:?}"
     );
+}
+
+/// A `.paa` of this type without tags and one 4x4 mipmap of 16 bytes.
+fn small_paa(paa_type: u16) -> Vec<u8> {
+    let mut paa = paa_type.to_le_bytes().to_vec();
+    paa.extend([0, 0]);
+    paa.extend([4, 0, 4, 0, 16, 0, 0]);
+    paa.extend([0; 16]);
+    paa.extend([0; 6]);
+    paa
+}
+
+/// The 4 bytes of a tag, `None` without it.
+fn tag(paa: &[u8], name: &[u8; 8]) -> Option<[u8; 4]> {
+    let pos = paa.windows(8).position(|w| w == name)?;
+    paa[pos + 12..pos + 16].try_into().ok()
+}
+
+#[test]
+fn unsupported_types_are_errors() {
+    for paa_type in [0xff02, 0xff03, 0xff04, 0x8888] {
+        assert!(
+            matches!(
+                Paa::from_reader(&mut Cursor::new(small_paa(paa_type)), None),
+                Err(PaaError::UnsupportedDecode(t)) if t == paa_type
+            ),
+            "{paa_type:#x}"
+        );
+    }
+    for paa_type in [
+        PaaType::DXT2,
+        PaaType::RGBA4444,
+        PaaType::ARGB1555,
+        PaaType::RGBA8888,
+        PaaType::GRAYwAlpha,
+        PaaType::UNKNOWN,
+    ] {
+        let mut paa = Paa::from_image(4, 4, vec![255; 64]);
+        assert!(
+            matches!(
+                paa.write(&mut Cursor::new(Vec::new()), Some(paa_type)),
+                Err(PaaError::UnsupportedEncode(t)) if t == u16::from(paa_type)
+            ),
+            "{paa_type:?}"
+        );
+    }
+}
+
+#[test]
+fn encoded_average_color_is_bgra() {
+    // Opaque red: DXT1 without a FLAG tag, the average color blue first like the game's files.
+    let mut paa = Paa::from_image(8, 8, [255, 0, 0, 255].repeat(64));
+    let mut out = Cursor::new(Vec::new());
+    paa.write(&mut out, None).unwrap();
+    let bytes = out.into_inner();
+    assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 0xff01);
+    assert_eq!(tag(&bytes, b"GGATCGVA"), Some([0, 0, 255, 255]));
+    assert_eq!(tag(&bytes, b"GGATCXAM"), Some([255; 4]));
+    assert_eq!(tag(&bytes, b"GGATGALF"), None);
+}
+
+#[test]
+fn lzo_dxt5_round_trip() {
+    // Wider than 128: the mipmap is LZO compressed. Half transparent: DXT5 with a FLAG tag.
+    let pixels: Vec<u8> = (0..256 * 256)
+        .flat_map(|i| [(i % 256) as u8, (i / 256) as u8, 64, 128])
+        .collect();
+    let mut paa = Paa::from_image(256, 256, pixels.clone());
+    let mut out = Cursor::new(Vec::new());
+    paa.write(&mut out, None).unwrap();
+    let bytes = out.into_inner();
+    assert_eq!(u16::from_le_bytes([bytes[0], bytes[1]]), 0xff05);
+    assert_eq!(tag(&bytes, b"GGATGALF"), Some([1, 255, 255, 255]));
+
+    let read = Paa::from_reader(&mut Cursor::new(&bytes), None).unwrap();
+    assert_eq!(read.magic_number, PaaType::DXT5);
+    let first = &read.mipmaps[0];
+    assert_eq!((first.width, first.height), (256, 256));
+    // The OFFS tag points at the first mipmap, its width has the LZO flag.
+    let offset = u32::from_le_bytes(tag(&bytes, b"GGATSFFO").unwrap()) as usize;
+    assert_eq!(
+        u16::from_le_bytes([bytes[offset], bytes[offset + 1]]),
+        0x8000 | 256
+    );
+    // BC3 is lossy, the gradient comes back close.
+    let worst = first
+        .data
+        .iter()
+        .zip(&pixels)
+        .map(|(a, b)| a.abs_diff(*b))
+        .max()
+        .unwrap();
+    assert!(worst <= 8, "{worst}");
+    assert!(read.mipmaps.len() > 1);
+
+    let blocks = Paa::from_reader_blocks(&mut Cursor::new(&bytes), Some(&[0])).unwrap();
+    assert_eq!(blocks.mipmaps[0].data.len(), 256 * 256);
+}
+
+#[test]
+fn mipmap_read_from_its_header() {
+    let file = small_paa(0xff01);
+    let mut cursor = Cursor::new(&file);
+    cursor.set_position(4);
+    let mut mipmap = Mipmap::new();
+    mipmap.read(&mut cursor, PaaType::DXT1).unwrap();
+    assert_eq!((mipmap.width, mipmap.height), (4, 4));
+    // The 16 bytes are two black BC1 blocks' worth, the first block decodes to 4x4 RGBA.
+    assert_eq!(mipmap.data.len(), 4 * 4 * 4);
 }

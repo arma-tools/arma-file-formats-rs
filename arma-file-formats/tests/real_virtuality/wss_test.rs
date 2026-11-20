@@ -264,3 +264,18 @@ fn wss_delta8_encode_test() {
         [0x81, 0x7f, 0x81]
     );
 }
+
+#[test]
+fn wss_pcm16_decode_and_duration() {
+    let samples = [0, 1, -1, i16::MAX, i16::MIN, 1234];
+    let wss = Wss::from_pcm(&samples, 2, 22050, WssCompression::None);
+    assert_eq!(wss.decode().unwrap(), samples);
+    assert_eq!(wss.pcm(), wss.data);
+    assert_eq!(wss.sample_count(), 6);
+    // 3 frames at 22050 Hz.
+    assert_eq!(wss.duration().as_nanos(), 136_054);
+
+    let mut no_rate = wss.clone();
+    no_rate.format.sample_rate = 0;
+    assert_eq!(no_rate.duration(), std::time::Duration::ZERO);
+}

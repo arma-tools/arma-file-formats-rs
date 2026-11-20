@@ -4,6 +4,7 @@ pub mod pbo;
 pub mod rap;
 pub mod rtm;
 pub mod sign;
+pub mod texheaders;
 pub mod wrp;
 pub mod wss;
 

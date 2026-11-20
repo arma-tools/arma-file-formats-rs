@@ -148,10 +148,10 @@ impl EddsFormat {
     /// Decodes `data` (at least [`EddsFormat::data_size`] bytes) to 8 bit pixels, see
     /// [`EddsFormat::decoded_pixel_type`].
     ///
-    /// BC5 and RG16F are expanded to RGBA with blue `0` and alpha `255`. BC6H and RG16F are
-    /// clamped to `0..=1` without tone mapping, they're only meant for previews (negative values
-    /// become `0`, [`RawEdds`](super::RawEdds) has the stored values). RGBA16 is rounded to
-    /// 8 bits.
+    /// BC5 and RG16F are expanded to RGBA with blue `0` and alpha `255`, BC6H with alpha `255`.
+    /// BC6H and RG16F are clamped to `0..=1` without tone mapping, they're only meant for
+    /// previews (negative values become `0`, [`RawEdds`](super::RawEdds) has the stored values).
+    /// RGBA16 is rounded to 8 bits.
     pub fn decode(self, data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, AffError> {
         let size = self.data_size(width, height);
         let data = data.get(..size).ok_or_else(|| {
@@ -221,10 +221,17 @@ impl EddsFormat {
                 }
             }),
             Self::Bc6hUf16 => decode_blocks::<4>(data, width, height, 16, |block, out| {
-                let mut rgba = [half::f16::ZERO; 64];
-                block_compression::decode::decode_block_bc6h(block, &mut rgba, 16, false);
-                for (byte, value) in out.iter_mut().zip(rgba) {
-                    *byte = unit_to_u8(value.to_f32());
+                // The decoder writes RGB, 3 values per pixel and 12 per row.
+                let mut rgb = [half::f16::ZERO; 48];
+                block_compression::decode::decode_block_bc6h(block, &mut rgb, 12, false);
+                for (pixel, &[r, g, b]) in out
+                    .as_chunks_mut::<4>()
+                    .0
+                    .iter_mut()
+                    .zip(rgb.as_chunks::<3>().0)
+                {
+                    let channel = |value: half::f16| unit_to_u8(value.to_f32());
+                    *pixel = [channel(r), channel(g), channel(b), 255];
                 }
             }),
         })

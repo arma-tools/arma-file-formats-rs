@@ -481,3 +481,224 @@ fn mipmap_too_short_is_an_error() {
     let file = edds(4, 4, &Pixels::FourCc(b"DXT1"), &[vec![0; 4]]);
     assert!(decode(&file).is_err());
 }
+
+#[test]
+fn dx10_formats_map_and_decode() {
+    use EddsFormat as F;
+    for (dxgi, format, channels) in [
+        (71, F::Bc1 { srgb: false }, 4),
+        (72, F::Bc1 { srgb: true }, 4),
+        (74, F::Bc2 { srgb: false }, 4),
+        (75, F::Bc2 { srgb: true }, 4),
+        (77, F::Bc3 { srgb: false }, 4),
+        (78, F::Bc3 { srgb: true }, 4),
+        (80, F::Bc4, 1),
+        (83, F::Bc5, 4),
+        (95, F::Bc6hUf16, 4),
+        (98, F::Bc7 { srgb: false }, 4),
+        (99, F::Bc7 { srgb: true }, 4),
+        (28, F::Rgba8 { srgb: false }, 4),
+        (29, F::Rgba8 { srgb: true }, 4),
+        (87, F::Bgra8 { srgb: false }, 4),
+        (91, F::Bgra8 { srgb: true }, 4),
+        (88, F::Bgrx8 { srgb: false }, 4),
+        (93, F::Bgrx8 { srgb: true }, 4),
+        (61, F::L8, 1),
+        (34, F::Rg16Float, 4),
+        (11, F::Rgba16, 4),
+    ] {
+        let data = vec![0; format.data_size(4, 4)];
+        let raw =
+            RawEdds::from(&mut Cursor::new(edds(4, 4, &Pixels::Dxgi(dxgi), &[data]))).unwrap();
+        assert_eq!(raw.format, format, "{dxgi}");
+        let srgb = matches!(dxgi, 29 | 72 | 75 | 78 | 91 | 93 | 99);
+        assert_eq!(format.is_srgb(), srgb, "{format:?}");
+        assert_eq!(
+            format.decoded_pixel_type(),
+            if channels == 1 {
+                PixelType::Gray
+            } else {
+                PixelType::Rgba
+            }
+        );
+        assert_eq!(
+            raw.decode_mipmap(0).unwrap().len(),
+            16 * channels,
+            "{format:?}"
+        );
+    }
+}
+
+#[test]
+fn four_cc_formats_map() {
+    use EddsFormat as F;
+    for (four_cc, format) in [
+        (b"DXT1", F::Bc1 { srgb: false }),
+        (b"DXT2", F::Bc2 { srgb: false }),
+        (b"DXT3", F::Bc2 { srgb: false }),
+        (b"DXT4", F::Bc3 { srgb: false }),
+        (b"DXT5", F::Bc3 { srgb: false }),
+        (b"BC4U", F::Bc4),
+        (b"BC5U", F::Bc5),
+    ] {
+        let data = vec![0; format.data_size(4, 4)];
+        let raw = RawEdds::from(&mut Cursor::new(edds(
+            4,
+            4,
+            &Pixels::FourCc(four_cc),
+            &[data],
+        )))
+        .unwrap();
+        assert_eq!(raw.format, format, "{four_cc:?}");
+    }
+}
+
+#[test]
+fn legacy_masks_map_or_name_the_format() {
+    use EddsFormat as F;
+    let supported = [
+        (
+            32,
+            [0xFF_0000, 0xFF00, 0xFF, 0xFF00_0000],
+            F::Bgra8 { srgb: false },
+        ),
+        (32, [0xFF_0000, 0xFF00, 0xFF, 0], F::Bgrx8 { srgb: false }),
+        (
+            32,
+            [0xFF, 0xFF00, 0xFF_0000, 0xFF00_0000],
+            F::Rgba8 { srgb: false },
+        ),
+        (8, [0xFF, 0, 0, 0], F::L8),
+    ];
+    for (bits, masks, format) in supported {
+        let data = vec![0; format.data_size(1, 1)];
+        let raw = RawEdds::from(&mut Cursor::new(edds(
+            1,
+            1,
+            &Pixels::Masks(bits, masks),
+            &[data],
+        )))
+        .unwrap();
+        assert_eq!(raw.format, format);
+    }
+
+    // Formats without a decoder are errors that name them.
+    let unsupported: [(u32, [u32; 4], &str); 17] = [
+        (16, [0x7C00, 0x3E0, 0x1F, 0x8000], "D3DFMT_A1R5G5B5"),
+        (
+            32,
+            [0x3FF, 0xFFC00, 0x3FF0_0000, 0xC000_0000],
+            "D3DFMT_A2B10G10R10",
+        ),
+        (
+            32,
+            [0x3FF0_0000, 0xFFC00, 0x3FF, 0xC000_0000],
+            "D3DFMT_A2R10G10B10",
+        ),
+        (8, [0xF, 0, 0, 0xF0], "D3DFMT_A4L4"),
+        (16, [0xF00, 0xF0, 0xF, 0xF000], "D3DFMT_A4R4G4B4"),
+        (8, [0, 0, 0, 0xFF], "D3DFMT_A8"),
+        (16, [0xFF, 0, 0, 0xFF00], "D3DFMT_A8L8"),
+        (16, [0xE0, 0x1C, 0x3, 0xFF00], "D3DFMT_A8R3G3B2"),
+        (32, [0xFFFF, 0xFFFF_0000, 0, 0], "D3DFMT_G16R16"),
+        (16, [0xFFFF, 0, 0, 0], "D3DFMT_L16"),
+        (16, [0xF800, 0x7E0, 0x1F, 0], "D3FMT_R5G6B5"),
+        (24, [0xFF_0000, 0xFF00, 0xFF, 0], "D3DFMT_R8G8B8"),
+        (16, [0x7C00, 0x3E0, 0x1F, 0], "D3DFMT_X1R5G5B5"),
+        (16, [0xF00, 0xF0, 0xF, 0], "D3DFMT_X4R4G4B4"),
+        (32, [0xFF, 0xFF00, 0xFF_0000, 0], "D3DFMT_X8B8G8R8"),
+        (32, [1, 2, 3, 4], "Unknown"),
+        (8, [0xF0, 0, 0, 0], "Unknown"),
+    ];
+    for (bits, masks, name) in unsupported {
+        let file = edds(1, 1, &Pixels::Masks(bits, masks), &[vec![0; 4]]);
+        match decode(&file) {
+            Err(AffError::UnknownImageDataFormat(described)) => assert_eq!(described, name),
+            other => panic!("{name}: expected an unknown format, got {other:?}"),
+        }
+    }
+}
+
+#[test]
+fn unsupported_four_cc_and_dxgi_are_named() {
+    for (pixels, name) in [
+        (Pixels::FourCc(b"ATT1"), "ATT1"),
+        (Pixels::FourCc(b"BC4S"), "BC4S"),
+        (Pixels::Dxgi(27), "DXGI_FORMAT_R8G8B8A8_TYPELESS"),
+    ] {
+        match decode(&edds(1, 1, &pixels, &[vec![0; 16]])) {
+            Err(AffError::UnknownImageDataFormat(described)) => assert_eq!(described, name),
+            other => panic!("{name}: expected an unknown format, got {other:?}"),
+        }
+    }
+}
+
+#[test]
+fn bgrx8_sets_alpha_and_bc2_has_explicit_alpha() {
+    let bgrx = EddsFormat::Bgrx8 { srgb: false }
+        .decode(&[10, 20, 30, 0, 1, 2, 3, 4], 2, 1)
+        .unwrap();
+    assert_eq!(bgrx, [30, 20, 10, 255, 3, 2, 1, 255]);
+
+    // BC2: 4 bit alpha per pixel, then a BC1 color block.
+    let alpha: Vec<u8> = (0..8).map(|i| if i < 4 { 0xFF } else { 0x00 }).collect();
+    let block = [alpha, bc1_block(RED_565, RED_565, [0; 16])].concat();
+    let pixels = EddsFormat::Bc2 { srgb: false }
+        .decode(&block, 4, 4)
+        .unwrap();
+    for (i, pixel) in pixels.as_chunks::<4>().0.iter().enumerate() {
+        let a = if i < 8 { 255 } else { 0 };
+        assert_eq!(*pixel, [255, 0, 0, a], "pixel {i}");
+    }
+}
+
+#[test]
+fn decode_needs_the_whole_image() {
+    let format = EddsFormat::Bc1 { srgb: false };
+    match format.decode(&[0; 7], 4, 4) {
+        Err(AffError::ParseError(message)) => {
+            assert_eq!(
+                message,
+                "Bc1 { srgb: false } image of 4x4 needs 8 bytes, got 7"
+            );
+        }
+        other => panic!("expected a parse error, got {other:?}"),
+    }
+}
+
+#[test]
+fn bc6h_is_rgb_with_opaque_alpha() {
+    // The library's own f32 decoder (3 values per pixel) as the reference, over pseudo random
+    // blocks: invalid modes decode to black, the others to some color.
+    let mut seed = 0x1234_5678u32;
+    let mut colored = 0;
+    for _ in 0..500 {
+        let block: Vec<u8> = (0..16)
+            .map(|_| {
+                seed = seed.wrapping_mul(1_103_515_245).wrapping_add(12_345);
+                (seed >> 16) as u8
+            })
+            .collect();
+        let mut rgb = [0f32; 48];
+        block_compression::decode::decode_block_bc6h_float(&block, &mut rgb, 12, false);
+        let expected: Vec<u8> = rgb
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .flat_map(|c| {
+                let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+                [byte(c[0]), byte(c[1]), byte(c[2]), 255]
+            })
+            .collect();
+        let pixels = EddsFormat::Bc6hUf16.decode(&block, 4, 4).unwrap();
+        assert_eq!(pixels, expected, "{block:02x?}");
+        colored += usize::from(
+            expected
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .any(|p| p[..3] != [0, 0, 0]),
+        );
+    }
+    assert!(colored > 100, "{colored}");
+}

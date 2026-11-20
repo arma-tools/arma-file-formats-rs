@@ -9,8 +9,11 @@ use std::io::Cursor;
 
 use arma_file_formats::{
     errors::{AffError, TexHeadersError},
-    real_virtuality::texheaders::{
-        DEFAULT_MAX_COLOR, PixelFormat, TexHeader, TexHeaderMipmap, TexHeaders, TextureType,
+    real_virtuality::{
+        texheaders::{
+            DEFAULT_MAX_COLOR, PixelFormat, TexHeader, TexHeaderMipmap, TexHeaders, TextureType,
+        },
+        types::PaaType,
     },
 };
 
@@ -270,4 +273,97 @@ fn texheaders_errors_test() {
         TexHeader::from_paa("a.paa", &truncated[..truncated.len() - 3]),
         Err(TexHeadersError::Truncated)
     );
+}
+
+#[test]
+fn texheaders_pixel_format_test() {
+    for value in 0..=10 {
+        assert_eq!(PixelFormat::from_u32(value).unwrap() as u32, value);
+    }
+    assert_eq!(PixelFormat::from_u32(11), None);
+
+    // What Binarize writes for each `.paa` type.
+    for (paa_type, format) in [
+        (PaaType::DXT1, PixelFormat::Dxt1),
+        (PaaType::DXT2, PixelFormat::Dxt2),
+        (PaaType::DXT3, PixelFormat::Dxt3),
+        (PaaType::DXT4, PixelFormat::Dxt4),
+        (PaaType::DXT5, PixelFormat::Dxt5),
+        (PaaType::RGBA4444, PixelFormat::Argb4444),
+        (PaaType::ARGB1555, PixelFormat::Argb1555),
+        (PaaType::GRAYwAlpha, PixelFormat::Ai88),
+    ] {
+        assert_eq!(PixelFormat::from_paa_type(paa_type), Some(format));
+        let mut file = paa(&[]);
+        file[0..2].copy_from_slice(&u16::from(paa_type).to_le_bytes());
+        let t = TexHeader::from_paa("a.paa", &file).unwrap();
+        assert_eq!(t.pixel_format, format);
+        assert_eq!(t.mipmaps[0].pixel_format, format);
+    }
+    assert_eq!(
+        PixelFormat::from_paa_type(PaaType::RGBA8888),
+        Some(PixelFormat::Argb8888)
+    );
+    assert_eq!(PixelFormat::from_paa_type(PaaType::UNKNOWN), None);
+    assert_eq!(
+        TexHeader::from_paa("a.paa", &[0, 0, 0, 0]),
+        Err(TexHeadersError::UnknownPaaType(0))
+    );
+}
+
+#[test]
+fn texheaders_lzo_width_test() {
+    // The width of an LZO compressed DXT mipmap has the flag 0x8000, the header doesn't.
+    let mut file = paa(&[]);
+    file[4..6].copy_from_slice(&(0x8000u16 | 4).to_le_bytes());
+    let t = TexHeader::from_paa("a.paa", &file).unwrap();
+    assert_eq!((t.mipmaps[0].width, t.mipmaps[0].height), (4, 4));
+}
+
+#[test]
+fn texheaders_invalid_fields_test() {
+    // editor_f's file: the flags at 0x34, the pixel format at 0x3c, the path from 0x42, the
+    // second mipmap count at 0x65.
+    let bytes = input("editor_f/texHeaders.bin");
+    let with = |pos: usize, value: u8| {
+        let mut changed = bytes.clone();
+        changed[pos] = value;
+        read(&changed)
+    };
+    assert_eq!(error(with(0x34, 2)), TexHeadersError::InvalidBool(2));
+    assert_eq!(
+        error(with(0x3c, 11)),
+        TexHeadersError::UnknownPixelFormat(11)
+    );
+    assert_eq!(
+        error(with(0x65, 8)),
+        TexHeadersError::MipmapCountMismatch(7, 8)
+    );
+    assert!(matches!(
+        error(with(0x42, 0xff)),
+        TexHeadersError::InvalidString(_)
+    ));
+    // The mipmap's pixel format byte.
+    assert_eq!(
+        error(with(0x6f, 11)),
+        TexHeadersError::UnknownPixelFormat(11)
+    );
+
+    // A path with a NUL can't be written.
+    let mut headers = read(&bytes).unwrap();
+    headers.textures[0].path.push('\0');
+    let mut out = Vec::new();
+    assert!(matches!(
+        headers.write(&mut out),
+        Err(AffError::TexHeadersError(TexHeadersError::InvalidPath(_)))
+    ));
+}
+
+#[test]
+fn texheaders_unknown_texture_type_test() {
+    // Types Binarize doesn't give file names are kept.
+    let mut headers = read(&input("editor_f/texHeaders.bin")).unwrap();
+    headers.textures[0].texture_type = TextureType::Other(5);
+    let bytes = write(&headers);
+    assert_eq!(read(&bytes).unwrap(), headers);
 }

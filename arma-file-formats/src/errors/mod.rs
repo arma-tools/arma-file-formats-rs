@@ -376,6 +376,55 @@ pub enum SndError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum RtmError {
+    #[error("Unknown signature: `{0}`")]
+    UnknownSignature(String),
+
+    #[error("Unsupported BMTR version: `{0}`")]
+    UnsupportedVersion(u32),
+
+    #[error("Truncated animation")]
+    Truncated,
+
+    #[error("Header says the animation has {header} bones, it names {names}")]
+    BoneCountMismatch { header: usize, names: usize },
+
+    #[error("Header says the animation has {header} frames, it has {times} frame times")]
+    FrameCountMismatch { header: usize, times: usize },
+
+    #[error("Frame {frame} has {actual} transforms, expected {expected}")]
+    TransformCountMismatch {
+        frame: usize,
+        expected: usize,
+        actual: usize,
+    },
+
+    #[error("Unknown array compression flag: `{0}`")]
+    UnknownCompression(u8),
+
+    #[error("LZO decompression failed: {0}")]
+    Lzo(String),
+
+    #[error("Bone name `{0}` is not up to 31 bytes without NULs")]
+    InvalidBoneName(String),
+
+    #[error("String is not UTF-8 without NULs: {0:?}")]
+    InvalidString(Vec<u8>),
+
+    #[error("BMTR version 3 has no metadata and keystones")]
+    MetadataUnsupported,
+
+    #[error("RTM_0100 has only the z of the step")]
+    StepUnsupported,
+
+    #[error("`{0}` is longer than 255 bytes")]
+    StringTooLong(String),
+
+    #[error("Animation exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum StarsError {
     #[error("Unknown form type: `{0}`")]
     UnknownFormType(String),
@@ -609,6 +658,9 @@ pub enum AffError {
 
     #[error("Navmesh Error: {0}")]
     NavmeshError(#[from] NavmeshError),
+
+    #[error("RTM Error: {0}")]
+    RtmError(#[from] RtmError),
 
     #[error("STARS Error: {0}")]
     StarsError(#[from] StarsError),

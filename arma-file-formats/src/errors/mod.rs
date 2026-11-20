@@ -376,6 +376,24 @@ pub enum SndError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum WssError {
+    #[error("Unknown signature: `{0}`, expected WSS0")]
+    UnknownSignature(String),
+
+    #[error("Truncated sound")]
+    Truncated,
+
+    #[error("Unknown compression: `{0}`, known are 0, 4 and 8")]
+    UnknownCompression(u32),
+
+    #[error("Only 16 bit PCM decodes to 16 bit samples, not {0} bit")]
+    UnsupportedBits(u16),
+
+    #[error("Wav exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum RtmError {
     #[error("Unknown signature: `{0}`")]
     UnknownSignature(String),
@@ -661,6 +679,9 @@ pub enum AffError {
 
     #[error("RTM Error: {0}")]
     RtmError(#[from] RtmError),
+
+    #[error("WSS Error: {0}")]
+    WssError(#[from] WssError),
 
     #[error("STARS Error: {0}")]
     StarsError(#[from] StarsError),

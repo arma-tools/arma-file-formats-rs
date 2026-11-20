@@ -6,6 +6,7 @@ mod real_virtuality {
     mod rtm_test;
     mod util_test;
     mod wrp_test;
+    mod wss_test;
 }
 
 mod enfusion {

@@ -5,6 +5,7 @@ pub mod rap;
 pub mod rtm;
 pub mod sign;
 pub mod wrp;
+pub mod wss;
 
 mod binrw_utils;
 pub mod types;

@@ -118,7 +118,11 @@ impl Mipmap {
         let expected_size = self.width as usize * self.height as usize;
 
         match paa_type {
-            PaaType::UNKNOWN => todo!(),
+            PaaType::UNKNOWN
+            | PaaType::DXT2
+            | PaaType::DXT3
+            | PaaType::DXT4
+            | PaaType::RGBA8888 => return Err(PaaError::UnsupportedDecode(paa_type.into())),
             PaaType::DXT1 => {
                 if self.is_lzo_compressed {
                     self.data = self.decompress_lzo(paa_type)?;
@@ -136,9 +140,6 @@ impl Mipmap {
 
                 self.data = decompressed;
             }
-            PaaType::DXT2 => todo!(),
-            PaaType::DXT3 => todo!(),
-            PaaType::DXT4 => todo!(),
             PaaType::DXT5 => {
                 if self.is_lzo_compressed {
                     self.data = self.decompress_lzo(paa_type)?;
@@ -219,7 +220,6 @@ impl Mipmap {
 
                 self.data = rgba_buf;
             }
-            PaaType::RGBA8888 => todo!(),
             PaaType::GRAYwAlpha => {
                 let mut cursor_data = Cursor::new(&self.data);
 
@@ -247,7 +247,6 @@ impl Mipmap {
     {
         let mut out_data: Vec<u8>;
         match paa_type {
-            PaaType::UNKNOWN => todo!(),
             PaaType::DXT1 => {
                 let format = Format::Bc1;
 
@@ -266,9 +265,6 @@ impl Mipmap {
                     out_data = compressed_data;
                 }
             }
-            PaaType::DXT2 => todo!(),
-            PaaType::DXT3 => todo!(),
-            PaaType::DXT4 => todo!(),
             PaaType::DXT5 => {
                 let format = Format::Bc3;
 
@@ -287,10 +283,7 @@ impl Mipmap {
                     out_data = compressed_data;
                 }
             }
-            PaaType::RGBA4444 => todo!(),
-            PaaType::ARGB1555 => todo!(),
-            PaaType::RGBA8888 => todo!(),
-            PaaType::GRAYwAlpha => todo!(),
+            other => return Err(PaaError::UnsupportedEncode((*other).into())),
         }
 
         self.data_size = self.data.len() as i64;

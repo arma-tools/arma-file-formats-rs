@@ -253,22 +253,28 @@ impl Pbo {
         sig
     }
 
+    /// Checks that `signature` was made for this PBO with the private key of `public_key`.
     pub fn verify(&self, public_key: &PublicKey, signature: &Signature) -> anyhow::Result<()> {
-        assert!(public_key.authority == signature.authority, "auth not same");
+        anyhow::ensure!(
+            public_key.authority == signature.authority,
+            "the signature is from authority {}, the key from {}",
+            signature.authority,
+            public_key.authority
+        );
+        // The signature carries a copy of the key, it has to be this key.
+        anyhow::ensure!(
+            public_key.n == signature.n && public_key.exponent == signature.exponent,
+            "the signature was made with another key of authority {}",
+            signature.authority
+        );
 
-        // Pbo sorted?
         let (pbo_hash1, pbo_hash2, pbo_hash3) =
             self.generate_hashes(signature.version, signature.n_length);
-
         let (sign_hash1, sign_hash2, sign_hash3) = signature.get_hashes();
 
-
-        assert!(sign_hash1 == pbo_hash1, "hash1 not same");
-
-        assert!(sign_hash2 == pbo_hash2, "hash2 not same");
-
-        assert!(sign_hash3 == pbo_hash3, "hash3 not same");
-
+        anyhow::ensure!(sign_hash1 == pbo_hash1, "the PBO checksum differs (hash 1)");
+        anyhow::ensure!(sign_hash2 == pbo_hash2, "the file names differ (hash 2)");
+        anyhow::ensure!(sign_hash3 == pbo_hash3, "the file contents differ (hash 3)");
         Ok(())
     }
 
@@ -284,7 +290,7 @@ impl Pbo {
     pub(crate) fn namehash(&self) -> Output<Sha1> {
         let mut hash = Sha1::new();
 
-        for entry in self.entries.iter() {
+        for entry in self.sorted_entries() {
             if entry.1.data.is_empty() {
                 continue;
             }
@@ -300,14 +306,16 @@ impl Pbo {
 
         let mut empty = true;
 
-        for entry in self.entries.iter() {
+        for entry in self.sorted_entries() {
             let file_ext = entry.0.split('.').last().unwrap();
 
-            if V2_EXCLUDE_LIST.contains(&file_ext) {
-                continue;
-            }
-
-            if !V3_INCLUDE_LIST.contains(&file_ext) {
+            // V2 hashes every file but textures, models, sounds and the like, V3 only scripts
+            // and configs.
+            let hashed = match version {
+                SignVersion::V2 => !V2_EXCLUDE_LIST.contains(&file_ext),
+                SignVersion::V3 => V3_INCLUDE_LIST.contains(&file_ext),
+            };
+            if !hashed {
                 continue;
             }
 
@@ -323,5 +331,14 @@ impl Pbo {
         }
 
         hash.finalize()
+    }
+}
+
+impl Pbo {
+    /// The entries sorted by their lower case path, the order signatures hash them in.
+    fn sorted_entries(&self) -> impl Iterator<Item = (&String, &Entry)> {
+        let mut entries: Vec<_> = self.entries.iter().collect();
+        entries.sort_by_cached_key(|(path, _)| path.to_lowercase());
+        entries.into_iter()
     }
 }

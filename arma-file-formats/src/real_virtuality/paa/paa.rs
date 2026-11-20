@@ -262,7 +262,8 @@ impl Paa {
             "GGATCGVA".to_string(),
             Tagg {
                 signature: "GGATCGVA".to_string(),
-                data: vec![avg_r as u8, avg_g as u8, avg_b as u8, avg_a as u8],
+                // A color like the engine stores them, `0xAARRGGBB`: blue first.
+                data: vec![avg_b as u8, avg_g as u8, avg_r as u8, avg_a as u8],
             },
         );
 

@@ -394,6 +394,45 @@ pub enum WssError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum TexHeadersError {
+    #[error("Unknown signature: `{0}`, expected 0DHT")]
+    UnknownSignature(String),
+
+    #[error("Unsupported version: `{0}`, only 1 is known")]
+    UnsupportedVersion(u32),
+
+    #[error("Truncated texture headers")]
+    Truncated,
+
+    #[error("{0} bytes after the last texture")]
+    TrailingData(usize),
+
+    #[error("Mipmap counts {0} and {1} of a texture differ")]
+    MipmapCountMismatch(u32, u32),
+
+    #[error("Unknown pixel format: `{0}`")]
+    UnknownPixelFormat(u32),
+
+    #[error("Byte `{0}` is not a bool")]
+    InvalidBool(u8),
+
+    #[error("String is not UTF-8 without NULs: {0:?}")]
+    InvalidString(Vec<u8>),
+
+    #[error("Path `{0}` contains a NUL")]
+    InvalidPath(String),
+
+    #[error("Unknown paa type: `{0:#06x}`")]
+    UnknownPaaType(u16),
+
+    #[error("Tag `{0}` has {1} bytes, expected 4")]
+    InvalidTag(String, usize),
+
+    #[error("Texture exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum RtmError {
     #[error("Unknown signature: `{0}`")]
     UnknownSignature(String),
@@ -679,6 +718,9 @@ pub enum AffError {
 
     #[error("RTM Error: {0}")]
     RtmError(#[from] RtmError),
+
+    #[error("TexHeaders Error: {0}")]
+    TexHeadersError(#[from] TexHeadersError),
 
     #[error("WSS Error: {0}")]
     WssError(#[from] WssError),

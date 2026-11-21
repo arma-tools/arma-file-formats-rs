@@ -439,6 +439,24 @@ pub enum TexHeadersError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum FxyError {
+    #[error("Unknown signature: `{0}`, expected BIFo")]
+    UnknownSignature(String),
+
+    #[error("Unsupported version: `{0:#x}`, known are 0x101 and 0x102")]
+    UnsupportedVersion(u32),
+
+    #[error("Truncated font")]
+    Truncated,
+
+    #[error("Character `{0:#x}` is below 0x20 or above 0x1001f, version 1 can't store it")]
+    InvalidCode(u32),
+
+    #[error("Page exceeds 4 GiB entries")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum RtmError {
     #[error("Unknown signature: `{0}`")]
     UnknownSignature(String),
@@ -727,6 +745,9 @@ pub enum AffError {
 
     #[error("TexHeaders Error: {0}")]
     TexHeadersError(#[from] TexHeadersError),
+
+    #[error("FXY Error: {0}")]
+    FxyError(#[from] FxyError),
 
     #[error("WSS Error: {0}")]
     WssError(#[from] WssError),

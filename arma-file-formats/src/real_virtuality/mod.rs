@@ -1,3 +1,4 @@
+pub mod fxy;
 pub mod p3d;
 pub mod paa;
 pub mod pbo;

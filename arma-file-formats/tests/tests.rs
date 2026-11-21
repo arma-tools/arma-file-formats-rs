@@ -25,6 +25,7 @@ mod enfusion {
     mod snd_test;
     mod stars_test;
     mod terr_test;
+    mod text_test;
     mod topo_test;
     mod ttile_test;
     mod xob_test;

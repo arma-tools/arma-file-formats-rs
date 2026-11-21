@@ -566,3 +566,68 @@ fn pak_scan_dir_test() {
         println!("{}: {} entries", path.display(), entries.len());
     }
 }
+
+#[test]
+fn pak_header_errors_test() {
+    let probe = std::fs::read(PROBE_PATH).unwrap();
+    let read = |bytes: &[u8]| Pak::from_stream(&mut Cursor::new(bytes));
+
+    let mut form = probe.clone();
+    form[8..12].copy_from_slice(b"XXXX");
+    assert_eq!(
+        pak_error(read(&form)),
+        PakError::UnknownFormType("XXXX".to_string())
+    );
+
+    // HEAD starts at 12, its data (version first) at 20.
+    let mut version = probe.clone();
+    version[20] = 4;
+    assert_eq!(
+        pak_error(read(&version)),
+        PakError::UnsupportedVersion(0x0001_0004)
+    );
+
+    // A HEAD chunk one byte longer, with the FORM and HEAD sizes (big endian) to match.
+    let mut longer = probe[..48].to_vec();
+    longer.push(0);
+    longer.extend(&probe[48..]);
+    let form_size = u32::from_be_bytes(probe[4..8].try_into().unwrap()) + 1;
+    longer[4..8].copy_from_slice(&form_size.to_be_bytes());
+    longer[16..20].copy_from_slice(&29u32.to_be_bytes());
+    assert_eq!(pak_error(read(&longer)), PakError::InvalidHead);
+}
+
+#[test]
+fn pak_reader_raw_and_inner_test() {
+    let probe = std::fs::read(PROBE_PATH).unwrap();
+    let reader = PakReader::from_stream(Cursor::new(probe.clone())).unwrap();
+    for entry in &reader.pak.entries {
+        let raw = reader.read_entry_raw(entry).unwrap();
+        assert_eq!(raw.len(), entry.compressed_size as usize, "{}", entry.path);
+        if entry.compression == PakCompression::Stored {
+            assert_eq!(raw, reader.read_entry(entry).unwrap());
+        }
+    }
+    assert_eq!(reader.into_inner().into_inner(), probe);
+}
+
+#[test]
+fn pak_source_conversions_test() {
+    let bytes = [1u8, 2, 3];
+    let vec = bytes.to_vec();
+    for (source, debug) in [
+        (PakSource::from(&bytes), "Bytes(3)"),
+        (PakSource::from(&bytes[..]), "Bytes(3)"),
+        (PakSource::from(&vec), "Bytes(3)"),
+        (PakSource::from(vec.clone()), "Bytes(3)"),
+        (
+            PakSource::from(std::borrow::Cow::from(&vec[..2])),
+            "Bytes(2)",
+        ),
+        (PakSource::from(Path::new("a/b.txt")), "Path(\"a/b.txt\")"),
+        (PakSource::from(PathBuf::from("c.txt")), "Path(\"c.txt\")"),
+        (PakSource::reader(Cursor::new(vec.clone())), "Reader"),
+    ] {
+        assert_eq!(format!("{source:?}"), debug);
+    }
+}

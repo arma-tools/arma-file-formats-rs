@@ -1,6 +1,11 @@
 use std::fs;
 
-use arma_file_formats::real_virtuality::p3d::ODOL;
+use std::{fs::File, io::BufReader};
+
+use arma_file_formats::{
+    errors::{AffError, OdolError},
+    real_virtuality::p3d::{ODOL, OdolLazyReader, ResolutionEnum},
+};
 use serial_test::serial;
 
 const INPUT_PATH_PREFIX: &str = "./tests/real_virtuality/test-data/p3d_in/";
@@ -258,4 +263,61 @@ fn truncated() {
         )),
         "{message}"
     );
+}
+
+#[test]
+fn lazy_reader_reads_the_same_lods() {
+    for name in [
+        "APC_Tracked_01_aa_F.p3d",
+        "Crash_barrier_F.p3d",
+        "sloup_vn.p3d",
+    ] {
+        let path = format!("{INPUT_PATH_PREFIX}{name}");
+        let full = ODOL::from_path(&path).unwrap();
+        let mut lazy =
+            OdolLazyReader::from_reader(BufReader::new(File::open(&path).unwrap())).unwrap();
+        // The header is the same, only the LODs aren't read.
+        assert!(lazy.odol.lods.is_empty(), "{name}");
+        assert_eq!(lazy.odol.resolutions, full.resolutions, "{name}");
+        assert_eq!(lazy.odol.start_address_of_lods, full.start_address_of_lods);
+
+        let mut file = BufReader::new(File::open(&path).unwrap());
+        for (index, resolution) in full.resolutions.iter().enumerate() {
+            // Graphical LODs share a resolution, the first of them is read.
+            let first = full
+                .resolutions
+                .iter()
+                .position(|r| r.res == resolution.res)
+                .unwrap();
+            if first != index {
+                continue;
+            }
+            let lod = lazy.read_lod(resolution.res).unwrap();
+            // Debug output, some LODs hold NaN floats.
+            let expected = format!("{:?}", full.lods[index]);
+            assert_eq!(format!("{lod:?}"), expected, "{name} {:?}", resolution.res);
+            let again = full.read_lod(&mut file, resolution.res).unwrap();
+            assert_eq!(format!("{again:?}"), expected);
+        }
+
+        let missing = [
+            ResolutionEnum::ViewUnknown,
+            ResolutionEnum::StencilShadowUnknown,
+            ResolutionEnum::ViewCommanderFireGeometry,
+            ResolutionEnum::SubParts,
+            ResolutionEnum::Wreck,
+        ]
+        .into_iter()
+        .find(|res| full.resolutions.iter().all(|r| r.res != *res))
+        .unwrap();
+        assert!(matches!(
+            lazy.read_lod(missing),
+            Err(AffError::OdolError(OdolError::LodNotFound))
+        ));
+        assert!(matches!(
+            full.read_lod(&mut file, missing),
+            Err(AffError::OdolError(OdolError::LodNotFound))
+        ));
+    }
+    assert_eq!(ODOL::new(), ODOL::default());
 }

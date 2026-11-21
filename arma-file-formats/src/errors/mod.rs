@@ -31,6 +31,12 @@ pub enum PaaError {
     #[error("Unknown PAA type `{0:#06x}`")]
     UnknownType(u16),
 
+    #[error("PAA type `{0:#06x}` can't be decoded")]
+    UnsupportedDecode(u16),
+
+    #[error("PAA type `{0:#06x}` can't be encoded")]
+    UnsupportedEncode(u16),
+
     /// The file is cut off, like the decoys of obfuscated PBOs: copies of real textures that
     /// end before their mipmaps.
     #[error("Mipmap {index} ends at byte {end}, past the end of the file ({len} bytes)")]

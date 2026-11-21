@@ -154,3 +154,198 @@ fn garbage_compressed_entries() {
     assert_eq!(data(&mut reader, "trailing.txt"), trailing);
     assert_eq!(data(&mut reader, "huge.txt"), lzss);
 }
+
+/// A PBO in memory with these files.
+fn memory_pbo(prefix: &str, files: &[(&str, &[u8])]) -> Pbo {
+    let mut pbo = Pbo::new();
+    pbo.properties
+        .insert("prefix".to_string(), prefix.to_string());
+    for (name, data) in files {
+        let mut entry = arma_file_formats::real_virtuality::pbo::Entry::new();
+        entry.filename = (*name).to_string();
+        entry.data = data.to_vec();
+        pbo.entries.insert((*name).to_string(), entry);
+    }
+    pbo.hash = vec![7; 20];
+    pbo
+}
+
+fn with_data(pbo: &Pbo, name: &str, data: &[u8]) -> Pbo {
+    let mut changed = pbo.clone();
+    changed.entries.get_mut(name).unwrap().data = data.to_vec();
+    changed
+}
+
+#[test]
+fn sign_versions_hash_different_files() {
+    let key = PrivateKey::generate("AFF_TEST_HASH");
+    let public: PublicKey = key.clone().into();
+    let pbo = memory_pbo(
+        "x\\test",
+        &[
+            ("config.bin", b"config"),
+            ("fn_test.sqf", b"hint 1;"),
+            ("data\\texture_co.paa", b"pixels"),
+        ],
+    );
+    for version in [SignVersion::V2, SignVersion::V3] {
+        let sig = pbo.sign(version, &key);
+        assert!(pbo.verify(&public, &sig).is_ok(), "{version:?}");
+
+        // Textures are in neither hash.
+        let texture = with_data(&pbo, "data\\texture_co.paa", b"other pixels");
+        assert!(texture.verify(&public, &sig).is_ok(), "{version:?}");
+
+        // Scripts are in both.
+        let script = with_data(&pbo, "fn_test.sqf", b"hint 2;");
+        let err = script.verify(&public, &sig).unwrap_err();
+        assert_eq!(err.to_string(), "the file contents differ (hash 3)");
+
+        // Binarized configs only in V2.
+        let config = with_data(&pbo, "config.bin", b"other config");
+        assert_eq!(
+            config.verify(&public, &sig).is_ok(),
+            version == SignVersion::V3,
+            "{version:?}"
+        );
+
+        // Hashed in the order of the lower case paths, not as stored.
+        let mut reordered = pbo.clone();
+        reordered.entries.reverse();
+        assert!(reordered.verify(&public, &sig).is_ok(), "{version:?}");
+
+        // The names are in hash 2.
+        let mut renamed = pbo.clone();
+        let entry = renamed.entries.shift_remove("fn_test.sqf").unwrap();
+        renamed.entries.insert("fn_other.sqf".to_string(), entry);
+        let err = renamed.verify(&public, &sig).unwrap_err();
+        assert_eq!(err.to_string(), "the file names differ (hash 2)");
+
+        // And the checksum of the file in hash 1.
+        let mut rehashed = pbo.clone();
+        rehashed.hash = vec![8; 20];
+        let err = rehashed.verify(&public, &sig).unwrap_err();
+        assert_eq!(err.to_string(), "the PBO checksum differs (hash 1)");
+    }
+}
+
+#[test]
+fn sign_without_hashed_files_and_prefix_with_backslash() {
+    let key = PrivateKey::generate("AFF_TEST_EMPTY");
+    let public: PublicKey = key.clone().into();
+    // Only a texture: the file hash is of "nothing" (V2) or "gnihton" (V3).
+    let pbo = memory_pbo("x\\test\\", &[("texture_co.paa", b"pixels")]);
+    for version in [SignVersion::V2, SignVersion::V3] {
+        let sig = pbo.sign(version, &key);
+        assert!(pbo.verify(&public, &sig).is_ok());
+        // The prefix ends with a `\` either way.
+        let mut without = pbo.clone();
+        without
+            .properties
+            .insert("prefix".to_string(), "x\\test".to_string());
+        assert!(without.verify(&public, &sig).is_ok());
+    }
+}
+
+#[test]
+fn verify_needs_the_signing_key() {
+    let key = PrivateKey::generate("AFF_TEST_KEY3");
+    let public: PublicKey = key.clone().into();
+    let pbo = memory_pbo("x\\test", &[("fn_test.sqf", b"hint 1;")]);
+    let sig = pbo.sign(SignVersion::V3, &key);
+
+    // Another key with the same authority name.
+    let forger = PrivateKey::generate("AFF_TEST_KEY3");
+    let forged = pbo.sign(SignVersion::V3, &forger);
+    let err = pbo.verify(&public, &forged).unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "the signature was made with another key of authority AFF_TEST_KEY3"
+    );
+
+    // Another authority.
+    let other: PublicKey = PrivateKey::generate("AFF_TEST_OTHER").into();
+    let err = pbo.verify(&other, &sig).unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "the signature is from authority AFF_TEST_KEY3, the key from AFF_TEST_OTHER"
+    );
+}
+
+#[test]
+fn pbo_entries_and_errors() {
+    use arma_file_formats::{errors::AffError, real_virtuality::pbo::Entry};
+    use std::io::Cursor;
+
+    let data = fs::read(format!("{INPUT_PATH_PREFIX}grad_adminMessages.pbo")).unwrap();
+    let mut reader = PboReader::from_stream(Cursor::new(&data)).unwrap();
+    assert_eq!(reader.get_prefix(), "x\\grad\\addons\\adminmessages\\");
+    assert!(reader.get_entry("missing.sqf").unwrap().is_none());
+    assert!(matches!(
+        reader.extract_single_file("missing.sqf", OUTPUT_PATH_PREFIX, false),
+        Err(AffError::PboEntryNotFound(_))
+    ));
+    // With the full path, the entry's directories are created under the output path.
+    let out = format!("{OUTPUT_PATH_PREFIX}extract_full/");
+    reader
+        .extract_single_file("gui\\defines.hpp", &out, true)
+        .unwrap();
+    assert!(fs::metadata(format!("{out}gui/defines.hpp")).is_ok());
+    // Without it, only the file name, on every platform.
+    let out = format!("{OUTPUT_PATH_PREFIX}extract_name/");
+    reader
+        .extract_single_file("gui\\defines.hpp", &out, false)
+        .unwrap();
+    assert!(fs::metadata(format!("{out}defines.hpp")).is_ok());
+
+    // `..` in an entry path can't leave the output directory.
+    let mut pbo = Pbo::new();
+    let mut entry = Entry::new();
+    entry.filename = "..\\../escape\\.\\file.txt".to_string();
+    entry.data = b"data".to_vec();
+    pbo.entries.insert(entry.filename.clone(), entry);
+    let out = format!("{OUTPUT_PATH_PREFIX}extract_dots/");
+    pbo.extract_single_file(
+        "..\\../escape\\.\\file.txt",
+        &out,
+        true,
+        &mut Cursor::new([]),
+    )
+    .unwrap();
+    assert_eq!(fs::read(format!("{out}escape/file.txt")).unwrap(), b"data");
+
+    // Not a PBO, or the data doesn't end where the headers say.
+    assert!(matches!(
+        Pbo::from_stream(&mut Cursor::new(vec![1u8; 64])),
+        Err(AffError::InvalidFileError)
+    ));
+    let mut header = vec![0u8];
+    header.extend(b"sreV");
+    header.extend([1; 16]);
+    header.extend([0; 32]);
+    assert!(matches!(
+        Pbo::from_stream(&mut Cursor::new(header)),
+        Err(AffError::InvalidFileError)
+    ));
+    let mut no_end = data.clone();
+    let len = no_end.len();
+    no_end[len - 21] = 1;
+    assert!(matches!(
+        Pbo::from_stream(&mut Cursor::new(no_end)),
+        Err(AffError::InvalidFileError)
+    ));
+
+    // An entry header round trips (the name is read lower case).
+    let mut bytes = b"dir\\file.sqf\0".to_vec();
+    for value in [0x7372_7043u32, 100, 0, 1_234_567, 80] {
+        bytes.extend(value.to_le_bytes());
+    }
+    let mut entry = Entry::new();
+    entry.read(&mut Cursor::new(&bytes)).unwrap();
+    assert_eq!(entry.filename, "dir\\file.sqf");
+    assert_eq!(entry.mime_type, "Cprs");
+    assert_eq!((entry.original_size, entry.timestamp), (100, 1_234_567));
+    let mut out = Cursor::new(Vec::new());
+    entry.write(&mut out).unwrap();
+    assert_eq!(out.into_inner(), bytes);
+}

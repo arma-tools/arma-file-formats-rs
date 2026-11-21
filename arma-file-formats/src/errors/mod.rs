@@ -457,6 +457,72 @@ pub enum FxyError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum MlodError {
+    #[error("Unknown signature: `{0}`, expected MLOD")]
+    UnknownSignature(String),
+
+    #[error("Unsupported version: `{0:#x}`, known is 0x101")]
+    UnsupportedVersion(u32),
+
+    #[error("Unknown LOD signature: `{0}`, expected P3DM")]
+    UnknownLodSignature(String),
+
+    #[error("Unsupported P3DM version: `{major:#x}.{minor:#x}`, known is 0x1c.0x100")]
+    UnsupportedLodVersion { major: u32, minor: u32 },
+
+    #[error("Truncated model")]
+    Truncated,
+
+    #[error("{0} bytes after the last LOD")]
+    TrailingData(usize),
+
+    #[error("Face has {0} sides, expected 3 or 4")]
+    InvalidSides(u32),
+
+    #[error("TAGG missing after the faces")]
+    TaggsMissing,
+
+    #[error("Tagg `{name}` has {size} bytes, expected {expected}")]
+    InvalidTaggSize {
+        name: String,
+        size: usize,
+        expected: usize,
+    },
+
+    #[error("Tagg `{name}` has {len} entries, the LOD needs {expected}")]
+    InvalidTaggLength {
+        name: String,
+        len: usize,
+        expected: usize,
+    },
+
+    #[error("Selection `{name}` has {points} points and {faces} faces, not those of the LOD")]
+    InvalidSelection {
+        name: String,
+        points: usize,
+        faces: usize,
+    },
+
+    #[error("Selection name `{0}` is empty or starts with `#`")]
+    InvalidSelectionName(String),
+
+    #[error("Property `{0}` has 64 bytes or more, or a NUL")]
+    InvalidProperty(String),
+
+    #[error("`{0}` has a NUL")]
+    InvalidName(String),
+
+    #[error("Tagg `#EndOfFile#` can't be written in the middle of a LOD")]
+    EndOfFileTagg,
+
+    #[error("String is not UTF-8: {0:02x?}")]
+    InvalidString(Vec<u8>),
+
+    #[error("Model exceeds 4 GiB entries")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum RtmError {
     #[error("Unknown signature: `{0}`")]
     UnknownSignature(String),
@@ -748,6 +814,9 @@ pub enum AffError {
 
     #[error("FXY Error: {0}")]
     FxyError(#[from] FxyError),
+
+    #[error("MLOD Error: {0}")]
+    MlodError(#[from] MlodError),
 
     #[error("WSS Error: {0}")]
     WssError(#[from] WssError),

@@ -1,4 +1,5 @@
 mod real_virtuality {
+    mod fxy_test;
     mod p3d_test;
     mod paa_test;
     mod pbo_test;

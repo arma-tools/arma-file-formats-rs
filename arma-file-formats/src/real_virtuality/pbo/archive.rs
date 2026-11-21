@@ -169,16 +169,17 @@ impl Pbo {
         let entry_path = &self.handle_prefix(entry_path);
 
         if let Some(entry) = self.get_entry(entry_path, reader)? {
+            // Entry paths use `\`, split them so every platform gets directories. Empty, `.`
+            // and `..` parts are dropped, the file stays under `out_path`.
+            let parts: Vec<&str> = entry
+                .filename
+                .split(['\\', '/'])
+                .filter(|part| !matches!(*part, "" | "." | ".."))
+                .collect();
             let mut out_path = PathBuf::from(out_path);
             if full_path {
-                out_path.push(entry.filename);
-            } else {
-                let filename = PathBuf::from(entry.filename)
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_str()
-                    .unwrap_or_default()
-                    .to_owned();
+                out_path.extend(&parts);
+            } else if let Some(filename) = parts.last() {
                 out_path.push(filename);
             }
 

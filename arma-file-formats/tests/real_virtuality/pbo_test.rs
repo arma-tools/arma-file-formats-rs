@@ -291,6 +291,28 @@ fn pbo_entries_and_errors() {
         .extract_single_file("gui\\defines.hpp", &out, true)
         .unwrap();
     assert!(fs::metadata(format!("{out}gui/defines.hpp")).is_ok());
+    // Without it, only the file name, on every platform.
+    let out = format!("{OUTPUT_PATH_PREFIX}extract_name/");
+    reader
+        .extract_single_file("gui\\defines.hpp", &out, false)
+        .unwrap();
+    assert!(fs::metadata(format!("{out}defines.hpp")).is_ok());
+
+    // `..` in an entry path can't leave the output directory.
+    let mut pbo = Pbo::new();
+    let mut entry = Entry::new();
+    entry.filename = "..\\../escape\\.\\file.txt".to_string();
+    entry.data = b"data".to_vec();
+    pbo.entries.insert(entry.filename.clone(), entry);
+    let out = format!("{OUTPUT_PATH_PREFIX}extract_dots/");
+    pbo.extract_single_file(
+        "..\\../escape\\.\\file.txt",
+        &out,
+        true,
+        &mut Cursor::new([]),
+    )
+    .unwrap();
+    assert_eq!(fs::read(format!("{out}escape/file.txt")).unwrap(), b"data");
 
     // Not a PBO, or the data doesn't end where the headers say.
     assert!(matches!(

@@ -457,6 +457,21 @@ pub enum FxyError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum LipError {
+    #[error("Lip sync is not UTF-8")]
+    InvalidText,
+
+    #[error("Missing the `frame = ...` line")]
+    MissingFrame,
+
+    #[error("Line {0} is not `time, value`: `{1}`")]
+    InvalidLine(usize, String),
+
+    #[error("Line {0} follows the `-1` that ends the lip sync")]
+    AfterEnd(usize),
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum SqfcError {
     #[error("Unsupported version: `{0}`, known are 1 and 2")]
     UnsupportedVersion(u32),
@@ -892,6 +907,9 @@ pub enum AffError {
 
     #[error("MLOD Error: {0}")]
     MlodError(#[from] MlodError),
+
+    #[error("LIP Error: {0}")]
+    LipError(#[from] LipError),
 
     #[error("SQFC Error: {0}")]
     SqfcError(#[from] SqfcError),

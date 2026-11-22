@@ -1,4 +1,5 @@
 pub mod fxy;
+pub mod lip;
 pub mod p3d;
 pub mod paa;
 pub mod pbo;

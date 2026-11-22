@@ -457,6 +457,81 @@ pub enum FxyError {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum SqfcError {
+    #[error("Unsupported version: `{0}`, known are 1 and 2")]
+    UnsupportedVersion(u32),
+
+    #[error("Unknown block type: `{0}`")]
+    UnknownBlock(u8),
+
+    #[error("Block type `{0}` is not supported")]
+    UnsupportedBlock(u8),
+
+    #[error("Block type `{0}` appears twice or out of order")]
+    RepeatedBlock(u8),
+
+    #[error("Block type `{0}` is missing")]
+    MissingBlock(u8),
+
+    #[error("Unknown compression: `{0}`, known is 2 (LZO)")]
+    UnknownCompression(u8),
+
+    #[error("LZO: {0}")]
+    Lzo(String),
+
+    #[error("Truncated script")]
+    Truncated,
+
+    #[error("{0} bytes after the end of a block")]
+    TrailingData(usize),
+
+    #[error("Unknown constant type: `{0}`")]
+    UnknownConstant(u8),
+
+    #[error("Unknown instruction: `{0}`")]
+    UnknownInstruction(u8),
+
+    #[error("Boolean is `{0}`, expected 0 or 1")]
+    InvalidBoolean(u8),
+
+    #[error("Name index `{0}` is past the name table")]
+    InvalidName(u16),
+
+    #[error("String is not UTF-8")]
+    InvalidString,
+
+    #[error("Hash map needs version 2 and an even number of items")]
+    InvalidHashMap,
+
+    #[error("Array flags `{0}`, version 1 can't store them")]
+    InvalidFlags(u8),
+
+    #[error("Code source constant has the top bit set, or its range is 2 GiB or more")]
+    InvalidSource,
+
+    #[error("String of {0} bytes, at most 16 MiB - 1 fit")]
+    StringTooLong(usize),
+
+    #[error("Array of {0} values, version 1 makes at most 65535")]
+    ArrayTooLarge(u32),
+
+    #[error("More than 65535 constants")]
+    TooManyConstants,
+
+    #[error("More than 65535 names")]
+    TooManyNames,
+
+    #[error("More than 65535 files")]
+    TooManyFiles,
+
+    #[error("More than 4 Gi instructions")]
+    TooManyInstructions,
+
+    #[error("Block exceeds 4 GiB")]
+    TooLarge,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum MlodError {
     #[error("Unknown signature: `{0}`, expected MLOD")]
     UnknownSignature(String),
@@ -817,6 +892,9 @@ pub enum AffError {
 
     #[error("MLOD Error: {0}")]
     MlodError(#[from] MlodError),
+
+    #[error("SQFC Error: {0}")]
+    SqfcError(#[from] SqfcError),
 
     #[error("WSS Error: {0}")]
     WssError(#[from] WssError),

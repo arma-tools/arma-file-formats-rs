@@ -6,6 +6,7 @@ mod real_virtuality {
     mod pbo_test;
     mod rap_test;
     mod rtm_test;
+    mod sqfc_test;
     mod texheaders_test;
     mod util_test;
     mod wrp_test;
